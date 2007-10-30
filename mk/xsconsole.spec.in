@@ -24,9 +24,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/xsconsole/XSConsole.py
-%{_libdir}/xsconsole/XSConsole.pyc
-%{_libdir}/xsconsole/XSConsole.pyo
+%{_libdir}/xsconsole/*.py
+%{_libdir}/xsconsole/*.pyc
+%{_libdir}/xsconsole/*.pyo
 %{_bindir}/xsconsole
 %doc LICENSE
 
