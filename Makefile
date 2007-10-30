@@ -25,8 +25,8 @@ COMMAND := xsconsole
 ################################################################################
 # Documents
 
-DOCUMENTS :=
-DOCUMENTS += LICENSE
+#DOCUMENTS :=
+#DOCUMENTS += LICENSE
 
 ################################################################################
 install:
@@ -37,8 +37,8 @@ install:
 
 	$(INSTALL) -m $(BIN_MODE) $(COMMAND) $(PREFIX)/bin
 
-	$(foreach docfile,$(DOCUMENTS),\
-          $(INSTALL) -m $(DOC_MODE) $(docfile) $(DOCDIR);)
+#	$(foreach docfile,$(DOCUMENTS),\
+#          $(INSTALL) -m $(DOC_MODE) $(docfile) $(DOCDIR);)
 
 clean:
 
