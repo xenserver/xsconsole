@@ -15,7 +15,17 @@ DOC_MODE := 644
 ################################################################################
 # List of python scripts:
 SCRIPTS :=
+SCRIPTS += XSConsoleAuth.py
+SCRIPTS += XSConsoleBases.py
+SCRIPTS += XSConsoleCurses.py
+SCRIPTS += XSConsoleData.py
+SCRIPTS += XSConsoleDialogues.py
+SCRIPTS += XSConsoleFields.py
+SCRIPTS += XSConsoleLang.py
+SCRIPTS += XSConsoleMenus.py
 SCRIPTS += XSConsole.py
+SCRIPTS += XSConsoleStructure.py
+SCRIPTS += XSConsoleTerm.py
 
 
 ################################################################################
