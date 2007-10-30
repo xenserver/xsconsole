@@ -1,0 +1,33 @@
+Summary: XenServer Host Configuration Console
+Name: xsconsole
+Version: @XS_VERSION@
+Release: @XS_RELEASE@
+License: Proprietary
+Group: Administration/System
+Source0: %{name}-%{version}.tar.bz2
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
+
+%description
+Console tool for configuring a XenServer installation.
+
+%prep
+%setup -q
+
+%install
+rm -rf $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/usr/bin
+mkdir -p $RPM_BUILD_ROOT/usr/lib
+make install DESTDIR=$RPM_BUILD_ROOT
+
+%clean
+rm -rf $RPM_BUILD_ROOT
+
+%files
+%defattr(-,root,root,-)
+%{_libdir}/xsconsole/XSConsole.py
+%{_libdir}/xsconsole/XSConsole.pyc
+%{_libdir}/xsconsole/XSConsole.pyo
+%{_bindir}/xsconsole
+%doc LICENSE
+
+%changelog
