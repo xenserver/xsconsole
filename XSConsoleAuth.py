@@ -1,10 +1,19 @@
 
+import os
+
 from XSConsoleBases import *
 import XenAPI
 
 class Auth:
     loggedInName = 'root'
-    loggedInPassword = 'xenroot'
+    loggedInPassword = ''
+    
+    if os.path.isfile("password.txt"):
+        passwordFile = open("password.txt")
+        try:
+            loggedInPassword = passwordFile.readline()
+        finally:
+            passwordFile.close()
     error = ""
     
     @classmethod
@@ -42,6 +51,7 @@ class Auth:
     @classmethod
     def LogOut(cls):
         cls.loggedInName = None
+        cls.loggedInPassword = None
 
     @classmethod
     def OpenSession(cls):
@@ -53,9 +63,17 @@ class Auth:
             except Exception, e:
                 session = None
                 cls.error = str(e)
-        
+
+                # Test code
+                session = XenAPI.Session("http://isis")
+                try:
+                    session.login_with_password(cls.LoggedInUsername(), cls.LoggedInPassword())
+                except Exception, e:
+                    session = None
+                    cls.error = str(e)
         return session
         
     @classmethod
     def CloseSession(cls, inSession):
+        # inSession.logout()
         pass

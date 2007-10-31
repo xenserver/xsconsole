@@ -78,6 +78,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
                 ChoiceDef("System Properties", "Configure the properties of this system",
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
+                ChoiceDef("Management Interface", "Configure the management interface for this system",
+                    lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
                 ChoiceDef("Server Reboot", "Reboot this server", "ServerReboot")
             ]),
             
@@ -93,9 +95,15 @@ class RootMenu:
                 ChoiceDef("BIOS Information", "", None, lambda : inDialogue.ChangeStatus('BIOS')),
                 ChoiceDef("BMC Version", ""),
                 ChoiceDef("CPLD Version", "")
+            ]),
+
+            'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', "Management Interface", [
+                ChoiceDef("Display NICs", "", None, lambda : inDialogue.ChangeStatus('PIF')),
+                ChoiceDef("Select Management NIC", "", None, lambda : inDialogue.ChangeStatus('SELECTNIC')),
+                ChoiceDef("Test Network", "", None, lambda : inDialogue.ChangeStatus('TESTNETWORK')),
             ])
         }
-        
+
         self.currentKey = 'MENU_ROOT'
     
     def CurrentMenu(self):

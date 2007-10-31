@@ -68,16 +68,31 @@ class CursesPane:
     def TitleSet(self, inTitle):
         self.title = inTitle
         
+    def ClippedAddStr(self,  inString, inX,  inY,  inColour): # Internal use
+        xPos = inX
+        clippedStr = inString
+        
+        # Is text on the screen at all?
+        if inY >=0 and inY < self.ySize and xPos < self.xSize:
+
+            # Clip against left hand side
+            if xPos < 0:
+                clippedStr = clippedStr[-xPos:]
+                xPos = 0
+
+            # Clip against right hand side
+            clippedStr = clippedStr[:self.xSize - xPos]
+            
+            if len(clippedStr) > 0:
+                self.win.addstr(inY, xPos, inString, CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
+        
     def AddBox(self):
         self.hasBox = True
-  
-    def AddText(self, inString):
-        self.win.addstr(inString, Palette.ColourAttr(self.defaultColour))
  
-    def AddText(self, inString, inX, inY, inColour=False):
-        self.win.addstr(inY,inX, inString, CursesPalette.ColourAttr(inColour, self.defaultColour))
+    def AddText(self, inString, inX, inY, inColour = None):
+        self.ClippedAddStr(inString, inX, inY, inColour)
     
-    def AddWrappedText(self, inString, inX, inY, inColour=False):
+    def AddWrappedText(self, inString, inX, inY, inColour = None):
         yPos = inY
         width = self.xSize - inX - 1
         if width < 1 : raise "Text outside of window"
@@ -92,13 +107,12 @@ class CursesPane:
             
             thisLine = text[0:lineLength]
             text = text[lineLength+1:]
-            self.win.addstr(yPos,inX, thisLine, CursesPalette.ColourAttr(inColour, self.defaultColour))
+            self.ClippedAddStr(thisLine, inX, inY, inColour)
             yPos += 1
     
-    def AddHCentredText(self, inString, inYStart):
+    def AddHCentredText(self, inString, inY, inColour = None):
         xStart = self.xSize / 2 - len(inString) / 2
-        if xStart < 0: xStart = 0
-        self.win.addstr(inYStart, xStart, inString, CursesPalette.ColourAttr(self.defaultColour))
+        self.ClippedAddStr(inString, xStart, inY, inColour)
     
     def Decorate(self):
         if self.hasBox:
@@ -138,11 +152,14 @@ class CursesPane:
     def CursorOn(self, inXPos = None, inYPos = None):
         curses.curs_set(2)
         if inXPos is not None and inYPos is not None:
-            self.win.move(inYPos, inXPos)
+            clippedXPos = max(min(inXPos,  self.xSize-1),  0)
+            clippedYPos = max(min(inYPos,  self.ySize-1),  0)
+            self.win.move(clippedYPos, clippedXPos)
             self.win.cursyncup()
             
     def CursorOff(self):
         curses.curs_set(0)
+        self.win.cursyncup()
 
 class CursesWindow(CursesPane):
     def __init__(self, inXPos, inYPos, inXSize, inYSize, inParent = None):

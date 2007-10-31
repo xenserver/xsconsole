@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Project SYSTEM "Project-4.0.dtd">
+<!-- eric4 project file for project xsconsole -->
+<!-- Saved: 2007-10-31, 10:06:05 -->
+<!-- Copyright (C) 2007 ,  -->
+<Project version="4.0">
+  <ProgLanguage mixed="0">Python</ProgLanguage>
+  <UIType>Other</UIType>
+  <Description></Description>
+  <Version>0.1</Version>
+  <Author></Author>
+  <Email></Email>
+  <Sources>
+    <Source>
+      <Name>XSConsole.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleStructure.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleFields.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleTerm.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleCurses.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleLang.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleDialogues.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleBases.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleAuth.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleData.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleMenus.py</Name>
+    </Source>
+  </Sources>
+  <Forms>
+  </Forms>
+  <Translations>
+  </Translations>
+  <Resources>
+  </Resources>
+  <Interfaces>
+  </Interfaces>
+  <Others>
+  </Others>
+  <MainScript>
+    <Name>XSConsole.py</Name>
+  </MainScript>
+  <Vcs>
+    <VcsType>None</VcsType>
+  </Vcs>
+  <FiletypeAssociations>
+    <FiletypeAssociation pattern="*.ui" type="FORMS" />
+    <FiletypeAssociation pattern="*.idl" type="INTERFACES" />
+    <FiletypeAssociation pattern="*.ptl" type="SOURCES" />
+    <FiletypeAssociation pattern="*.pyw" type="SOURCES" />
+    <FiletypeAssociation pattern="*.ui.h" type="FORMS" />
+    <FiletypeAssociation pattern="*.py" type="SOURCES" />
+    <FiletypeAssociation pattern="*.qrc" type="RESOURCES" />
+  </FiletypeAssociations>
+</Project>

@@ -7,6 +7,8 @@ from XSConsoleFields import *
 from XSConsoleLang import *
 from XSConsoleMenus import *
 
+from pprint import pprint
+
 class DialoguePane:
     LEFT_XSTART = 1
     TITLE_XSTART = LEFT_XSTART
@@ -18,7 +20,6 @@ class DialoguePane:
         self.ySize = inYSize
         self.ResetFields()
         self.ResetPosition()
-        
     
     def ResetFields(self):
         self.fields = {}
@@ -137,11 +138,6 @@ class DialoguePane:
     
     def AddKeyHelpField(self, inKeys):
         (oldXPos, oldYPos) = (self.xPos, self.yPos)
-        width = 0
-        for name, value in inKeys.iteritems():
-            width += len(name) + len(value) + 2
-
-        # self.xPos = max(2, self.xSize - 1 - width)
         self.xPos = 1
         self.yPos = self.ySize - 1
         if self.window.HasBox():
@@ -169,7 +165,6 @@ class RightPanel:
     def StatusUpdateFields(cls, inPane):
         data = Data.Inst()
 
-        inPane.ResetPosition()
         inPane.AddWrappedTextField(data.dmi.system_manufacturer())
         inPane.AddWrappedTextField(data.dmi.system_product_name())
         inPane.NewLine()
@@ -186,7 +181,7 @@ class RightPanel:
         
     @classmethod
     def PropertiesUpdateFields(cls, inPane):
-        inPane.ResetPosition()
+
         inPane.AddTitleField(Lang("System Properties"))
     
         inPane.AddWrappedTextField(Lang(
@@ -194,7 +189,7 @@ class RightPanel:
     
     @classmethod
     def AuthUpdateFields(cls, inPane):
-        inPane.ResetPosition()
+
         inPane.AddTitleField(Lang("Authentication"))
     
         if Auth.IsLoggedIn():
@@ -212,11 +207,17 @@ class RightPanel:
                 "You are currently not logged in. Press Enter to log in with your username and password to access privileged operations."))
     
     @classmethod
+    def InterfaceUpdateFields(cls, inPane):
+        inPane.AddTitleField(Lang("Management Interface"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "The management interface is a network interface used to control this host remotely.  "
+            "Press enter to configure."))
+    
+    @classmethod
     def XenSourceUpdateFields(cls, inPane):
         data = Data.Inst()
 
-        inPane.ResetPosition()
-        
         inPane.AddTitleField(Lang("XenSource"))
         inPane.AddStatusField(Lang("Name", 16), str(data.host.software_version.product_brand()))
         inPane.AddStatusField(Lang("Version", 16), str(data.host.software_version.product_version()))
@@ -229,8 +230,6 @@ class RightPanel:
     def LicenceUpdateFields(cls, inPane):
         data = Data.Inst()
 
-        inPane.ResetPosition()
-        
         expiryStr = data.host.license_params.expiry()
         if (re.match('\d{8}', expiryStr)):
             # Convert ISO date to more readable form
@@ -251,8 +250,6 @@ class RightPanel:
     def HostUpdateFields(cls, inPane):
         data = Data.Inst()
 
-        inPane.ResetPosition()
-        
         inPane.AddTitleField(Lang("Hostname"))
         inPane.AddWrappedTextField(data.host.hostname())
         inPane.NewLine()
@@ -261,8 +258,6 @@ class RightPanel:
     def SystemUpdateFields(cls, inPane):
         data = Data.Inst()
 
-        inPane.ResetPosition()
-        
         inPane.AddTitleField(Lang("System Manufacturer"))
         inPane.AddWrappedTextField(data.dmi.system_manufacturer())
         inPane.NewLine()
@@ -283,8 +278,6 @@ class RightPanel:
     def ProcessorUpdateFields(cls, inPane):
         data = Data.Inst()
 
-        inPane.ResetPosition()
-        
         inPane.AddTitleField(Lang("Processor Details"))
         
         inPane.AddStatusField(Lang("Logical CPUs", 27), str(data.host.host_CPUs.Size()))
@@ -300,8 +293,6 @@ class RightPanel:
     @classmethod    
     def MemoryUpdateFields(cls, inPane):
         data = Data.Inst()
-
-        inPane.ResetPosition()
         
         inPane.AddTitleField(Lang("System Memory"))
             
@@ -312,8 +303,6 @@ class RightPanel:
     @classmethod    
     def PIFUpdateFields(cls, inPane):
         data = Data.Inst()
-
-        inPane.ResetPosition()
         
         inPane.AddTitleField(Lang("Physical Network Interfaces"))
         
@@ -331,18 +320,48 @@ class RightPanel:
     @classmethod    
     def BIOSUpdateFields(cls, inPane):
         data = Data.Inst()
-
-        inPane.ResetPosition()
         
         inPane.AddTitleField(Lang("BIOS Information"))
         
         inPane.AddStatusField(Lang("Vendor", 12), data.dmi.bios_vendor())
         inPane.AddStatusField(Lang("Version", 12), data.dmi.bios_version())
             
+    @classmethod    
+    def SelectNICUpdateFields(cls, inPane):
+        data = Data.Inst()
+        
+        inPane.AddTitleField(Lang("Current Configuration"))
+        
+        if data.derived.managementpifs.Size() == 0:
+            inPane.AddTextField(Lang("<No network configured>"))
+        else:
+            for pif in data.derived.managementpifs():
+                inPane.AddStatusField(Lang('Device', 16), pif['device'])
+                inPane.AddStatusField(Lang('MAC Address', 16),  pif['MAC'])
+                inPane.AddStatusField(Lang('Assigned IP', 16),  data.host.address()) # FIXME: should come from pif
+                inPane.AddStatusField(Lang('DHCP/Static IP', 16),  pif['ip_configuration_mode'])
+                inPane.NewLine()
+                inPane.AddTitleField(Lang("NIC Vendor"))
+                inPane.AddWrappedTextField(pif['metrics']['vendor_name'])
+                inPane.NewLine()
+                inPane.AddTitleField(Lang("NIC Model"))
+                inPane.AddWrappedTextField(pif['metrics']['device_name'])
+                
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Reconfigure this interface")
+        })
+            
+    @classmethod    
+    def ExceptionUpdateFields(cls, inPane,  inException):
+        inPane.AddTitleField(Lang("Information not available"))
+        inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
+        inPane.AddWrappedTextField(str(inException))
+            
 class RootDialogue(Dialogue):
     statusUpdaters = {
         'STATUS' : RightPanel.StatusUpdateFields,
         'AUTH' : RightPanel.AuthUpdateFields,
+        'INTERFACE' : RightPanel.InterfaceUpdateFields,
         'PROPERTIES' : RightPanel.PropertiesUpdateFields,
         'XENSOURCE' : RightPanel.XenSourceUpdateFields,
         'LICENCE' : RightPanel.LicenceUpdateFields,
@@ -351,7 +370,8 @@ class RootDialogue(Dialogue):
         'PROCESSOR' : RightPanel.ProcessorUpdateFields,
         'MEMORY' : RightPanel.MemoryUpdateFields,
         'PIF' : RightPanel.PIFUpdateFields,
-        'BIOS' : RightPanel.BIOSUpdateFields
+        'BIOS' : RightPanel.BIOSUpdateFields, 
+        'SELECTNIC' : RightPanel.SelectNICUpdateFields
     }
 
     def __init__(self, inLayout, inParent):
@@ -370,13 +390,21 @@ class RootDialogue(Dialogue):
         menuPane.ResetPosition();
         menuPane.AddTitleField(self.menu.CurrentMenu().Title())
         menuPane.AddMenuField(self.menu.CurrentMenu())
-        self.statusUpdaters[self.currentStatus](self.Pane('status'))
+        statusPane = self.Pane('status')
+        try:
+            statusPane.ResetFields();
+            statusPane.ResetPosition();
+            self.statusUpdaters[self.currentStatus](statusPane)
+        except Exception, e:
+            statusPane.ResetFields();
+            statusPane.ResetPosition();
+            RightPanel.ExceptionUpdateFields(statusPane,  e)
         
         keyHash = { Lang("<Up/Down>") : Lang("Select") }
         if self.menu.CurrentMenu().Parent() != None:
             keyHash[ Lang("<Esc/Left>") ] = Lang("Back")
         else:
-                        keyHash[ Lang("<Enter>") ] = Lang("OK")
+            keyHash[ Lang("<Enter>") ] = Lang("OK")
 
         menuPane.AddKeyHelpField( keyHash )
     
@@ -405,6 +433,7 @@ class RootDialogue(Dialogue):
         if (Auth.IsLoggedIn()):
             name = Auth.LoggedInUsername()
             Auth.LogOut()
+            Data.Inst().Update()
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
         else:
             self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
@@ -424,7 +453,7 @@ class LoginDialogue(Dialogue):
         menuPane.ResetFields()
         menuPane.ResetPosition(2, 2);
         menuPane.AddInputField(Lang("Username:", 14), "root", 'username')
-        menuPane.AddPasswordField(Lang("Password:", 14), "xenroot", 'password')
+        menuPane.AddPasswordField(Lang("Password:", 14), "", 'password')
         menuPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Next/OK"),
             Lang("<Tab>") : Lang("Next"),
@@ -439,9 +468,11 @@ class LoginDialogue(Dialogue):
         elif inKey == 'KEY_ENTER':
             if pane.IsLastInput():
                 inputValues = pane.GetFieldValues()
+                self.layout.PopDialogue()
+                self.layout.DoUpdate()
                 success = Auth.ProcessLogin(inputValues['username'], inputValues['password'])
                 Data.Inst().Update()
-                self.layout.PopDialogue()
+
                 if success:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login successful')))
                 else:

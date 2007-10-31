@@ -14,11 +14,7 @@ class DataMethod:
         return DataMethod(self.send, self.name+[inName])
 
     def __call__(self):
-        if self.name[-1] is 'Size':
-            self.name.pop()
-            return len(self());
-        else:
-            return self.send(self.name)
+        return self.send(self.name)
 
 class Data:
     instance = None
@@ -40,22 +36,14 @@ class Data:
             retVal = 'Unknown'
         return retVal
     
-    def GetInfoDict(self, inKey):
-        if inKey in self.data['dmi']:
-            retVal = self.data['dmi'][inKey]
-        else:
-            retVal = {}
-        return retVal
-    
     def Update(self):
         self.data = {
-            'derived' : {
-                'cpu_name_summary' : {}
+            'host' : {}
             }
-        }
+
         session = Auth.OpenSession()
         if session is not None:
-            thisHost = session.xenapi.session.get_this_host(session._session) # Need to check this
+            thisHost = session.xenapi.session.get_this_host(session._session)
             
             hostRecord = session.xenapi.host.get_record(thisHost)
             self.data['host'] = hostRecord
@@ -79,16 +67,7 @@ class Data:
             self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
             
 
-            # Gather up the CPU model names info a more convinient form
-            hostCPUs = self.host.host_CPUs()
 
-            cpuNameSummary = self.data['derived']['cpu_name_summary']
-            for cpu in hostCPUs:
-                name = " ".join(cpu['modelname'].split())
-                if name in cpuNameSummary:
-                    cpuNameSummary[name] += 1
-                else:
-                    cpuNameSummary[name] = 1
 
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
@@ -97,6 +76,36 @@ class Data:
                 raise Exception("Cannot get dmidecode output")
         
         self.ScanDmiDecode(output.split("\n"))
+     
+        self.DeriveData()
+        
+    def DeriveData(self):
+        self.data.update({
+            'derived' : {
+                'cpu_name_summary' : {}
+            }
+        })
+        
+        # Gather up the CPU model names info a more convinient form
+
+        if 'host_CPUs' in self.data['host']:
+            hostCPUs = self.data['host']['host_CPUs']
+    
+            cpuNameSummary = self.data['derived']['cpu_name_summary']
+            
+            for cpu in hostCPUs:
+                name = " ".join(cpu['modelname'].split())
+                if name in cpuNameSummary:
+                    cpuNameSummary[name] += 1
+                else:
+                    cpuNameSummary[name] = 1
+                
+        # Select the current management PIFs
+        self.data['derived']['managementpifs'] = []
+        if 'PIFs' in self.data['host']:
+            for pif in self.data['host']['PIFs']:
+                if pif['management']:
+                    self.data['derived']['managementpifs'].append(pif)
      
     def Dump(self):
         pprint(self.data)
@@ -107,7 +116,9 @@ class Data:
             if name is '__repr__':
                 # Error - missing ()
                 raise 'Data call Data.'+'.'.join(inNames[:-1])+' must end with ()'
-            if name in data:
+            elif name is 'Size':
+                data = len(data)
+            elif name in data:
                 data = data[name]
             else:
                 return '<Unknown>'
@@ -115,34 +126,6 @@ class Data:
     
     def __getattr__(self, inName):
         return DataMethod(self.GetData, [inName])
-    
-    def ScanCpuInfo(self, inLines):
-        self.data['dmi'].update( {
-            'cpulogicalcores' : 0,
-            'cpunames' : [],
-            'cpucountednames' : {}
-        })
-        ignore = False
-        for line in inLines:
-            if re.match(r'processor\s*:\s*(\d+)\s*$', line):
-                self.data['dmi']['cpulogicalcores'] += 1 # Record one core - we have to adjust this if a 'cpu cores' element is present
-
-            match = re.match(r'model\s+name\s*:\s*(.*?)\s*$', line)
-            if match:
-                # Convert multiple spaces to single spaces
-                name = " ".join(match.group(1).split())
-                
-                self.data['dmi']['cpunames'].append(name)
-                
-            match = self.MultipleMatch(line, r'cpu\s+cores\s*:\s*(\d+)\s*$', 'cpucore')
-            if match:
-                self.data['dmi']['cpulogicalcores'] += int(match.group(1)) - 1 # Correct the core count
-
-        for name in self.data['dmi']['cpunames']:
-            if name in self.data['dmi']['cpucountednames']:
-                self.data['dmi']['cpucountednames'][name] += 1
-            else:
-                self.data['dmi']['cpucountednames'][name] = 1
         
     def ScanDmiDecode(self, inLines):
         STATE_NEXT_ELEMENT = 2
