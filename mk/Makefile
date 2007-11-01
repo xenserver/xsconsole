@@ -53,7 +53,7 @@ $(RPM_SPECSDIR)/xsconsole.spec: xsconsole.spec.in $(RPM_SPECSDIR)/.dirstamp
 	-rm changelog.tmp
 
 $(RPM_BUILD_COOKIE): $(RPM_DIRECTORIES) $(SOURCES)
-	$(RPMBUILD) --target i686 -ba $(RPM_SPECSDIR)/xsconsole.spec
+	$(RPMBUILD) --target noarch -ba $(RPM_SPECSDIR)/xsconsole.spec
 	@touch $@
 
 $(MY_SOURCES)/MANIFEST: $(MY_SOURCES_DIRSTAMP)
