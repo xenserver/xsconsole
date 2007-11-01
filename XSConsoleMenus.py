@@ -99,7 +99,8 @@ class RootMenu:
 
             'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', "Management Interface", [
                 ChoiceDef("Display NICs", "", None, lambda : inDialogue.ChangeStatus('PIF')),
-                ChoiceDef("Select Management NIC", "", None, lambda : inDialogue.ChangeStatus('SELECTNIC')),
+                ChoiceDef("Select Management NIC", "",
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
                 ChoiceDef("Test Network", "", None, lambda : inDialogue.ChangeStatus('TESTNETWORK')),
             ])
         }

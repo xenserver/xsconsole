@@ -46,7 +46,7 @@ class App:
             if gotKey == "\033": gotKey = "KEY_ESCAPE"
             if gotKey == "\177": gotKey = "KEY_BACKSPACE"
             
-            self.renderer.RenderStatus(self.layout.Window(Layout.WIN_STATUS), "Status: Got "+gotKey)
+            # self.renderer.RenderStatus(self.layout.Window(Layout.WIN_STATUS), "Status: Got "+gotKey)
 
             if self.layout.TopDialogue().HandleKey(gotKey):
                 self.layout.Refresh()

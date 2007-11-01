@@ -18,6 +18,8 @@ class DialoguePane:
         self.window = CursesWindow(inXPos, inYPos, inXSize, inYSize, inParent)
         self.xSize = inXSize
         self.ySize = inYSize
+        self.xOffset = 0
+        self.yOffset = 0
         self.ResetFields()
         self.ResetPosition()
     
@@ -28,6 +30,15 @@ class DialoguePane:
 
     def Win(self):
         return self.window
+
+    def AddBox(self):
+        if not self.window.HasBox():
+            self.window.AddBox()
+            self.xSize -= 2
+            self.ySize -= 2
+            self.xOffset += 1
+            self.yOffset += 1
+            self.ResetPosition()
 
     def ActivateNextInput(self): 
         self.InputIndexSet((self.inputIndex + 1) % len(self.inputFields))
@@ -73,8 +84,8 @@ class DialoguePane:
         self.window.Redraw()
 
     def ResetPosition(self, inXPos = None, inYPos = None):
-        self.xPos = FirstValue(inXPos, self.TITLE_XSTART)
-        self.yPos = FirstValue(inYPos, self.TITLE_YSTART)
+        self.xPos = self.xOffset + FirstValue(inXPos, self.TITLE_XSTART)
+        self.yPos = self.yOffset + FirstValue(inYPos, self.TITLE_YSTART)
         self.xStart = self.xPos
 
     def MakeLabel(self, inLabel = None):
@@ -138,11 +149,8 @@ class DialoguePane:
     
     def AddKeyHelpField(self, inKeys):
         (oldXPos, oldYPos) = (self.xPos, self.yPos)
-        self.xPos = 1
-        self.yPos = self.ySize - 1
-        if self.window.HasBox():
-            self.xPos += 1
-            self.yPos -= 1
+        self.xPos = self.xOffset + 1
+        self.yPos = self.yOffset + self.ySize - 1
         for name in sorted(inKeys):
             self.AddField(TextField(str(name), self.brightColour))
             self.xPos += 1
@@ -430,13 +438,16 @@ class RootDialogue(Dialogue):
         self.menu.CurrentMenu().HandleEnter()
             
     def ActivateDialogue(self, inName):
-        if (Auth.IsLoggedIn()):
-            name = Auth.LoggedInUsername()
-            Auth.LogOut()
-            Data.Inst().Update()
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
-        else:
-            self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
+        if inName is 'DIALOGUE_AUTH':
+            if (Auth.IsLoggedIn()):
+                name = Auth.LoggedInUsername()
+                Auth.LogOut()
+                Data.Inst().Update()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
+            else:
+                self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
+        elif inName is 'DIALOGUE_INTERFACE':
+            self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent))
         
 class LoginDialogue(Dialogue):
     def __init__(self, layout, parent):
@@ -444,17 +455,16 @@ class LoginDialogue(Dialogue):
         pane = self.NewPane('login', DialoguePane(3, 8, 74, 7, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.Win().TitleSet("Login")
-        pane.Win().AddBox()
+        pane.AddBox()
         self.UpdateFields()
         pane.InputIndexSet(0)
         
     def UpdateFields(self):
-        menuPane = self.Pane('login')
-        menuPane.ResetFields()
-        menuPane.ResetPosition(2, 2);
-        menuPane.AddInputField(Lang("Username:", 14), "root", 'username')
-        menuPane.AddPasswordField(Lang("Password:", 14), "", 'password')
-        menuPane.AddKeyHelpField( {
+        pane = self.Pane('login')
+        pane.ResetFields()
+        pane.AddInputField(Lang("Username:", 14), "root", 'username')
+        pane.AddPasswordField(Lang("Password:", 14), "", 'password')
+        pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Next/OK"),
             Lang("<Tab>") : Lang("Next"),
             Lang("<Shift-Tab>") : Lang("Previous")
@@ -496,7 +506,7 @@ class InfoDialogue(Dialogue):
         self.text = inText
         pane = self.NewPane('info', DialoguePane(3, 8, 74, 6, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.Win().AddBox()
+        pane.AddBox()
         self.UpdateFields()
 
     def UpdateFields(self):
@@ -504,9 +514,9 @@ class InfoDialogue(Dialogue):
         pane.ResetFields()
         if len(self.text) < 70:
             # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 2);
+            pane.ResetPosition(37 - len(self.text) / 2, 1);
         else:
-            pane.ResetPosition(30, 2);
+            pane.ResetPosition(30, 1);
         
         pane.AddWrappedBoldTextField(self.text)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
@@ -518,3 +528,147 @@ class InfoDialogue(Dialogue):
         else:
             handled = False
         return True
+
+class InterfaceDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
+        numNICs = Data.Inst().host.PIFs.Size()
+        paneHeight = max(numNICs,  5) + 6
+        paneHeight = min(paneHeight,  22)
+        pane = self.NewPane('interface', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.Win().TitleSet(Lang("Management Interface Configuration"))
+        pane.AddBox()
+        
+        choiceDefs = []
+
+        for i in range(len(Data.Inst().host.PIFs())):
+            pif = Data.Inst().host.PIFs()[i]
+            choiceName = pif['device']+": "+pif['metrics']['device_name']
+            choiceDefs.append(ChoiceDef(choiceName, "", lambda: self.HandleNICChoice(i)))
+        
+        choiceDefs.append(ChoiceDef("None",  "", lambda: self.HandleNICChoice(None)))
+        self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
+        
+        self.modeMenu = Menu(self, None, "Select IP Address Configuration Mode", [
+            ChoiceDef("DHCP", "", lambda: self.HandleModeChoice('DHCP') ), 
+            ChoiceDef("Static", "", lambda: self.HandleModeChoice('Static') ), 
+            ])
+        
+        self.state = 'INITIAL'
+        self.UpdateFields()
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('interface')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Select NIC for management interface"))
+        pane.AddMenuField(self.nicMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+
+    def UpdateFieldsMODE(self):
+        pane = self.Pane('interface')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Select DHCP or Static IP Address Configuration"))
+        pane.AddMenuField(self.modeMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        
+    def UpdateFieldsSTATICIP(self):
+        pane = self.Pane('interface')
+        pane.ResetFields()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddTitleField(Lang("Enter Static IP Address Configuration"))
+        pane.AddInputField(Lang("IP Address",  14),  '0.0.0.0', 'ipaddress')
+        pane.AddInputField(Lang("Subnet mask",  14),  '255.255.255.255', 'subnet')
+        pane.AddInputField(Lang("Gateway",  14),  '0.0.0.0', 'gateway')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        
+    def UpdateFieldsPRECOMMIT(self):
+        pane = self.Pane('interface')
+        pane.ResetFields()
+        if self.nicChoice is None:
+            pane.AddTextField(Lang("No management interface will be configured"))
+        else:
+            pif = Data.Inst().host.PIFs()[self.nicChoice]
+            pane.AddStatusField(Lang("Device",  16),  pif['device'])
+            pane.AddStatusField(Lang("Name",  16),  pif['metrics']['device_name'])
+            pane.AddStatusField(Lang("IP Mode",  16),  self.modeChoice)
+            if self.modeChoice is 'Static':
+                pane.AddStatusField(Lang("IP Address",  16),  self.ipAddress)
+                pane.AddStatusField(Lang("Subnet Mask",  16),  self.subnet)
+                pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
+                
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        
+    def UpdateFields(self):
+        self.Pane('interface').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+    
+    def HandleKeyINITIAL(self, inKey):
+        return self.nicMenu.HandleKey(inKey)
+
+    def HandleKeyMODE(self, inKey):
+        return self.modeMenu.HandleKey(inKey)
+
+    def HandleKeySTATICIP(self, inKey):
+        handled = True
+        pane = self.Pane('interface')
+        if inKey == 'KEY_ENTER':
+            if pane.IsLastInput():
+                inputValues = pane.GetFieldValues()
+                self.ipAddress = inputValues['ipaddress']
+                self.subnet = inputValues['subnet']
+                self.gateway = inputValues['gateway']
+                self.state = 'PRECOMMIT'
+                self.UpdateFields()
+            else:
+                pane.ActivateNextInput()
+        elif inKey == 'KEY_TAB':
+            pane.ActivateNextInput()
+        elif inKey == 'KEY_BTAB':
+            pane.ActivatePreviousInput()
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+
+    def HandleKeyPRECOMMIT(self, inKey):
+        handled = True
+        if inKey == 'KEY_ENTER':
+            # Process commit
+            self.layout.PopDialogue()
+        else:
+            handled = False
+        return handled
+        
+    def HandleKey(self,  inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+            
+    def HandleNICChoice(self,  inChoice):
+        self.nicChoice = inChoice
+        if self.nicChoice is None:
+            self.state = 'PRECOMMIT'
+        else:
+            self.state = 'MODE'
+        self.UpdateFields()
+        
+    def HandleModeChoice(self,  inChoice):
+        self.modeChoice = inChoice
+        if self.modeChoice is 'DHCP':
+            self.state = 'PRECOMMIT'
+            self.UpdateFields()
+        else:
+            self.state = 'STATICIP'
+            self.UpdateFields() # Setup input fields first
+            self.Pane('interface').InputIndexSet(0) # and then choose the first
+            

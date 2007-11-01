@@ -45,6 +45,7 @@ class CursesPalette:
         cls.colours['MODAL_BASE'] = cls.ColourCreate(lightgrey, red)
         cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(white, red)
         cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(black, red) | curses.A_DIM
+        cls.colours['MODAL_MENU_HIGHLIGHT'] = cls.ColourCreate(black, white)
         cls.colours['HELP_BASE'] = cls.ColourCreate(lightgrey, black)
         cls.colours['HELP_BRIGHT'] = cls.ColourCreate(white, black)
         cls.colours['STATUS_BASE'] = cls.ColourCreate(lightgrey, black)
