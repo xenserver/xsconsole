@@ -23,28 +23,28 @@ class CursesPalette:
         # Set sensible defaults for non-colour terminals
         white = curses.COLOR_WHITE
         black = curses.COLOR_BLACK
-        magenta = curses.COLOR_MAGENTA
-        darkmagenta = curses.COLOR_MAGENTA
+        red = curses.COLOR_MAGENTA
+        darkred = curses.COLOR_MAGENTA
         lightgrey = curses.COLOR_WHITE
         darkgrey = curses.COLOR_BLACK
         
         if curses.can_change_color():
-            curses.init_color(curses.COLOR_BLUE, 666, 666, 666) # Redefine COLOR_BLUE to use as light grey
+            curses.init_color(curses.COLOR_BLUE, 666, 666, 500) # Redefine COLOR_BLUE to use as light grey
             lightgrey = curses.COLOR_BLUE
-            curses.init_color(curses.COLOR_GREEN, 333, 333, 333) # Redefine COLOR_GREEN to use as dark grey
+            curses.init_color(curses.COLOR_GREEN, 333, 333, 222) # Redefine COLOR_GREEN to use as dark grey
             darkgrey = curses.COLOR_GREEN
-            curses.init_color(curses.COLOR_RED, 500, 0, 500) # Redefine COLOR_RED to use as dark magenta
-            darkmagenta = curses.COLOR_RED
-            curses.init_color(curses.COLOR_MAGENTA, 666, 0, 666) # Tweak the colour of magenta
-            curses.init_color(curses.COLOR_WHITE, 999, 999, 999) # Tweak the colour of white
+            curses.init_color(curses.COLOR_RED, 333, 0, 0) # Redefine COLOR_RED to use as dark red
+            darkred = curses.COLOR_RED
+            curses.init_color(curses.COLOR_MAGENTA, 500, 0, 0) # Tweak the colour of red
+            curses.init_color(curses.COLOR_WHITE, 999, 999, 750) # Tweak the colour of white
             
-        cls.colours['MAIN_BASE'] = cls.ColourCreate(lightgrey, darkmagenta)
-        cls.colours['MENU_BASE'] = cls.ColourCreate(lightgrey, darkmagenta)
-        cls.colours['MENU_BRIGHT'] = cls.ColourCreate(white, darkmagenta)
+        cls.colours['MAIN_BASE'] = cls.ColourCreate(lightgrey, darkred)
+        cls.colours['MENU_BASE'] = cls.ColourCreate(lightgrey, darkred)
+        cls.colours['MENU_BRIGHT'] = cls.ColourCreate(white, darkred)
         cls.colours['MENU_HIGHLIGHT'] = cls.ColourCreate(black, white)
-        cls.colours['MODAL_BASE'] = cls.ColourCreate(lightgrey, magenta)
-        cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(white, magenta)
-        cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(black, magenta) | curses.A_DIM
+        cls.colours['MODAL_BASE'] = cls.ColourCreate(lightgrey, red)
+        cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(white, red)
+        cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(black, red) | curses.A_DIM
         cls.colours['HELP_BASE'] = cls.ColourCreate(lightgrey, black)
         cls.colours['HELP_BRIGHT'] = cls.ColourCreate(white, black)
         cls.colours['STATUS_BASE'] = cls.ColourCreate(lightgrey, black)
