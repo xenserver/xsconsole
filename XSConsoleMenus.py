@@ -18,6 +18,9 @@ class Menu:
     def ChoiceDefs(self): return self.choiceDefs
     def ChoiceIndex(self): return self.choiceIndex
 
+    def CurrentChoiceSet(self,  inChoice):
+        self.choiceIndex = inChoice
+        
     def CurrentChoiceDef(self):
         return self.choiceDefs[self.choiceIndex]
 

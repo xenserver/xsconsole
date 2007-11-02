@@ -1,6 +1,6 @@
 # import socket, fcntl, struct, os
 import XenAPI
-import commands, re
+import commands, re,  sys
 
 from pprint import pprint
 from XSConsoleAuth import *
@@ -21,6 +21,7 @@ class Data:
     
     def __init__(self):
         self.data = {}
+        self.session = None
     
     @classmethod
     def Inst(cls):
@@ -36,34 +37,36 @@ class Data:
             retVal = 'Unknown'
         return retVal
     
+    def RequireSession(self):
+        if self.session is None: self.session = Auth.OpenSession()
+    
     def Update(self):
         self.data = {
             'host' : {}
             }
 
-        session = Auth.OpenSession()
-        if session is not None:
-            thisHost = session.xenapi.session.get_this_host(session._session)
+        self.RequireSession()
+        if self.session is not None:
+            thisHost = self.session.xenapi.session.get_this_host(self.session._session)
             
-            hostRecord = session.xenapi.host.get_record(thisHost)
+            hostRecord = self.session.xenapi.host.get_record(thisHost)
             self.data['host'] = hostRecord
 
             # Expand the items we need in the host record
-            self.data['host']['metrics'] = session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
+            self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
             
-            convertCPU = lambda cpu: session.xenapi.host_cpu.get_record(cpu)
+            convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
             self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
 
-            convertPIF = lambda pif: session.xenapi.PIF.get_record(pif)
-            self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
-                
-            def convertPIFMetric(pif):
-                pif['metrics'] = session.xenapi.PIF_metrics.get_record(pif['metrics'])
-                return pif
-                
-            self.data['host']['PIFs'] = map(convertPIFMetric, self.data['host']['PIFs'])
+            def convertPIF(inPIF):
+                retVal = self.session.xenapi.PIF.get_record(inPIF)
+                retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
+                retVal['opaqueref'] = inPIF
+                return retVal
 
-            convertPBD = lambda pbd: session.xenapi.PBD.get_record(pbd)
+            self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
+
+            convertPBD = lambda pbd: self.session.xenapi.PBD.get_record(pbd)
             self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
             
 
@@ -211,3 +214,11 @@ class Data:
             self.data['dmi'][inKey].append(match.group(1))
 
         return match
+
+    def ReconfigureIP(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
+        self.RequireSession()
+        self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)
+        # Network reconfigured so this link is no longer valid
+        self.session = Auth.CloseSession(self.session)
+        
+    

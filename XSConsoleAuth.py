@@ -56,7 +56,17 @@ class Auth:
     @classmethod
     def OpenSession(cls):
         session = None
-        if (Auth.LoggedInUsername() != None and Auth.LoggedInPassword() != None):
+        
+        try:
+            # Try the local session first
+            session = XenAPI.xapi_local()
+            session.login_with_password('','')
+        except Exception,  e:
+            session = None
+            cls.error = str(e)
+            
+        if (session is None and Auth.LoggedInUsername() != None and Auth.LoggedInPassword() != None):
+            # Local session couldn't connect, so try remote.
             session = XenAPI.Session("http://127.0.0.1")
             try:
                 session.login_with_password(cls.LoggedInUsername(), cls.LoggedInPassword())
@@ -76,4 +86,4 @@ class Auth:
     @classmethod
     def CloseSession(cls, inSession):
         # inSession.logout()
-        pass
+        return None

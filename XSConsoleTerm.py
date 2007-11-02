@@ -17,21 +17,25 @@ class App:
         Data.Inst().Dump() # Testing
         
         try:
-            sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
-            os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
-            
-            self.cursesScreen = CursesScreen()
-            self.renderer = Renderer()
-            self.layout = Layout(self.cursesScreen)
-            self.layout.Create()
-            self.layout.Clear()
-            
-            self.MainLoop()
-            
-        finally:
-            if self.cursesScreen is not None:
-                self.cursesScreen.Exit()
+            try:
+                sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
+                os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
+                
+                self.cursesScreen = CursesScreen()
+                self.renderer = Renderer()
+                self.layout = Layout(self.cursesScreen)
+                self.layout.Create()
+                self.layout.Clear()
+                
+                self.MainLoop()
+                
+            finally:
+                if self.cursesScreen is not None:
+                    self.cursesScreen.Exit()
         
+        except Exception, e:
+            sys.stderr.write(str(e)+"\n")
+
     def MainLoop(self):
         
         doQuit= False

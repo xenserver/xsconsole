@@ -8,6 +8,7 @@ from XSConsoleLang import *
 from XSConsoleMenus import *
 
 from pprint import pprint
+from copy import copy
 
 class DialoguePane:
     LEFT_XSTART = 1
@@ -183,7 +184,7 @@ class RightPanel:
         
         inPane.AddStatusField(Lang("Interface", 14), data.host.address())
         inPane.AddStatusField(Lang("IP Address", 14), data.GetInfo('host.address'))
-        inPane.AddStatusField(Lang("Subnet", 14), data.ManagementSubnet())
+        inPane.AddStatusField(Lang("netmask", 14), data.Managementnetmask())
         inPane.AddStatusField(Lang("Gateway", 14), data.ManagementGateway())
         inPane.NewLine()
         
@@ -348,6 +349,11 @@ class RightPanel:
                 inPane.AddStatusField(Lang('MAC Address', 16),  pif['MAC'])
                 inPane.AddStatusField(Lang('Assigned IP', 16),  data.host.address()) # FIXME: should come from pif
                 inPane.AddStatusField(Lang('DHCP/Static IP', 16),  pif['ip_configuration_mode'])
+                if pif['ip_configuration_mode'].lower().startswith('static'):
+                    inPane.AddStatusField(Lang('IP Address', 16),  pif['IP'])
+                    inPane.AddStatusField(Lang('Netmask', 16),  pif['netmask'])
+                    inPane.AddStatusField(Lang('Gateway', 16),  pif['gateway'])
+                
                 inPane.NewLine()
                 inPane.AddTitleField(Lang("NIC Vendor"))
                 inPane.AddWrappedTextField(pif['metrics']['vendor_name'])
@@ -542,12 +548,19 @@ class InterfaceDialogue(Dialogue):
         
         choiceDefs = []
 
+        currentPIF = None
+        choiceArray = []
         for i in range(len(Data.Inst().host.PIFs())):
             pif = Data.Inst().host.PIFs()[i]
+            if currentPIF is None and pif['management']:
+                self.nic = i # Record this as best guess of current NIC
+                currentPIF = pif
             choiceName = pif['device']+": "+pif['metrics']['device_name']
-            choiceDefs.append(ChoiceDef(choiceName, "", lambda: self.HandleNICChoice(i)))
+
+            choiceDefs.append(ChoiceDef(choiceName, "", lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
         
         choiceDefs.append(ChoiceDef("None",  "", lambda: self.HandleNICChoice(None)))
+
         self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
         
         self.modeMenu = Menu(self, None, "Select IP Address Configuration Mode", [
@@ -556,6 +569,29 @@ class InterfaceDialogue(Dialogue):
             ])
         
         self.state = 'INITIAL'
+
+        # Get best guess of current values
+        self.mode = 'DHCP'
+        self.IP = '0.0.0.0'
+        self.netmask = '0.0.0.0'
+        self.gateway = '0.0.0.0'
+        if currentPIF is not None:
+            if 'ip_configuration_mode' in currentPIF: self.mode = currentPIF['ip_configuration_mode']
+            if self.mode.lower().startswith('static'):
+                if 'IP' in currentPIF: self.IP = currentPIF['IP']
+                if 'netmask' in currentPIF: self.netmask = currentPIF['netmask']
+                if 'gateway' in currentPIF: self.gateway = currentPIF['gateway']
+    
+        # Make the menu current choices point to our best guess of current choices
+        if self.nic is not None:
+            self.nicMenu.CurrentChoiceSet(self.nic)
+        if self.mode.lower().startswith('static'):
+            self.modeMenu.CurrentChoiceSet(1)
+        else:
+            self.modeMenu.CurrentChoiceSet(0)
+            
+                
+    
         self.UpdateFields()
         
     def UpdateFieldsINITIAL(self):
@@ -579,24 +615,24 @@ class InterfaceDialogue(Dialogue):
         pane.ResetFields()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddTitleField(Lang("Enter Static IP Address Configuration"))
-        pane.AddInputField(Lang("IP Address",  14),  '0.0.0.0', 'ipaddress')
-        pane.AddInputField(Lang("Subnet mask",  14),  '255.255.255.255', 'subnet')
-        pane.AddInputField(Lang("Gateway",  14),  '0.0.0.0', 'gateway')
+        pane.AddInputField(Lang("IP Address",  14),  self.IP, 'IP')
+        pane.AddInputField(Lang("Netmask",  14),  self.netmask, 'netmask')
+        pane.AddInputField(Lang("Gateway",  14),  self.gateway, 'gateway')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
     def UpdateFieldsPRECOMMIT(self):
         pane = self.Pane('interface')
         pane.ResetFields()
-        if self.nicChoice is None:
+        if self.nic is None:
             pane.AddTextField(Lang("No management interface will be configured"))
         else:
-            pif = Data.Inst().host.PIFs()[self.nicChoice]
+            pif = Data.Inst().host.PIFs()[self.nic]
             pane.AddStatusField(Lang("Device",  16),  pif['device'])
             pane.AddStatusField(Lang("Name",  16),  pif['metrics']['device_name'])
-            pane.AddStatusField(Lang("IP Mode",  16),  self.modeChoice)
-            if self.modeChoice is 'Static':
-                pane.AddStatusField(Lang("IP Address",  16),  self.ipAddress)
-                pane.AddStatusField(Lang("Subnet Mask",  16),  self.subnet)
+            pane.AddStatusField(Lang("IP Mode",  16),  self.mode)
+            if self.mode is 'Static':
+                pane.AddStatusField(Lang("IP Address",  16),  self.IP)
+                pane.AddStatusField(Lang("netmask Mask",  16),  self.netmask)
                 pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
                 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
@@ -617,8 +653,8 @@ class InterfaceDialogue(Dialogue):
         if inKey == 'KEY_ENTER':
             if pane.IsLastInput():
                 inputValues = pane.GetFieldValues()
-                self.ipAddress = inputValues['ipaddress']
-                self.subnet = inputValues['subnet']
+                self.IP = inputValues['IP']
+                self.netmask = inputValues['netmask']
                 self.gateway = inputValues['gateway']
                 self.state = 'PRECOMMIT'
                 self.UpdateFields()
@@ -637,7 +673,7 @@ class InterfaceDialogue(Dialogue):
     def HandleKeyPRECOMMIT(self, inKey):
         handled = True
         if inKey == 'KEY_ENTER':
-            # Process commit
+            self.Commit()
             self.layout.PopDialogue()
         else:
             handled = False
@@ -655,20 +691,29 @@ class InterfaceDialogue(Dialogue):
         return handled
             
     def HandleNICChoice(self,  inChoice):
-        self.nicChoice = inChoice
-        if self.nicChoice is None:
+        self.nic = inChoice
+        if self.nic is None:
             self.state = 'PRECOMMIT'
         else:
             self.state = 'MODE'
         self.UpdateFields()
         
     def HandleModeChoice(self,  inChoice):
-        self.modeChoice = inChoice
-        if self.modeChoice is 'DHCP':
+        self.mode = inChoice
+        if self.mode is 'DHCP':
             self.state = 'PRECOMMIT'
             self.UpdateFields()
         else:
             self.state = 'STATICIP'
             self.UpdateFields() # Setup input fields first
             self.Pane('interface').InputIndexSet(0) # and then choose the first
+            
+    def Commit(self):
+        if self.nic is None:
+            pass # Delete interfaces
+        else:
+            data = Data.Inst()
+            pif = data.host.PIFs()[self.nic]
+            data.ReconfigureIP(pif, self.mode, self.IP,  self.netmask, self.gateway)
+            Data.Inst().Update()
             
