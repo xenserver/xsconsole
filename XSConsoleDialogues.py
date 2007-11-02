@@ -184,7 +184,7 @@ class RightPanel:
         
         inPane.AddStatusField(Lang("Interface", 14), data.host.address())
         inPane.AddStatusField(Lang("IP Address", 14), data.GetInfo('host.address'))
-        inPane.AddStatusField(Lang("netmask", 14), data.Managementnetmask())
+        inPane.AddStatusField(Lang("Netmask", 14), data.Managementnetmask())
         inPane.AddStatusField(Lang("Gateway", 14), data.ManagementGateway())
         inPane.NewLine()
         
@@ -510,7 +510,7 @@ class InfoDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText):
         Dialogue.__init__(self, inLayout, inParent);
         self.text = inText
-        pane = self.NewPane('info', DialoguePane(3, 8, 74, 6, self.parent))
+        pane = self.NewPane('info', DialoguePane(3, 9, 74, 5, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
@@ -535,6 +535,26 @@ class InfoDialogue(Dialogue):
             handled = False
         return True
 
+class BannerDialogue(Dialogue):
+    def __init__(self, inLayout, inParent, inText):
+        Dialogue.__init__(self, inLayout, inParent);
+        self.text = inText
+        pane = self.NewPane('banner', DialoguePane(3, 9, 74, 5, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddBox()
+        self.UpdateFields()
+
+    def UpdateFields(self):
+        pane = self.Pane('banner')
+        pane.ResetFields()
+        if len(self.text) < 70:
+            # Centre text if short
+            pane.ResetPosition(37 - len(self.text) / 2, 1);
+        else:
+            pane.ResetPosition(30, 1);
+        
+        pane.AddWrappedBoldTextField(self.text)
+
 class InterfaceDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);
@@ -548,6 +568,7 @@ class InterfaceDialogue(Dialogue):
         
         choiceDefs = []
 
+        self.nic=0
         currentPIF = None
         choiceArray = []
         for i in range(len(Data.Inst().host.PIFs())):
@@ -589,8 +610,6 @@ class InterfaceDialogue(Dialogue):
             self.modeMenu.CurrentChoiceSet(1)
         else:
             self.modeMenu.CurrentChoiceSet(0)
-            
-                
     
         self.UpdateFields()
         
@@ -672,9 +691,21 @@ class InterfaceDialogue(Dialogue):
 
     def HandleKeyPRECOMMIT(self, inKey):
         handled = True
+        pane = self.Pane('interface')
         if inKey == 'KEY_ENTER':
-            self.Commit()
             self.layout.PopDialogue()
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Reconfiguring network...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            try:
+                self.Commit()
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Successful")))
+                
+            except Exception, e:
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Failed: "+str(e))))
+                
         else:
             handled = False
         return handled

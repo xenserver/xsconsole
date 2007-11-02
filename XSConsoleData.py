@@ -17,6 +17,8 @@ class DataMethod:
         return self.send(self.name)
 
 class Data:
+    
+    
     instance = None
     
     def __init__(self):
@@ -216,9 +218,13 @@ class Data:
         return match
 
     def ReconfigureIP(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
-        self.RequireSession()
-        self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)
-        # Network reconfigured so this link is no longer valid
-        self.session = Auth.CloseSession(self.session)
+        try:
+            self.RequireSession()
+            self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)
+            # Need to wait for DHCP?
+            self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'],  '') # Guessing here
+        finally:
+            # Network reconfigured so this link is no longer valid
+            self.session = Auth.CloseSession(self.session)
         
     
