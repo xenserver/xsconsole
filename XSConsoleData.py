@@ -17,8 +17,6 @@ class DataMethod:
         return self.send(self.name)
 
 class Data:
-    
-    
     instance = None
     
     def __init__(self):
@@ -59,7 +57,7 @@ class Data:
             
             convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
             self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
-
+            
             def convertPIF(inPIF):
                 retVal = self.session.xenapi.PIF.get_record(inPIF)
                 retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
@@ -68,11 +66,11 @@ class Data:
 
             self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
 
+            # Sort PIFs by device name for consistent order
+            self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))
+
             convertPBD = lambda pbd: self.session.xenapi.PBD.get_record(pbd)
             self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
-            
-
-
 
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
@@ -217,14 +215,24 @@ class Data:
 
         return match
 
-    def ReconfigureIP(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
+    def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
         try:
             self.RequireSession()
             self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)
             # Need to wait for DHCP?
-            self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'],  '') # Guessing here
+            self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'],  '') # TODO: Value for second parameter 'interface'
         finally:
-            # Network reconfigured so this link is no longer valid
+            # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.CloseSession(self.session)
         
-    
+    def Ping(self,  inIP):
+        # Must be careful that no unsanitised data is passed to the shell
+        # TODO: IP regexp will need revision for future IPv6 support
+        match = re.match(r'([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})',  inIP)
+        if not match:
+            raise Exception("Invalid IP address '"+inIP+'"')
+        
+        command = '/bin/ping -c 1 -w 2 -n '+match.group(1)+'.'+match.group(2)+'.'+match.group(3)+'.'+match.group(4)
+        (status,  output) = commands.getstatusoutput(command)
+        return (status == 0,  output)
+        

@@ -104,7 +104,8 @@ class RootMenu:
                 ChoiceDef("Display NICs", "", None, lambda : inDialogue.ChangeStatus('PIF')),
                 ChoiceDef("Select Management NIC", "",
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
-                ChoiceDef("Test Network", "", None, lambda : inDialogue.ChangeStatus('TESTNETWORK')),
+                ChoiceDef("Test Network", "",
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK')),
             ])
         }
 

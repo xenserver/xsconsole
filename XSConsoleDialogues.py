@@ -169,9 +169,19 @@ class DialoguePane:
     def Delete(self):
         self.window.Delete()
 
-class RightPanel:
-    @classmethod
-    def StatusUpdateFields(cls, inPane):
+class RootDialogue(Dialogue):
+    
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
+        menuPane = self.NewPane('menu', DialoguePane(1, 2, 38, 20, self.parent))
+        menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT')
+        statusPane = self.NewPane('status', DialoguePane(41, 2, 38, 20, self.parent))
+        statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
+        self.menu = RootMenu(self)
+        self.currentStatus = 'STATUS'
+        self.UpdateFields()
+
+    def UpdateFieldsSTATUS(self, inPane):
         data = Data.Inst()
 
         inPane.AddWrappedTextField(data.dmi.system_manufacturer())
@@ -180,24 +190,26 @@ class RightPanel:
         inPane.AddWrappedTextField(data.host.software_version.product_brand() + ' ' +
             data.host.software_version.product_version())
         inPane.NewLine()
-        inPane.AddTitleField(Lang("Management network parameters"))
+        inPane.AddTitleField(Lang("Management Network Parameters"))
         
-        inPane.AddStatusField(Lang("Interface", 14), data.host.address())
-        inPane.AddStatusField(Lang("IP Address", 14), data.GetInfo('host.address'))
-        inPane.AddStatusField(Lang("Netmask", 14), data.Managementnetmask())
-        inPane.AddStatusField(Lang("Gateway", 14), data.ManagementGateway())
+        if data.derived.managementpifs.Size() == 0:
+            inPane.AddTextField(Lang("<No network configured>"))
+        else:
+            for pif in data.derived.managementpifs():
+                inPane.AddStatusField(Lang('IP address', 16), data.host.address()) # FIXME: should come from pif
+                if pif['ip_configuration_mode'].lower().startswith('static'):
+                    inPane.AddStatusField(Lang('Netmask', 16),  pif['netmask'])
+                    inPane.AddStatusField(Lang('Gateway', 16),  pif['gateway'])
         inPane.NewLine()
-        
-    @classmethod
-    def PropertiesUpdateFields(cls, inPane):
+    
+    def UpdateFieldsPROPERTIES(self, inPane):
 
         inPane.AddTitleField(Lang("System Properties"))
     
         inPane.AddWrappedTextField(Lang(
             "Press enter to view the properties of this system."))
     
-    @classmethod
-    def AuthUpdateFields(cls, inPane):
+    def UpdateFieldsAUTH(self, inPane):
 
         inPane.AddTitleField(Lang("Authentication"))
     
@@ -215,16 +227,15 @@ class RightPanel:
             inPane.AddWrappedTextField(Lang(
                 "You are currently not logged in. Press Enter to log in with your username and password to access privileged operations."))
     
-    @classmethod
-    def InterfaceUpdateFields(cls, inPane):
+
+    def UpdateFieldsINTERFACE(self, inPane):
         inPane.AddTitleField(Lang("Management Interface"))
     
         inPane.AddWrappedTextField(Lang(
             "The management interface is a network interface used to control this host remotely.  "
             "Press enter to configure."))
-    
-    @classmethod
-    def XenSourceUpdateFields(cls, inPane):
+        
+    def UpdateFieldsXENSOURCE(self, inPane):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("XenSource"))
@@ -234,9 +245,8 @@ class RightPanel:
         inPane.AddStatusField(Lang("Kernel Version", 16), str(data.host.software_version.linux()))
         inPane.AddStatusField(Lang("Xen Version", 16), str(data.host.software_version.xen()))
         inPane.NewLine()
-        
-    @classmethod
-    def LicenceUpdateFields(cls, inPane):
+    
+    def UpdateFieldsLICENCE(self, inPane):
         data = Data.Inst()
 
         expiryStr = data.host.license_params.expiry()
@@ -254,37 +264,34 @@ class RightPanel:
         inPane.NewLine()
         inPane.AddTitleField(Lang("Serial Number"))
         inPane.AddWrappedTextField(str(data.host.license_params.serialnumber()))
-        
-    @classmethod
-    def HostUpdateFields(cls, inPane):
+
+    def UpdateFieldsHOST(self, inPane):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("Hostname"))
         inPane.AddWrappedTextField(data.host.hostname())
         inPane.NewLine()
-    
-    @classmethod
-    def SystemUpdateFields(cls, inPane):
+
+    def UpdateFieldsSYSTEM(self, inPane):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("System Manufacturer"))
-        inPane.AddWrappedTextField(data.dmi.system_manufacturer())
+        inPane.AddWrappedTextField(data.host.software_version.oem_manufacturer())
         inPane.NewLine()
         
         inPane.AddTitleField(Lang("System Model"))
-        inPane.AddWrappedTextField(data.dmi.system_product_name())
+        inPane.AddWrappedTextField(data.host.software_version.oem_model())
         inPane.NewLine()
         
-        inPane.AddTitleField(Lang("Serial Number/Service Tag"))
-        inPane.AddWrappedTextField(data.dmi.system_serial_number())
+        inPane.AddTitleField(data.host.software_version.machine_serial_name())
+        inPane.AddWrappedTextField(data.host.software_version.machine_serial_number())
         inPane.NewLine()
         
         inPane.AddTitleField(Lang("Asset Tag"))
-        inPane.AddWrappedTextField(data.dmi.asset_tag())
+        inPane.AddWrappedTextField(data.dmi.asset_tag()) # FIXME: Get from XenAPI
         inPane.NewLine()
-        
-    @classmethod
-    def ProcessorUpdateFields(cls, inPane):
+
+    def UpdateFieldsPROCESSOR(self, inPane):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("Processor Details"))
@@ -299,8 +306,7 @@ class RightPanel:
         for name, value in data.derived.cpu_name_summary().iteritems():
             inPane.AddWrappedTextField(str(value)+" x "+name)
     
-    @classmethod    
-    def MemoryUpdateFields(cls, inPane):
+    def UpdateFieldsMEMORY(self, inPane):
         data = Data.Inst()
         
         inPane.AddTitleField(Lang("System Memory"))
@@ -308,9 +314,8 @@ class RightPanel:
         inPane.AddStatusField(Lang("Total memory", 27), str(data.dmi.memory_size())+' MB')
         inPane.AddStatusField(Lang("Populated memory sockets", 27), str(data.dmi.memory_modules()))
         inPane.AddStatusField(Lang("Total memory sockets", 27), str(data.dmi.memory_sockets()))
-            
-    @classmethod    
-    def PIFUpdateFields(cls, inPane):
+
+    def UpdateFieldsPIF(self, inPane):
         data = Data.Inst()
         
         inPane.AddTitleField(Lang("Physical Network Interfaces"))
@@ -325,18 +330,16 @@ class RightPanel:
             inPane.AddStatusField(Lang("MAC Address:", 16), pif['MAC'])
             inPane.AddStatusField(Lang("Device:", 16), pif['device'])
             inPane.NewLine()
-            
-    @classmethod    
-    def BIOSUpdateFields(cls, inPane):
+
+    def UpdateFieldsBIOS(self, inPane):
         data = Data.Inst()
         
         inPane.AddTitleField(Lang("BIOS Information"))
         
         inPane.AddStatusField(Lang("Vendor", 12), data.dmi.bios_vendor())
         inPane.AddStatusField(Lang("Version", 12), data.dmi.bios_version())
-            
-    @classmethod    
-    def SelectNICUpdateFields(cls, inPane):
+
+    def UpdateFieldsSELECTNIC(self, inPane):
         data = Data.Inst()
         
         inPane.AddTitleField(Lang("Current Configuration"))
@@ -350,7 +353,7 @@ class RightPanel:
                 inPane.AddStatusField(Lang('Assigned IP', 16),  data.host.address()) # FIXME: should come from pif
                 inPane.AddStatusField(Lang('DHCP/Static IP', 16),  pif['ip_configuration_mode'])
                 if pif['ip_configuration_mode'].lower().startswith('static'):
-                    inPane.AddStatusField(Lang('IP Address', 16),  pif['IP'])
+                    # inPane.AddStatusField(Lang('IP Address', 16),  pif['IP'])
                     inPane.AddStatusField(Lang('Netmask', 16),  pif['netmask'])
                     inPane.AddStatusField(Lang('Gateway', 16),  pif['gateway'])
                 
@@ -364,39 +367,17 @@ class RightPanel:
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Reconfigure this interface")
         })
+        
+    def UpdateFieldsTESTNETWORK(self, inPane):
+        inPane.AddTitleField(Lang("Test Network"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press enter to test the configured network interface."))
             
-    @classmethod    
-    def ExceptionUpdateFields(cls, inPane,  inException):
+    def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
         inPane.AddWrappedTextField(str(inException))
-            
-class RootDialogue(Dialogue):
-    statusUpdaters = {
-        'STATUS' : RightPanel.StatusUpdateFields,
-        'AUTH' : RightPanel.AuthUpdateFields,
-        'INTERFACE' : RightPanel.InterfaceUpdateFields,
-        'PROPERTIES' : RightPanel.PropertiesUpdateFields,
-        'XENSOURCE' : RightPanel.XenSourceUpdateFields,
-        'LICENCE' : RightPanel.LicenceUpdateFields,
-        'HOST' : RightPanel.HostUpdateFields,
-        'SYSTEM' : RightPanel.SystemUpdateFields,
-        'PROCESSOR' : RightPanel.ProcessorUpdateFields,
-        'MEMORY' : RightPanel.MemoryUpdateFields,
-        'PIF' : RightPanel.PIFUpdateFields,
-        'BIOS' : RightPanel.BIOSUpdateFields, 
-        'SELECTNIC' : RightPanel.SelectNICUpdateFields
-    }
-
-    def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
-        menuPane = self.NewPane('menu', DialoguePane(1, 2, 38, 20, self.parent))
-        menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT')
-        statusPane = self.NewPane('status', DialoguePane(41, 2, 38, 20, self.parent))
-        statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
-        self.menu = RootMenu(self)
-        self.currentStatus = 'STATUS'
-        self.UpdateFields()
 
     def UpdateFields(self):
         menuPane = self.Pane('menu')
@@ -408,11 +389,12 @@ class RootDialogue(Dialogue):
         try:
             statusPane.ResetFields();
             statusPane.ResetPosition();
-            self.statusUpdaters[self.currentStatus](statusPane)
+            getattr(self, 'UpdateFields'+self.currentStatus)(statusPane) # Despatch method named 'UpdateFields'+self.currentStatus
+
         except Exception, e:
             statusPane.ResetFields();
             statusPane.ResetPosition();
-            RightPanel.ExceptionUpdateFields(statusPane,  e)
+            self.UpdateFieldsEXCEPTION(statusPane,  e)
         
         keyHash = { Lang("<Up/Down>") : Lang("Select") }
         if self.menu.CurrentMenu().Parent() != None:
@@ -454,10 +436,12 @@ class RootDialogue(Dialogue):
                 self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
         elif inName is 'DIALOGUE_INTERFACE':
             self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent))
+        elif inName is 'DIALOGUE_TESTNETWORK':
+            self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
         
 class LoginDialogue(Dialogue):
-    def __init__(self, layout, parent):
-        Dialogue.__init__(self, layout, parent);
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
         pane = self.NewPane('login', DialoguePane(3, 8, 74, 7, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.Win().TitleSet("Login")
@@ -507,10 +491,20 @@ class LoginDialogue(Dialogue):
         return True
 
 class InfoDialogue(Dialogue):
-    def __init__(self, inLayout, inParent, inText):
+    def __init__(self, inLayout, inParent, inText,  inInfo = None):
         Dialogue.__init__(self, inLayout, inParent);
         self.text = inText
-        pane = self.NewPane('info', DialoguePane(3, 9, 74, 5, self.parent))
+        if inInfo is None:
+            self.info = None
+            paneHeight = 5
+            
+        else:
+            self.info = inInfo
+            paneHeight = 7+ len(Language.ReflowText(self.info, 70))
+                
+        paneHeight = min(paneHeight,  22)
+        
+        pane = self.NewPane('info', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
@@ -522,9 +516,12 @@ class InfoDialogue(Dialogue):
             # Centre text if short
             pane.ResetPosition(37 - len(self.text) / 2, 1);
         else:
-            pane.ResetPosition(30, 1);
+            pane.ResetPosition(3, 1);
         
         pane.AddWrappedBoldTextField(self.text)
+        if self.info is not None:
+            pane.ResetPosition(1, 3);
+            pane.AddWrappedTextField(self.info)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
     def HandleKey(self, inKey):
@@ -741,10 +738,66 @@ class InterfaceDialogue(Dialogue):
             
     def Commit(self):
         if self.nic is None:
-            pass # Delete interfaces
+            pass # TODO: Delete interfaces
         else:
             data = Data.Inst()
             pif = data.host.PIFs()[self.nic]
-            data.ReconfigureIP(pif, self.mode, self.IP,  self.netmask, self.gateway)
+            data.ReconfigureManagement(pif, self.mode, self.IP,  self.netmask, self.gateway)
             Data.Inst().Update()
+            
+class TestNetworkDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
+
+        paneHeight = 12
+        paneHeight = min(paneHeight,  22)
+        pane = self.NewPane('testnetwork', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.Win().TitleSet(Lang("Test Network Configuration"))
+        pane.AddBox()
+        
+        self.testMenu = Menu(self, None, "Select Test Type", [
+            ChoiceDef("Ping local address 127.0.0.1", "", lambda: self.HandleTestChoice('local') ), 
+            ChoiceDef("Ping IP gateway address", "", lambda: self.HandleTestChoice('gateway') ), 
+            ChoiceDef("Ping www.xensource.com", "", lambda: self.HandleTestChoice('xensource') ), 
+            ChoiceDef("Ping custom address", "", lambda: self.HandleTestChoice('custom') ), 
+            ])
+        
+        self.state = 'INITIAL'
+    
+        self.UpdateFields()
+
+    def UpdateFields(self):
+        self.Pane('testnetwork').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('testnetwork')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Select Test"))
+        pane.AddMenuField(self.testMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        return self.testMenu.HandleKey(inKey)
+        
+    def HandleTestChoice(self,  inChoice):
+        if inChoice is 'local':
+            (success,  output) = Data.Inst().Ping('127.0.0.1')
+            if success:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping successful"), output))
+            else:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping failed"), output))
             
