@@ -752,17 +752,20 @@ class TestNetworkDialogue(Dialogue):
         paneHeight = 12
         paneHeight = min(paneHeight,  22)
         pane = self.NewPane('testnetwork', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.Win().TitleSet(Lang("Test Network Configuration"))
         pane.AddBox()
         
+        gatewayName = Data.Inst().ManagementGateway()
+        if gatewayName is None: gatewayName = 'Unknown'
+        
         self.testMenu = Menu(self, None, "Select Test Type", [
             ChoiceDef("Ping local address 127.0.0.1", "", lambda: self.HandleTestChoice('local') ), 
-            ChoiceDef("Ping IP gateway address", "", lambda: self.HandleTestChoice('gateway') ), 
+            ChoiceDef("Ping IP gateway address ("+gatewayName+")", "", lambda: self.HandleTestChoice('gateway') ), 
             ChoiceDef("Ping www.xensource.com", "", lambda: self.HandleTestChoice('xensource') ), 
             ChoiceDef("Ping custom address", "", lambda: self.HandleTestChoice('custom') ), 
             ])
-        
+    
+        self.customIP = '0.0.0.0'
         self.state = 'INITIAL'
     
         self.UpdateFields()
@@ -773,12 +776,24 @@ class TestNetworkDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane('testnetwork')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select Test"))
         pane.AddMenuField(self.testMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         
+    def UpdateFieldsCUSTOM(self):
+        pane = self.Pane('testnetwork')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Enter hostname or IP address to ping"))
+        pane.AddInputField(Lang("Address",  16), self.customIP, 'address')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
     def HandleKey(self, inKey):
         handled = False
         if hasattr(self, 'HandleKey'+self.state):
@@ -793,11 +808,53 @@ class TestNetworkDialogue(Dialogue):
     def HandleKeyINITIAL(self, inKey):
         return self.testMenu.HandleKey(inKey)
         
-    def HandleTestChoice(self,  inChoice):
-        if inChoice is 'local':
-            (success,  output) = Data.Inst().Ping('127.0.0.1')
-            if success:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping successful"), output))
-            else:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping failed"), output))
+    def HandleKeyCUSTOM(self, inKey):
+        handled = True
+        pane = self.Pane('testnetwork')
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            inputValues = pane.GetFieldValues()
+            self.customIP = inputValues['address']
+            self.DoPing(self.customIP)
             
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+        
+    def HandleTestChoice(self,  inChoice):
+        pingTarget = None
+        custom = False
+        if inChoice is 'local':
+            pingTarget = '127.0.0.1'
+        elif inChoice is 'gateway':
+            pingTarget = Data.Inst().ManagementGateway()
+        elif inChoice is 'xensource':
+            pingTarget = 'www.xensource.com'
+        else:
+            custom = True
+
+        if custom:
+            self.state = 'CUSTOM'
+            self.UpdateFields()
+            self.Pane('testnetwork').InputIndexSet(0)
+        else:
+            self.DoPing(pingTarget)
+
+    def DoPing(self, inAddress):
+        success = False
+        output = 'Cannot determine address to ping'
+            
+        if inAddress is not None:
+            try:
+                (success,  output) = Data.Inst().Ping(inAddress)
+            except Exception,  e:
+                output = str(e)
+            
+        if success:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping successful"), output))
+        else:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping failed"), output))
+        

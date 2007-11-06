@@ -61,6 +61,7 @@ class Data:
             def convertPIF(inPIF):
                 retVal = self.session.xenapi.PIF.get_record(inPIF)
                 retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
+                if retVal['network'] is not 'OpaqueRef:NULL': retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
                 retVal['opaqueref'] = inPIF
                 return retVal
 
@@ -225,14 +226,40 @@ class Data:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.CloseSession(self.session)
         
-    def Ping(self,  inIP):
+    def Ping(self,  inDest):
         # Must be careful that no unsanitised data is passed to the shell
-        # TODO: IP regexp will need revision for future IPv6 support
-        match = re.match(r'([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})\.([0-9]{1,3})',  inIP)
-        if not match:
-            raise Exception("Invalid IP address '"+inIP+'"')
+        if not re.match(r'([0-9a-zA-Z.-]+)$',  inDest):
+            raise Exception("Invalid destination '"+inDest+"'")
         
-        command = '/bin/ping -c 1 -w 2 -n '+match.group(1)+'.'+match.group(2)+'.'+match.group(3)+'.'+match.group(4)
+        command = "/bin/ping -c 1 -w 2 '"+inDest+"'"
         (status,  output) = commands.getstatusoutput(command)
         return (status == 0,  output)
+    
+    def ManagementGateway(self):
+        retVal = None
         
+        # FIXME: Address should come from API, but not available at present.  This is just a guess at the gateway address
+        if self.derived.managementpifs.Size() == 0:
+            # No management i/f configured
+            pass
+        else:
+            for pif in self.derived.managementpifs():
+                if pif['ip_configuration_mode'].lower().startswith('static'):
+                    # For static IP the API address is correct
+                    retVal = pif['gateway']
+                elif pif['ip_configuration_mode'].lower().startswith('dhcp'):
+                    # For DHCP,  find the gateway address by parsing the output from the 'route' command
+                    if 'bridge' in pif['network']:
+                        device = pif['network']['bridge']
+                    else:
+                        device = pif['device']
+                    routeRE = r'([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+UG\s+\d+\s+\d+\s+\d+\s+'+device
+        
+                    routes = commands.getoutput("/sbin/route -n").split("\n")
+                    for line in routes:
+                        m = re.match(routeRE, line)
+                        if m:
+                            retVal = m.group(2)
+    
+        return retVal
+

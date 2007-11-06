@@ -60,7 +60,7 @@ class Auth:
         try:
             # Try the local session first
             session = XenAPI.xapi_local()
-            session.login_with_password('','')
+            session.login_with_password('root','')
         except Exception,  e:
             session = None
             cls.error = str(e)
@@ -75,7 +75,7 @@ class Auth:
                 cls.error = str(e)
 
                 # Test code
-                session = XenAPI.Session("http://hypori")
+                session = XenAPI.Session("http://isis")
                 try:
                     session.login_with_password(cls.LoggedInUsername(), cls.LoggedInPassword())
                 except Exception, e:
