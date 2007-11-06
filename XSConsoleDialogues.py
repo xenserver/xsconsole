@@ -373,7 +373,25 @@ class RootDialogue(Dialogue):
     
         inPane.AddWrappedTextField(Lang(
             "Press enter to test the configured network interface."))
+    
+    def UpdateFieldsREBOOT(self, inPane):
+        inPane.AddTitleField(Lang("Server Reboot"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press enter to reboot this server."))
+    
+    def UpdateFieldsSHUTDOWN(self, inPane):
+        inPane.AddTitleField(Lang("Server Shutdown"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press enter to shutdown this server."))
             
+    def UpdateFieldsLOCALSHELL(self, inPane):
+        inPane.AddTitleField(Lang("Start Local Shell"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press enter to enter a local command shell on this server."))
+    
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
@@ -438,7 +456,27 @@ class RootDialogue(Dialogue):
             self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent))
         elif inName is 'DIALOGUE_TESTNETWORK':
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
-        
+        elif inName is 'DIALOGUE_REBOOT':
+            self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x)))
+        elif inName is 'DIALOGUE_SHUTDOWN':
+            self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x)))
+        elif inName is 'DIALOGUE_LOCALSHELL':
+            self.layout.ExitBannerSet(Lang("\rPlease login with your user credentials.\r\r"
+                "After login, type 'exit' to return to the management console.\r"))
+            self.layout.ExitCommandSet("/bin/login")
+            
+    def RebootDialogueHandler(self,  inYesNo):
+        if inYesNo is 'y':
+            self.layout.ExitBannerSet(Lang("Rebooting..."))
+            self.layout.ExitCommandSet('/sbin/shutdown -r now')
+
+    def ShutdownDialogueHandler(self,  inYesNo):
+        if inYesNo is 'y':
+            self.layout.ExitBannerSet(Lang("Shutting down..."))
+            self.layout.ExitCommandSet('/sbin/shutdown -h now')
+
 class LoginDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);
@@ -496,7 +534,7 @@ class InfoDialogue(Dialogue):
         self.text = inText
         if inInfo is None:
             self.info = None
-            paneHeight = 5
+            paneHeight = 6
             
         else:
             self.info = inInfo
@@ -551,6 +589,42 @@ class BannerDialogue(Dialogue):
             pane.ResetPosition(30, 1);
         
         pane.AddWrappedBoldTextField(self.text)
+
+class QuestionDialogue(Dialogue):
+    def __init__(self, inLayout, inParent, inText,  inHandler):
+        Dialogue.__init__(self, inLayout, inParent);
+        self.text = inText
+        self.handler = inHandler
+        pane = self.NewPane('question', DialoguePane(3, 9, 74, 5, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddBox()
+        self.UpdateFields()
+
+    def UpdateFields(self):
+        pane = self.Pane('question')
+        pane.ResetFields()
+        if len(self.text) < 70:
+            # Centre text if short
+            pane.ResetPosition(37 - len(self.text) / 2, 1);
+        else:
+            pane.ResetPosition(30, 1);
+        
+        pane.AddWrappedBoldTextField(self.text)
+
+        pane.AddKeyHelpField( { Lang("<Y>") : Lang("Yes"),  Lang("<N>") : Lang("No")  } )
+    
+    def HandleKey(self, inKey):
+        handled = True
+        if inKey is 'y':
+            self.layout.PopDialogue()
+            self.handler('y')
+        elif inKey is 'n' or inKey is 'KEY_ESC':
+            self.layout.PopDialogue()
+            self.handler('n')
+        else:
+            handled = False
+            
+        return handled
 
 class InterfaceDialogue(Dialogue):
     def __init__(self, inLayout, inParent):

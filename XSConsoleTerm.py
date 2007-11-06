@@ -8,6 +8,7 @@ from XSConsoleCurses import *
 from XSConsoleData import *
 from XSConsoleDialogues import *
 from XSConsoleMenus import *
+from XSConsoleLang import *
 
 class App:
     def __init__(self):
@@ -15,10 +16,11 @@ class App:
     
     def Enter(self):
         Data.Inst().Dump() # Testing
-        
+
         try:
             try:
                 sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
+                os.system("/bin/setfont") # Restore the default font. Ignore failures
                 os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
                 
                 self.cursesScreen = CursesScreen()
@@ -33,8 +35,22 @@ class App:
                 if self.cursesScreen is not None:
                     self.cursesScreen.Exit()
         
+            if self.layout.ExitCommand() is None:
+                doQuit = True
+            else:
+                os.system('/usr/bin/reset') # Reset terminal
+                if self.layout.ExitBanner() is not None:
+                    # print no longer works here
+                    reflowed = Language.ReflowText(self.layout.ExitBanner(),  80)
+                    for line in reflowed:
+                        os.system("echo "+line)
+                commandList = self.layout.ExitCommand().split()
+                os.execv(commandList[0],  commandList)
+                # Does not return
+                
         except Exception, e:
             sys.stderr.write(str(e)+"\n")
+            doQuit = True
 
     def MainLoop(self):
         
@@ -57,6 +73,10 @@ class App:
             else:
                 # Key not handled by dialogue, so handle the exit case
                 if gotKey == "KEY_ESCAPE": doQuit = True # Escape
+                
+            if self.layout.ExitCommand() is not None:
+                self.layout.DoUpdate()
+                doQuit = True
 
 class Renderer:        
     def RenderStatus(self, inWindow, inText):
@@ -71,6 +91,20 @@ class Layout:
     def __init__(self, inParent = None):
         self.parent = inParent
         self.windows = []
+        self.exitCommand = None # Not layout, but keep with layout for convinience
+        self.exitBanner = None # Not layout, but keep with layout for convinience
+
+    def ExitBanner(self):
+        return self.exitBanner;
+        
+    def ExitBannerSet(self,  inBanner):
+        self.exitBanner = inBanner
+        
+    def ExitCommand(self):
+        return self.exitCommand;
+        
+    def ExitCommandSet(self,  inCommand):
+        self.exitCommand = inCommand
 
     def Window(self, inNum):
         return self.windows[inNum]
@@ -105,8 +139,7 @@ class Layout:
     
         for dialogue in self.dialogues:
             dialogue.Render()
-            
-    
+
     def Redraw(self):
         for window in self.windows:
             window.Win().redrawwin()
@@ -119,4 +152,4 @@ class Layout:
     
     def DoUpdate(self):
         curses.doupdate()
-        
+    

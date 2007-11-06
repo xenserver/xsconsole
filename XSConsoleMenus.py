@@ -83,7 +83,12 @@ class RootMenu:
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
                 ChoiceDef("Management Interface", "Configure the management interface for this system",
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
-                ChoiceDef("Server Reboot", "Reboot this server", "ServerReboot")
+                ChoiceDef("Server Reboot", "Reboot this server",
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
+                ChoiceDef("Server Shutdown", "Shutdown this server",
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
+                ChoiceDef("Local Command Shell", "Start a local command shell",
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ]),
             
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', "System Properties", [
