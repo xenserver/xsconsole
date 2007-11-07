@@ -83,7 +83,9 @@ class MenuField:
         ParamsToAttr();
     
     def Width(self):
-        return max ( len(choice.name) for choice in self.menu.ChoiceDefs() )
+        if len(self.menu.ChoiceDefs()) is 0:
+            return 0
+        return max(len(choice.name) for choice in self.menu.ChoiceDefs() )
 
     def Height(self):
         return len(self.menu.ChoiceDefs())

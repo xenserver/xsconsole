@@ -75,7 +75,7 @@ class Auth:
                 cls.error = str(e)
 
                 # Test code
-                session = XenAPI.Session("http://isis")
+                session = XenAPI.Session("http://hypori")
                 try:
                     session.login_with_password(cls.LoggedInUsername(), cls.LoggedInPassword())
                 except Exception, e:

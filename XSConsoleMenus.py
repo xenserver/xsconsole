@@ -1,8 +1,9 @@
 
 from XSConsoleBases import *
+from XSConsoleLang import *
 
 class ChoiceDef:
-    def __init__(self, name, help, onAction = None, onEnter = None):
+    def __init__(self, name, onAction = None, onEnter = None):
         ParamsToAttr()
 
 class Menu:
@@ -74,42 +75,42 @@ class Menu:
 class RootMenu:
     def __init__(self, inDialogue):
         self.menus = {
-            'MENU_ROOT' : Menu(self, None, "Customize System", [
-                ChoiceDef("Status Display", "View the Status of this Machine",
+            'MENU_ROOT' : Menu(self, None, Lang("Customize System"), [
+                ChoiceDef(Lang("Status Display"), 
                     None,  lambda : inDialogue.ChangeStatus('STATUS')),
-                ChoiceDef("Authentication", "Set the root password to protect this machine",
+                ChoiceDef(Lang("Authentication"), 
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
-                ChoiceDef("System Properties", "Configure the properties of this system",
+                ChoiceDef(Lang("System Properties"), 
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
-                ChoiceDef("Management Interface", "Configure the management interface for this system",
+                ChoiceDef(Lang("Management Interface"), 
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
-                ChoiceDef("Server Reboot", "Reboot this server",
+                ChoiceDef(Lang("Server Reboot"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
-                ChoiceDef("Server Shutdown", "Shutdown this server",
+                ChoiceDef(Lang("Server Shutdown"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
-                ChoiceDef("Local Command Shell", "Start a local command shell",
+                ChoiceDef(Lang("Local Command Shell"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ]),
             
-            'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', "System Properties", [
-                ChoiceDef("XenSource Product Information", "", None, lambda : inDialogue.ChangeStatus('XENSOURCE')),
-                ChoiceDef("License Details", "", None, lambda : inDialogue.ChangeStatus('LICENCE')),
-                ChoiceDef("Hostname", "", None, lambda : inDialogue.ChangeStatus('HOST')),
-                ChoiceDef("System Details", "", None, lambda : inDialogue.ChangeStatus('SYSTEM')),
-                ChoiceDef("Processor", "", None, lambda : inDialogue.ChangeStatus('PROCESSOR')),
-                ChoiceDef("System Memory", "", None, lambda : inDialogue.ChangeStatus('MEMORY')),
-                ChoiceDef("Local Storage Controller", ""),
-                ChoiceDef("System Physical NICs", "", None, lambda : inDialogue.ChangeStatus('PIF')),
-                ChoiceDef("BIOS Information", "", None, lambda : inDialogue.ChangeStatus('BIOS')),
-                ChoiceDef("BMC Version", ""),
-                ChoiceDef("CPLD Version", "")
+            'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), [
+                ChoiceDef(Lang("XenSource Product Information"), None, lambda : inDialogue.ChangeStatus('XENSOURCE')),
+                ChoiceDef(Lang("License Details"), None, lambda : inDialogue.ChangeStatus('LICENCE')),
+                ChoiceDef(Lang("Hostname"), None, lambda : inDialogue.ChangeStatus('HOST')),
+                ChoiceDef(Lang("System Details"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
+                ChoiceDef(Lang("Processor"), None, lambda : inDialogue.ChangeStatus('PROCESSOR')),
+                ChoiceDef(Lang("System Memory"), None, lambda : inDialogue.ChangeStatus('MEMORY')),
+                ChoiceDef(Lang("Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
+                ChoiceDef(Lang("System Physical NICs"),  None, lambda : inDialogue.ChangeStatus('PIF')),
+                ChoiceDef(Lang("BIOS Information"), None, lambda : inDialogue.ChangeStatus('BIOS')),
+                ChoiceDef(Lang("BMC Version")),
+                ChoiceDef(Lang("CPLD Version"))
             ]),
 
-            'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', "Management Interface", [
-                ChoiceDef("Display NICs", "", None, lambda : inDialogue.ChangeStatus('PIF')),
-                ChoiceDef("Select Management NIC", "",
+            'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', Lang("Management Interface"), [
+                ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
+                ChoiceDef(Lang("Select Management NIC"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
-                ChoiceDef("Test Network", "",
+                ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK')),
             ])
         }

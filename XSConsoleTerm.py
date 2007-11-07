@@ -20,7 +20,7 @@ class App:
         try:
             try:
                 sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
-                os.system("/bin/setfont") # Restore the default font. Ignore failures
+                if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font.
                 os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
                 
                 self.cursesScreen = CursesScreen()

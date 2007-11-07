@@ -1,9 +1,10 @@
 # import socket, fcntl, struct, os
 import XenAPI
 import commands, re,  sys
-
 from pprint import pprint
+
 from XSConsoleAuth import *
+from XSConsoleLang import *
 
 class DataMethod:
     def __init__(self, inSend, inName):
@@ -13,8 +14,8 @@ class DataMethod:
     def __getattr__(self, inName):
         return DataMethod(self.send, self.name+[inName])
 
-    def __call__(self):
-        return self.send(self.name)
+    def __call__(self,  inDefault = None):
+        return self.send(self.name,  inDefault)
 
 class Data:
     instance = None
@@ -30,6 +31,27 @@ class Data:
             cls.instance.Update()
         return cls.instance
     
+    def GetData(self, inNames, inDefault = None):
+        data = self.data
+        for name in inNames:
+            if name is '__repr__':
+                # Error - missing ()
+                raise 'Data call Data.'+'.'.join(inNames[:-1])+' must end with ()'
+            elif name in data:
+                data = data[name]
+            else:
+                return FirstValue(inDefault, Lang('<Unknown>'))
+        return data
+    
+    # Attribute access can be used in two ways
+    #   self.host.software_version.oem_model()
+    # returns the value of self.data['host']['software_version']['oem_model'], or the string '<Unknown>'
+    # if the element doesn't exist.
+    #   self.host.software_version.oem_model('Default')
+    # is similar but returns the parameter ('Default' in this case) if the element doesn't exist
+    def __getattr__(self, inName):
+        return DataMethod(self.GetData, [inName])
+
     def GetInfo(self, inKey):
         if inKey in self.data['dmi']:
             retVal = self.data['dmi'][inKey]
@@ -76,10 +98,16 @@ class Data:
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
             (status, output) = commands.getstatusoutput("cat ./dmidecode.txt")
-            if status != 0:
-                raise Exception("Cannot get dmidecode output")
         
-        self.ScanDmiDecode(output.split("\n"))
+        if status == 0:
+            self.ScanDmiDecode(output.split("\n"))
+     
+        (status, output) = commands.getstatusoutput("/sbin/lspci")
+        if status != 0:
+            (status, output) = commands.getstatusoutput("/usr/bin/lspci")
+
+        if status == 0:
+            self.ScanLspci(output.split("\n"))
      
         self.DeriveData()
         
@@ -113,24 +141,7 @@ class Data:
      
     def Dump(self):
         pprint(self.data)
-        
-    def GetData(self, inNames):
-        data = self.data
-        for name in inNames:
-            if name is '__repr__':
-                # Error - missing ()
-                raise 'Data call Data.'+'.'.join(inNames[:-1])+' must end with ()'
-            elif name is 'Size':
-                data = len(data)
-            elif name in data:
-                data = data[name]
-            else:
-                return '<Unknown>'
-        return data
-    
-    def __getattr__(self, inName):
-        return DataMethod(self.GetData, [inName])
-        
+
     def ScanDmiDecode(self, inLines):
         STATE_NEXT_ELEMENT = 2
         state = 0
@@ -216,6 +227,17 @@ class Data:
 
         return match
 
+    def ScanLspci(self, inLines):
+        self.data['lspci'] = {
+            'storage_controllers' : []
+        }
+        # Spot storage controllers by looking for keywords in the lspci output
+        keywords = "IDE|PATA|SATA|SCSI|SAS|RAID|Fiber Channel"
+        for line in inLines:
+            match = re.match(r'[0-9a-f:.]+\s+(('+keywords+').*)',  line)
+            if match:
+                self.data['lspci']['storage_controllers'].append(match.group(1))
+            
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
         try:
             self.RequireSession()

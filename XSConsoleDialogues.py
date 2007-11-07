@@ -8,7 +8,6 @@ from XSConsoleLang import *
 from XSConsoleMenus import *
 
 from pprint import pprint
-from copy import copy
 
 class DialoguePane:
     LEFT_XSTART = 1
@@ -192,7 +191,7 @@ class RootDialogue(Dialogue):
         inPane.NewLine()
         inPane.AddTitleField(Lang("Management Network Parameters"))
         
-        if data.derived.managementpifs.Size() == 0:
+        if len(data.derived.managementpifs([])) == 0:
             inPane.AddTextField(Lang("<No network configured>"))
         else:
             for pif in data.derived.managementpifs():
@@ -283,12 +282,12 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(data.host.software_version.oem_model())
         inPane.NewLine()
         
-        inPane.AddTitleField(data.host.software_version.machine_serial_name())
+        inPane.AddTitleField(data.host.software_version.machine_serial_name(Lang("Serial Number")))
         inPane.AddWrappedTextField(data.host.software_version.machine_serial_number())
         inPane.NewLine()
         
         inPane.AddTitleField(Lang("Asset Tag"))
-        inPane.AddWrappedTextField(data.dmi.asset_tag()) # FIXME: Get from XenAPI
+        inPane.AddWrappedTextField(data.dmi.asset_tag(Lang("None"))) # FIXME: Get from XenAPI
         inPane.NewLine()
 
     def UpdateFieldsPROCESSOR(self, inPane):
@@ -296,7 +295,7 @@ class RootDialogue(Dialogue):
 
         inPane.AddTitleField(Lang("Processor Details"))
         
-        inPane.AddStatusField(Lang("Logical CPUs", 27), str(data.host.host_CPUs.Size()))
+        inPane.AddStatusField(Lang("Logical CPUs", 27), str(len(data.host.host_CPUs([]))))
         inPane.AddStatusField(Lang("Populated CPU Sockets", 27), str(data.dmi.cpu_populated_sockets()))
         inPane.AddStatusField(Lang("Total CPU Sockets", 27), str(data.dmi.cpu_sockets()))
 
@@ -315,12 +314,21 @@ class RootDialogue(Dialogue):
         inPane.AddStatusField(Lang("Populated memory sockets", 27), str(data.dmi.memory_modules()))
         inPane.AddStatusField(Lang("Total memory sockets", 27), str(data.dmi.memory_sockets()))
 
+    def UpdateFieldsSTORAGE(self, inPane):
+        data = Data.Inst()
+        
+        inPane.AddTitleField(Lang("Local Storage Controllers"))
+        
+        for name in data.lspci.storage_controllers([]):
+            inPane.AddWrappedTextField(name)
+            inPane.NewLine()
+            
     def UpdateFieldsPIF(self, inPane):
         data = Data.Inst()
         
         inPane.AddTitleField(Lang("Physical Network Interfaces"))
         
-        for pif in data.host.PIFs():
+        for pif in data.host.PIFs([]):
             inPane.AddWrappedBoldTextField(pif['metrics']['device_name'])
             if pif['metrics']['carrier']:
                 inPane.AddTextField(Lang("(connected)"))
@@ -342,12 +350,12 @@ class RootDialogue(Dialogue):
     def UpdateFieldsSELECTNIC(self, inPane):
         data = Data.Inst()
         
-        inPane.AddTitleField(Lang("Current Configuration"))
+        inPane.AddTitleField(Lang("Current Management Interface"))
         
-        if data.derived.managementpifs.Size() == 0:
-            inPane.AddTextField(Lang("<No network configured>"))
+        if len(data.derived.managementpifs([])) == 0:
+            inPane.AddTextField(Lang("<No interface configured>"))
         else:
-            for pif in data.derived.managementpifs():
+            for pif in data.derived.managementpifs([]):
                 inPane.AddStatusField(Lang('Device', 16), pif['device'])
                 inPane.AddStatusField(Lang('MAC Address', 16),  pif['MAC'])
                 inPane.AddStatusField(Lang('Assigned IP', 16),  data.host.address()) # FIXME: should come from pif
@@ -387,10 +395,10 @@ class RootDialogue(Dialogue):
             "Press enter to shutdown this server."))
             
     def UpdateFieldsLOCALSHELL(self, inPane):
-        inPane.AddTitleField(Lang("Start Local Shell"))
+        inPane.AddTitleField(Lang("Local Command Shell"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press enter to enter a local command shell on this server."))
+            "Press enter to start a local command shell on this server."))
     
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
@@ -629,7 +637,7 @@ class QuestionDialogue(Dialogue):
 class InterfaceDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);
-        numNICs = Data.Inst().host.PIFs.Size()
+        numNICs = len(Data.Inst().host.PIFs([]))
         paneHeight = max(numNICs,  5) + 6
         paneHeight = min(paneHeight,  22)
         pane = self.NewPane('interface', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
@@ -642,22 +650,27 @@ class InterfaceDialogue(Dialogue):
         self.nic=0
         currentPIF = None
         choiceArray = []
-        for i in range(len(Data.Inst().host.PIFs())):
-            pif = Data.Inst().host.PIFs()[i]
+        for i in range(len(Data.Inst().host.PIFs([]))):
+            pif = Data.Inst().host.PIFs([])[i]
             if currentPIF is None and pif['management']:
                 self.nic = i # Record this as best guess of current NIC
                 currentPIF = pif
-            choiceName = pif['device']+": "+pif['metrics']['device_name']
+            choiceName = pif['device']+": "+pif['metrics']['device_name']+" "
+            if pif['metrics']['carrier']:
+                choiceName += '('+Lang("connected")+')'
+            else:
+                choiceName += '('+Lang("not connected")+')'
 
-            choiceDefs.append(ChoiceDef(choiceName, "", lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
+            choiceDefs.append(ChoiceDef(choiceName, lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
         
-        choiceDefs.append(ChoiceDef("None",  "", lambda: self.HandleNICChoice(None)))
+        if len(choiceDefs) is 0:
+            choiceDefs.append(ChoiceDef(Lang("None"), lambda: self.HandleNICChoice(None)))
 
         self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
         
-        self.modeMenu = Menu(self, None, "Select IP Address Configuration Mode", [
-            ChoiceDef("DHCP", "", lambda: self.HandleModeChoice('DHCP') ), 
-            ChoiceDef("Static", "", lambda: self.HandleModeChoice('Static') ), 
+        self.modeMenu = Menu(self, None, Lang("Select IP Address Configuration Mode"), [
+            ChoiceDef(Lang("DHCP"), lambda: self.HandleModeChoice('DHCP') ), 
+            ChoiceDef(Lang("Static"), lambda: self.HandleModeChoice('Static') ), 
             ])
         
         self.state = 'INITIAL'
@@ -832,11 +845,11 @@ class TestNetworkDialogue(Dialogue):
         gatewayName = Data.Inst().ManagementGateway()
         if gatewayName is None: gatewayName = 'Unknown'
         
-        self.testMenu = Menu(self, None, "Select Test Type", [
-            ChoiceDef("Ping local address 127.0.0.1", "", lambda: self.HandleTestChoice('local') ), 
-            ChoiceDef("Ping IP gateway address ("+gatewayName+")", "", lambda: self.HandleTestChoice('gateway') ), 
-            ChoiceDef("Ping www.xensource.com", "", lambda: self.HandleTestChoice('xensource') ), 
-            ChoiceDef("Ping custom address", "", lambda: self.HandleTestChoice('custom') ), 
+        self.testMenu = Menu(self, None, Lang("Select Test Type"), [
+            ChoiceDef(Lang("Ping local address 127.0.0.1"), lambda: self.HandleTestChoice('local') ), 
+            ChoiceDef(Lang("Ping IP gateway address")+" ("+gatewayName+")", lambda: self.HandleTestChoice('gateway') ), 
+            ChoiceDef(Lang("Ping www.xensource.com"), lambda: self.HandleTestChoice('xensource') ), 
+            ChoiceDef(Lang("Ping custom address"), lambda: self.HandleTestChoice('custom') ), 
             ])
     
         self.customIP = '0.0.0.0'
