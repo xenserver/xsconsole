@@ -399,7 +399,23 @@ class RootDialogue(Dialogue):
     
         inPane.AddWrappedTextField(Lang(
             "Press enter to start a local command shell on this server."))
+ 
+    def UpdateFieldsDNS(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("DNS Servers"))
     
+        inPane.AddTitleField(Lang("Current Nameservers"))
+        if len(data.dns.nameservers([])) == 0:
+            inPane.AddWrappedTextField(Lang("<No nameservers are configured>"))
+        for dns in data.dns.nameservers([]):
+            inPane.AddWrappedTextField(str(dns))
+        inPane.NewLine()
+        inPane.AddWrappedTextField(Lang("Changes to this configuration may be overwritten if any "
+                                        "interfaces are configured to used DHCP."))
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Reconfigure DNS")
+        })
+
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
@@ -464,6 +480,8 @@ class RootDialogue(Dialogue):
             self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent))
         elif inName is 'DIALOGUE_TESTNETWORK':
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
+        elif inName is 'DIALOGUE_DNS':
+            self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent))
         elif inName is 'DIALOGUE_REBOOT':
             self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x)))
@@ -626,7 +644,7 @@ class QuestionDialogue(Dialogue):
         if inKey is 'y':
             self.layout.PopDialogue()
             self.handler('y')
-        elif inKey is 'n' or inKey is 'KEY_ESC':
+        elif inKey is 'n' or inKey is 'KEY_ESCAPE':
             self.layout.PopDialogue()
             self.handler('n')
         else:
@@ -832,6 +850,127 @@ class InterfaceDialogue(Dialogue):
             data.ReconfigureManagement(pif, self.mode, self.IP,  self.netmask, self.gateway)
             Data.Inst().Update()
             
+class DNSDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
+        paneHeight = 10
+        pane = self.NewPane('dns', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.Win().TitleSet(Lang("DNS Configuration"))
+        pane.AddBox()
+        
+        self.addRemoveMenu = Menu(self, None, Lang("Add or Remove Nameserver Entries"), [
+            ChoiceDef(Lang("Add a nameserver"), lambda: self.HandleAddRemoveChoice('ADD') ), 
+            ChoiceDef(Lang("Remove a single nameserver"), lambda: self.HandleAddRemoveChoice('REMOVE') ), 
+            ChoiceDef(Lang("Remove all nameservers"), lambda: self.HandleAddRemoveChoice('REMOVEALL') )
+            ])
+        
+        choiceDefs = []
+        
+        for server in Data.Inst().dns.nameservers([]):
+            choiceDefs.append(ChoiceDef(server, lambda: self.HandleRemoveChoice(self.removeMenu.ChoiceIndex())))
+        
+        self.removeMenu = Menu(self, None, Lang("Remove Nameserver Entry"), choiceDefs)
+        
+        self.state = 'INITIAL'
+
+        self.UpdateFields()
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('dns')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Add or Remove Nameserver Entries"))
+        pane.AddMenuField(self.addRemoveMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+    
+    def UpdateFieldsADD(self):
+        pane = self.Pane('dns')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please Enter the Nameserver IP Address"))
+        pane.AddInputField(Lang("IP Address", 16),'0.0.0.0', 'address')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") , Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+
+    def UpdateFieldsREMOVE(self):
+        pane = self.Pane('dns')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Select Nameserver Entry To Remove"))
+        pane.AddMenuField(self.removeMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") , Lang("<Esc>") : Lang("Cancel") } )
+        
+    def UpdateFields(self):
+        self.Pane('dns').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+    
+    def HandleKeyINITIAL(self, inKey):
+        return self.addRemoveMenu.HandleKey(inKey)
+     
+    def HandleKeyADD(self, inKey):
+        handled = True
+        pane = self.Pane('dns')
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            inputValues = pane.GetFieldValues()
+            self.layout.PopDialogue()
+            data=Data.Inst()
+            servers = data.dns.nameservers([])
+            servers.append(inputValues['address'])
+            data.NameserversSet(servers)
+            self.Commit(Lang("Nameserver")+" "+inputValues['address']+" "+Lang("added"))
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+
+    def HandleKeyREMOVE(self, inKey):
+        return self.removeMenu.HandleKey(inKey)
+        
+    def HandleKey(self,  inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+            
+    def HandleAddRemoveChoice(self,  inChoice):
+        if inChoice is 'ADD':
+            self.state = 'ADD'
+            self.UpdateFields()
+        elif inChoice is 'REMOVE':
+            self.state = 'REMOVE'
+            self.UpdateFields()
+        elif inChoice is 'REMOVEALL':
+            self.layout.PopDialogue()
+            Data.Inst().NameserversSet([])
+            self.Commit(Lang("All nameserver entries deleted"))
+
+    def HandleRemoveChoice(self,  inChoice):
+        self.layout.PopDialogue()
+        data=Data.Inst()
+        servers = data.dns.nameservers([])
+        thisServer = servers[inChoice]
+        del servers[inChoice]
+        data.NameserversSet(servers)
+        self.Commit(Lang("Nameserver")+" "+thisServer+" "+Lang("deleted"))
+    
+    def Commit(self, inMessage):
+        try:
+            Data.Inst().SaveToResolvConf()
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, inMessage))
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+str(e)))
+
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);

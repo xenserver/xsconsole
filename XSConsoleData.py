@@ -95,9 +95,11 @@ class Data:
             convertPBD = lambda pbd: self.session.xenapi.PBD.get_record(pbd)
             self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
 
+        self.UpdateFromResolveConf()
+
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
-            (status, output) = commands.getstatusoutput("cat ./dmidecode.txt")
+            (status, output) = commands.getstatusoutput("/bin/cat ./dmidecode.txt")
         
         if status == 0:
             self.ScanDmiDecode(output.split("\n"))
@@ -118,7 +120,7 @@ class Data:
             }
         })
         
-        # Gather up the CPU model names info a more convinient form
+        # Gather up the CPU model names into a more convenient form
 
         if 'host_CPUs' in self.data['host']:
             hostCPUs = self.data['host']['host_CPUs']
@@ -142,6 +144,26 @@ class Data:
     def Dump(self):
         pprint(self.data)
 
+    def NameserversSet(self, inServers):
+        self.data['dns']['nameservers'] = inServers
+
+    def UpdateFromResolveConf(self):
+        (status, output) = commands.getstatusoutput("/bin/cat /etc/resolv.conf")
+        if status == 0:
+            self.ScanResolvConf(output.split("\n"))
+    
+    def SaveToResolvConf(self):
+        file = None
+        try:
+            file = open("/etc/resolv.conf", "w")
+            for other in self.dns.othercontents([]):
+                file.write(other+"\n")
+            for server in self.dns.nameservers([]):
+                file.write("nameserver "+server+"\n")
+        finally:
+            if file is not None: file.close()
+            self.UpdateFromResolveConf()
+    
     def ScanDmiDecode(self, inLines):
         STATE_NEXT_ELEMENT = 2
         state = 0
@@ -238,6 +260,18 @@ class Data:
             if match:
                 self.data['lspci']['storage_controllers'].append(match.group(1))
             
+    def ScanResolvConf(self, inLines):
+        self.data['dns'] = {
+            'nameservers' : [], 
+            'othercontents' : []
+        }
+        for line in inLines:
+            match = re.match(r'nameserver\s+(\S+)',  line)
+            if match:
+                self.data['dns']['nameservers'].append(match.group(1))
+            else:
+                self.data['dns']['othercontents'].append(line)
+                
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
         try:
             self.RequireSession()
@@ -260,7 +294,7 @@ class Data:
     def ManagementGateway(self):
         retVal = None
         
-        # FIXME: Address should come from API, but not available at present.  This is just a guess at the gateway address
+        # FIXME: Address should come from API, but not available at present.  For DHCP this is just a guess at the gateway address
         if self.derived.managementpifs.Size() == 0:
             # No management i/f configured
             pass

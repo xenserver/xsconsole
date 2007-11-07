@@ -110,6 +110,8 @@ class RootMenu:
                 ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
                 ChoiceDef(Lang("Select Management NIC"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
+                ChoiceDef(Lang("Add/Remove DNS Servers"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_DNS'), lambda : inDialogue.ChangeStatus('DNS')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK')),
             ])
