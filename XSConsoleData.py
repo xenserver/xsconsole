@@ -92,6 +92,7 @@ class Data:
 
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
+            # Use test dmidecode file if there's no real output
             (status, output) = commands.getstatusoutput("/bin/cat ./dmidecode.txt")
         
         if status == 0:
@@ -145,6 +146,10 @@ class Data:
             self.ScanResolvConf(output.split("\n"))
     
     def SaveToResolvConf(self):
+        # Double-check authentication
+        if not Auth.Inst().IsAuthenticated():
+            raise Exception("Failed to save resolv.conf - not authenticated")
+        
         file = None
         try:
             file = open("/etc/resolv.conf", "w")
@@ -245,12 +250,17 @@ class Data:
         self.data['lspci'] = {
             'storage_controllers' : []
         }
-        # Spot storage controllers by looking for keywords in the lspci output
+        # Spot storage controllers by looking for keywords or the phrase 'storage controller' in the lspci output
         keywords = "IDE|PATA|SATA|SCSI|SAS|RAID|Fiber Channel"
         for line in inLines:
-            match = re.match(r'[0-9a-f:.]+\s+(('+keywords+').*)',  line)
-            if match:
-                self.data['lspci']['storage_controllers'].append(match.group(1))
+            if not re.search(r'[Uu]nknown [Dd]evice',  line): # Skip unknown devices
+                match = re.match(r'[0-9a-f:.]+\s+(.*)',  line)
+                name = match.group(1)
+                match1 = re.match(r'('+keywords+')',  name)
+                match2 = re.search(r'[Ss]torage [Cc]ontroller',  name)
+                
+                if match1 or match2:
+                    self.data['lspci']['storage_controllers'].append(name)
             
     def ScanResolvConf(self, inLines):
         self.data['dns'] = {
@@ -265,11 +275,13 @@ class Data:
                 self.data['dns']['othercontents'].append(line)
                 
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
+        # Double-check authentication
+        if not Auth.Inst().IsAuthenticated():
+            raise Exception("Failed to reconfigure management - not authenticated")
         try:
             self.RequireSession()
             self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)
-            # Need to wait for DHCP?
-            self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'],  '') # TODO: Value for second parameter 'interface'
+            self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'])
         finally:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.Inst().CloseSession(self.session)

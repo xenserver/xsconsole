@@ -46,6 +46,9 @@ class App:
                         print(line)
                     sys.stdout.flush()
                 commandList = self.layout.ExitCommand().split()
+                # Double-check authentication
+                if not Auth.Inst().IsAuthenticated():
+                    raise Exception("Failed to execute command - not authenticated")
                 os.execv(commandList[0],  commandList)
                 # Does not return
                 
