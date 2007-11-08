@@ -212,15 +212,15 @@ class RootDialogue(Dialogue):
 
         inPane.AddTitleField(Lang("Authentication"))
     
-        if Auth.IsLoggedIn():
-            username = Auth.LoggedInUsername()
+        if Auth.Inst().IsAuthenticated():
+            username = Auth.Inst().LoggedInUsername()
         else:
             username = "<none>"
 
         inPane.AddStatusField(Lang("User", 14), username)
         inPane.NewLine()
         
-        if Auth.IsLoggedIn():
+        if Auth.Inst().IsAuthenticated():
             inPane.AddWrappedTextField(Lang("You are logged in.  Press Enter to log out."))
         else:
             inPane.AddWrappedTextField(Lang(
@@ -466,32 +466,43 @@ class RootDialogue(Dialogue):
     def ChangeMenu(self, inName):
         self.menu.ChangeMenu(inName)
         self.menu.CurrentMenu().HandleEnter()
-            
+    
+    def AuthenticatedOnly(self, inFunc):
+        if not Auth.Inst().IsAuthenticated():
+            self.layout.PushDialogue(LoginDialogue(self.layout, self.parent,
+                                                   Lang('Please log in to perform this function'), inFunc))
+        else:
+            inFunc()
+        
     def ActivateDialogue(self, inName):
         if inName is 'DIALOGUE_AUTH':
-            if (Auth.IsLoggedIn()):
-                name = Auth.LoggedInUsername()
-                Auth.LogOut()
+            if (Auth.Inst().IsAuthenticated()):
+                name = Auth.Inst().LoggedInUsername()
+                Auth.Inst().LogOut()
                 Data.Inst().Update()
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
             else:
                 self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
         elif inName is 'DIALOGUE_INTERFACE':
-            self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent))
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent)))
         elif inName is 'DIALOGUE_TESTNETWORK':
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
         elif inName is 'DIALOGUE_DNS':
-            self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent))
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent)))
         elif inName is 'DIALOGUE_REBOOT':
-            self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
-                Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x)))
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
         elif inName is 'DIALOGUE_SHUTDOWN':
-            self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
-                Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x)))
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
         elif inName is 'DIALOGUE_LOCALSHELL':
-            self.layout.ExitBannerSet(Lang("\rPlease login with your user credentials.\r\r"
-                "After login, type 'exit' to return to the management console.\r"))
-            self.layout.ExitCommandSet("/bin/login")
+            self.AuthenticatedOnly(lambda: self.StartLocalShell())
+            
+    def StartLocalShell(self):
+        user = os.environ.get('USER', 'root')
+        self.layout.ExitBannerSet(Lang("\rShell for local user '")+user+"'.\r\r"+
+                Lang("Type 'exit' to return to the management console.\r"))
+        self.layout.ExitCommandSet("/bin/bash")
             
     def RebootDialogueHandler(self,  inYesNo):
         if inYesNo is 'y':
@@ -504,9 +515,15 @@ class RootDialogue(Dialogue):
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
 
 class LoginDialogue(Dialogue):
-    def __init__(self, inLayout, inParent):
+    def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
         Dialogue.__init__(self, inLayout, inParent);
-        pane = self.NewPane('login', DialoguePane(3, 8, 74, 7, self.parent))
+        self.text = inText
+        self.successFunc = inSuccessFunc
+        if self.text is None:
+            paneHeight = 7
+        else:
+            paneHeight = 9
+        pane = self.NewPane('login', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.Win().TitleSet("Login")
         pane.AddBox()
@@ -516,8 +533,10 @@ class LoginDialogue(Dialogue):
     def UpdateFields(self):
         pane = self.Pane('login')
         pane.ResetFields()
+        if self.text is not None:
+            pane.AddTitleField(self.text)
         pane.AddInputField(Lang("Username:", 14), "root", 'username')
-        pane.AddPasswordField(Lang("Password:", 14), "", 'password')
+        pane.AddPasswordField(Lang("Password:", 14), Auth.Inst().DefaultPassword(), 'password')
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Next/OK"),
             Lang("<Tab>") : Lang("Next"),
@@ -534,13 +553,16 @@ class LoginDialogue(Dialogue):
                 inputValues = pane.GetFieldValues()
                 self.layout.PopDialogue()
                 self.layout.DoUpdate()
-                success = Auth.ProcessLogin(inputValues['username'], inputValues['password'])
+                success = Auth.Inst().ProcessLogin(inputValues['username'], inputValues['password'])
                 Data.Inst().Update()
 
                 if success:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login successful')))
+                    if self.successFunc is not None:
+                        self.successFunc()
+                    else:
+                        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login successful')))
                 else:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login failed: ')+Auth.ErrorMessage()))
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login failed: ')+Auth.Inst().ErrorMessage()))
                         
             else:
                 pane.ActivateNextInput()

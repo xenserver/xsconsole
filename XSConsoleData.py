@@ -36,7 +36,7 @@ class Data:
         for name in inNames:
             if name is '__repr__':
                 # Error - missing ()
-                raise 'Data call Data.'+'.'.join(inNames[:-1])+' must end with ()'
+                raise Exception('Data call Data.' + '.'.join(inNames[:-1]) + ' must end with ()')
             elif name in data:
                 data = data[name]
             else:
@@ -51,16 +51,9 @@ class Data:
     # is similar but returns the parameter ('Default' in this case) if the element doesn't exist
     def __getattr__(self, inName):
         return DataMethod(self.GetData, [inName])
-
-    def GetInfo(self, inKey):
-        if inKey in self.data['dmi']:
-            retVal = self.data['dmi'][inKey]
-        else:
-            retVal = 'Unknown'
-        return retVal
     
     def RequireSession(self):
-        if self.session is None: self.session = Auth.OpenSession()
+        if self.session is None: self.session = Auth.Inst().OpenSession()
     
     def Update(self):
         self.data = {
@@ -121,7 +114,6 @@ class Data:
         })
         
         # Gather up the CPU model names into a more convenient form
-
         if 'host_CPUs' in self.data['host']:
             hostCPUs = self.data['host']['host_CPUs']
     
@@ -280,7 +272,7 @@ class Data:
             self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'],  '') # TODO: Value for second parameter 'interface'
         finally:
             # Network reconfigured so this link is potentially no longer valid
-            self.session = Auth.CloseSession(self.session)
+            self.session = Auth.Inst().CloseSession(self.session)
         
     def Ping(self,  inDest):
         # Must be careful that no unsanitised data is passed to the shell

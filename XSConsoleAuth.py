@@ -1,89 +1,102 @@
 
-import os
+import os, re
 
 from XSConsoleBases import *
 import XenAPI
 
 class Auth:
-    loggedInName = 'root'
-    loggedInPassword = ''
+    instance = None
     
-    if os.path.isfile("password.txt"):
-        passwordFile = open("password.txt")
-        try:
-            loggedInPassword = passwordFile.readline()
-        finally:
-            passwordFile.close()
-    error = ""
-    
-    @classmethod
-    def LoggedInUsername(cls):
-        return cls.loggedInName
+    def __init__(self):
+        self.isAuthenticated = False
+        self.loggedInUsername = ''
+        self.loggedInPassword = '' # Testing only
+        self.defaultPassword = ''
+        self.testingHost = None
+        # The testing.txt file is used for testing only
+        if os.path.isfile("testing.txt"):
+            testingFile = open("testing.txt")
+            for line in testingFile:
+                match = re.match(r'host=(\w+)', line)
+                if match: self.testingHost = match.group(1)
+                match = re.match(r'password=(\w+)', line)
+                if match: self.defaultPassword = match.group(1)
+
+            testingFile.close()
 
     @classmethod
-    def LoggedInPassword(cls):
-        return cls.loggedInPassword
- 
-    @classmethod
-    def ErrorMessage(cls):
-        return cls.error
+    def Inst(cls):
+        if cls.instance is None:
+            cls.instance = Auth()
+        return cls.instance
     
-    @classmethod
-    def ProcessLogin(cls, inUsername, inPassword):
-        # Just accept anything
-        cls.loggedInName = inUsername
-        cls.loggedInPassword = inPassword
-        
-        session = cls.OpenSession()
+    def LoggedInUsername(self):
+        if (self.isAuthenticated):
+            retVal = self.loggedInUsername
+        else:
+            retVal = None
+        return retVal
+    
+    def DefaultPassword(self):
+        return self.defaultPassword
+    
+    def ErrorMessage(self):
+        return self.error
+    
+    def ProcessLogin(self, inUsername, inPassword):
+        self.isAuthenticated = False
+    
+        # Create a local login if we can
+        session = XenAPI.Session("http://"+FirstValue(self.testingHost, "127.0.0.1"))
+        try:
+            session.login_with_password(inUsername, inPassword)
+
+        except Exception, e:
+            # Should check for slave response here
+            session = None
+            self.error = str(e)
+
         if session is None:
-            cls.loggedInName = None
-            cls.loggedInPassword = None
             retVal = False
         else:
-            cls.CloseSession(session)
+            # Successful login
+            self.CloseSession(session)
+            self.loggedInUsername = inUsername
+            if self.testingHost is not None:
+                # Store password when testing only
+                self.loggedInPassword = inPassword
+            self.isAuthenticated = True
             retVal = True
         return retVal
         
-    @classmethod
-    def IsLoggedIn(cls):
-        return cls.loggedInName != None
+    def IsAuthenticated(self):
+        return self.isAuthenticated
         
-    @classmethod
-    def LogOut(cls):
-        cls.loggedInName = None
-        cls.loggedInPassword = None
+    def LogOut(self):
+        self.isAuthenticated = False
+        self.loggedInUsername = None
 
-    @classmethod
-    def OpenSession(cls):
+    def OpenSession(self):
         session = None
         
         try:
-            # Try the local session first
+            # Try the local Unix domain socket first
             session = XenAPI.xapi_local()
             session.login_with_password('root','')
         except Exception,  e:
             session = None
-            cls.error = str(e)
+            self.error = str(e)
             
-        if (session is None and Auth.LoggedInUsername() != None and Auth.LoggedInPassword() != None):
+        if session is None and self.testingHost is not None:
             # Local session couldn't connect, so try remote.
-            session = XenAPI.Session("http://127.0.0.1")
+            session = XenAPI.Session("http://"+self.testingHost)
             try:
-                session.login_with_password(cls.LoggedInUsername(), cls.LoggedInPassword())
+                session.login_with_password(self.loggedInUsername, self.loggedInPassword)
             except Exception, e:
                 session = None
-                cls.error = str(e)
-
-                # Test code
-                session = XenAPI.Session("http://hypori")
-                try:
-                    session.login_with_password(cls.LoggedInUsername(), cls.LoggedInPassword())
-                except Exception, e:
-                    session = None
-                    cls.error = str(e)
+                self.error = str(e)
         return session
         
-    @classmethod
-    def CloseSession(cls, inSession):
+    def CloseSession(self, inSession):
         # inSession.logout()
         return None

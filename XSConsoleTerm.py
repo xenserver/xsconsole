@@ -43,7 +43,8 @@ class App:
                     # print no longer works here
                     reflowed = Language.ReflowText(self.layout.ExitBanner(),  80)
                     for line in reflowed:
-                        os.system("echo "+line)
+                        print(line)
+                    sys.stdout.flush()
                 commandList = self.layout.ExitCommand().split()
                 os.execv(commandList[0],  commandList)
                 # Does not return
