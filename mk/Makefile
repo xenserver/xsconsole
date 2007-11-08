@@ -6,8 +6,6 @@ include $(B_BASE)/rpmbuild.mk
 REPO_NAME= xsconsole
 RPM_BUILD_COOKIE= $(MY_OBJ_DIR)/.rpm_build_cookie
 
-XSCONSOLE_VERSION := 0.1
-
 -include $(MY_OBJ_DIR)/version.inc
 $(MY_OBJ_DIR)/version.inc:
 	rm -f $(MY_OBJ_DIR)/version.inc
@@ -16,13 +14,13 @@ $(MY_OBJ_DIR)/version.inc:
 		< $(call hg_req,xsconsole) >> $@
 	$(call hg_cset_number,xsconsole) >> $@
 
-XS_VERSION := $(XSCONSOLE_VERSION)
+XS_VERSION := $(PRODUCT_VERSION)
 XS_RELEASE := $(CSET_NUMBER)
 
 CHANGELOG_DATE    := $(shell LANG=C date +"%a %b %d %Y")
-CHANGELOG_USER    := Citrix Inc. <citrix.com>
+CHANGELOG_USER    := @COMPANY_NAME_LEGAL@ <citrix.com>
 CHANGELOG_HEADER  := * $(CHANGELOG_DATE) $(CHANGELOG_USER) [$(XS_VERSION)-$(XS_RELEASE)]
-CHANGELOG_MESSAGE := - Build XenServer Host Configuration Console.
+CHANGELOG_MESSAGE := - Build @BRAND_SERVER@ Configuration Console.
 
 .PHONY: build
 build: $(RPM_BUILD_COOKIE) $(MY_SOURCES)/MANIFEST
