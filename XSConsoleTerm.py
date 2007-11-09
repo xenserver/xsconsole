@@ -109,9 +109,12 @@ class App:
 
 class Renderer:        
     def RenderStatus(self, inWindow, inText):
+        (cursY, cursX) = curses.getsyx() # Store cursor position
         inWindow.Win().erase()
         inWindow.AddText(inText, 0, 0)
         inWindow.Refresh()
+        if cursX is not -1 and cursY is not -1:
+            curses.setsyx(cursY, cursX) # Restore cursor position
         
 class Layout:
     WIN_MAIN = 0
@@ -164,14 +167,14 @@ class Layout:
             
         self.Window(self.WIN_MAIN).AddBox()
         self.Window(self.WIN_MAIN).TitleSet("Configuration")
-
+        
         self.dialogues = [ RootDialogue(self, self.Window(self.WIN_MAIN)) ]
         
     def Refresh(self):
         self.Window(self.WIN_MAIN).Erase() # Unknown why main won't redraw without this
         for window in self.windows:
             window.Refresh()
-    
+
         for dialogue in self.dialogues:
             dialogue.Render()
 
