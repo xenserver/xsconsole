@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2007-10-31, 10:06:05 -->
+<!-- Saved: 2007-11-09, 18:07:20 -->
 <!-- Copyright (C) 2007 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -13,9 +13,6 @@
   <Sources>
     <Source>
       <Name>XSConsole.py</Name>
-    </Source>
-    <Source>
-      <Name>XSConsoleStructure.py</Name>
     </Source>
     <Source>
       <Name>XSConsoleFields.py</Name>

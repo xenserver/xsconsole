@@ -60,6 +60,7 @@ class App:
         
         doQuit= False
         startSeconds = time.time()
+        lastDataUpdateSeconds = startSeconds
         
         self.layout.DoUpdate()
         while not doQuit:
@@ -78,13 +79,14 @@ class App:
             secondsNow = time.time()
             secondsRunning = secondsNow - startSeconds
 
-            # Initially refresh every second whilst we have no address, 
-            # so that the effect of DHCP completion is reflected on the status display
-            if secondsRunning < 30 and Data.Inst().host.address('') is '':
-                Data.Inst().Update()
-                self.layout.UpdateRootFields()
-                needsRefresh = True
-                
+            if Data.Inst().host.address('') is '':
+                # If the host doesn't yet have an IP, reload data occasionally to pick up DHCP updates
+                if secondsNow - lastDataUpdateSeconds >= 4:
+                    lastDataUpdateSeconds = secondsNow
+                    Data.Inst().Update()
+                    self.layout.UpdateRootFields()
+                    needsRefresh = True
+    
             if gotKey is not None and self.layout.TopDialogue().HandleKey(gotKey):
                 needsRefresh = True
                 
