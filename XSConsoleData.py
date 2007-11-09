@@ -133,6 +133,7 @@ class Data:
             for pif in self.data['host']['PIFs']:
                 if pif['management']:
                     self.data['derived']['managementpifs'].append(pif)
+                    
      
     def Dump(self):
         pprint(self.data)

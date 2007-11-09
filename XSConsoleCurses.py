@@ -20,23 +20,24 @@ class CursesPalette:
     
     @classmethod
     def DefineColours(cls):
-        # Set sensible defaults for non-colour terminals
+        # Set sensible defaults for non-colour-changing terminals
         white = curses.COLOR_WHITE
         black = curses.COLOR_BLACK
-        red = curses.COLOR_MAGENTA
-        darkred = curses.COLOR_MAGENTA
+        red = curses.COLOR_RED
+        darkred = curses.COLOR_RED
         lightgrey = curses.COLOR_WHITE
         darkgrey = curses.COLOR_BLACK
-        
+
         if curses.can_change_color():
-            curses.init_color(curses.COLOR_BLUE, 666, 666, 500) # Redefine COLOR_BLUE to use as light grey
+            curses.init_color(curses.COLOR_BLUE, 666, 666, 500)
             lightgrey = curses.COLOR_BLUE
-            curses.init_color(curses.COLOR_GREEN, 333, 333, 222) # Redefine COLOR_GREEN to use as dark grey
+            curses.init_color(curses.COLOR_GREEN, 444, 444, 333)
             darkgrey = curses.COLOR_GREEN
-            curses.init_color(curses.COLOR_RED, 333, 0, 0) # Redefine COLOR_RED to use as dark red
+            curses.init_color(curses.COLOR_RED, 333, 0, 0)
             darkred = curses.COLOR_RED
-            curses.init_color(curses.COLOR_MAGENTA, 500, 0, 0) # Tweak the colour of red
-            curses.init_color(curses.COLOR_WHITE, 999, 999, 750) # Tweak the colour of white
+            curses.init_color(curses.COLOR_MAGENTA, 500, 0, 0)
+            red = curses.COLOR_MAGENTA
+            curses.init_color(curses.COLOR_WHITE, 999, 999, 750)
             
         cls.colours['MAIN_BASE'] = cls.ColourCreate(lightgrey, darkred)
         cls.colours['MENU_BASE'] = cls.ColourCreate(lightgrey, darkred)
@@ -48,7 +49,7 @@ class CursesPalette:
         cls.colours['MODAL_MENU_HIGHLIGHT'] = cls.ColourCreate(black, white)
         cls.colours['HELP_BASE'] = cls.ColourCreate(lightgrey, black)
         cls.colours['HELP_BRIGHT'] = cls.ColourCreate(white, black)
-        cls.colours['STATUS_BASE'] = cls.ColourCreate(lightgrey, black)
+        cls.colours['TOPLINE_BASE'] = cls.ColourCreate(darkgrey, black)
         cls.colours['TEST'] = cls.ColourCreate(curses.COLOR_RED, white)
         
 class CursesPane:
@@ -85,7 +86,15 @@ class CursesPane:
             clippedStr = clippedStr[:self.xSize - xPos]
             
             if len(clippedStr) > 0:
-                self.win.addstr(inY, xPos, inString, CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
+                try:
+                    self.win.addstr(inY, xPos, inString, CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
+                except Exception,  e:
+                    if xPos + len(inString) == self.xSize and inY + 1 == self.ySize:
+                        # Curses incorrectely raises an exception when writing the bottom right
+                        # character in a window, but still completes the write, so ignore it
+                        pass
+                    else:
+                        raise Exception("addstr failed with "+str(e)+" for '"+inString+"' at "+str(xPos)+', '+str(inY))
         
     def AddBox(self):
         self.hasBox = True
@@ -173,7 +182,8 @@ class CursesWindow(CursesPane):
         self.win.keypad(1)
         self.title = ""
         self.hasBox = False
-    
+        self.win.timeout(1000) # Return from getkey after x milliseconds if no key pressed
+        
     def Delete(self):
         # We rely on the garbage collector to call delwin(self.win), in the binding for PyCursesWindow_Dealloc
         del self.win
@@ -192,7 +202,8 @@ class CursesScreen(CursesPane):
             CursesPalette.DefineColours()
         curses.curs_set(0) # Make cursor invisible
         self.win.keypad(1)
-        
+        self.win.timeout(1000) # Return from getkey after x milliseconds if no key pressed
+                
     def Exit(self):
         curses.nocbreak()
         self.win.keypad(0)

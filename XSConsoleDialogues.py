@@ -172,9 +172,9 @@ class RootDialogue(Dialogue):
     
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);
-        menuPane = self.NewPane('menu', DialoguePane(1, 2, 38, 20, self.parent))
+        menuPane = self.NewPane('menu', DialoguePane(1, 2, 38, 21, self.parent))
         menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT')
-        statusPane = self.NewPane('status', DialoguePane(41, 2, 38, 20, self.parent))
+        statusPane = self.NewPane('status', DialoguePane(41, 2, 38, 21, self.parent))
         statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
         self.menu = RootMenu(self)
         self.currentStatus = 'STATUS'
@@ -875,17 +875,21 @@ class InterfaceDialogue(Dialogue):
 class DNSDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);
+        data=Data.Inst()
         paneHeight = 10
         pane = self.NewPane('dns', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.Win().TitleSet(Lang("DNS Configuration"))
         pane.AddBox()
         
-        self.addRemoveMenu = Menu(self, None, Lang("Add or Remove Nameserver Entries"), [
-            ChoiceDef(Lang("Add a nameserver"), lambda: self.HandleAddRemoveChoice('ADD') ), 
-            ChoiceDef(Lang("Remove a single nameserver"), lambda: self.HandleAddRemoveChoice('REMOVE') ), 
-            ChoiceDef(Lang("Remove all nameservers"), lambda: self.HandleAddRemoveChoice('REMOVEALL') )
-            ])
+        choiceDefs = [
+            ChoiceDef(Lang("Add a nameserver"), lambda: self.HandleAddRemoveChoice('ADD') ) ]
+        
+        if len(data.dns.nameservers([])) > 0:
+            choiceDefs.append(ChoiceDef(Lang("Remove a single nameserver"), lambda: self.HandleAddRemoveChoice('REMOVE') ))
+            choiceDefs.append(ChoiceDef(Lang("Remove all nameservers"), lambda: self.HandleAddRemoveChoice('REMOVEALL') ))
+        
+        self.addRemoveMenu = Menu(self, None, Lang("Add or Remove Nameserver Entries"), choiceDefs)
         
         choiceDefs = []
         

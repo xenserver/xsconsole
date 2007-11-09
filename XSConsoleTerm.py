@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sys, os
+import sys, os, time, string
 import curses
 
 from XSConsoleBases import *
@@ -59,28 +59,51 @@ class App:
     def MainLoop(self):
         
         doQuit= False
-                
+        startSeconds = time.time()
+        
+        self.layout.DoUpdate()
         while not doQuit:
-            self.layout.DoUpdate()
             
-            gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
+            try:
+                gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
+            except Exception, e:
+                gotKey = None
 
             if gotKey == "\011": gotKey = "KEY_TAB"
             if gotKey == "\012": gotKey = "KEY_ENTER"
             if gotKey == "\033": gotKey = "KEY_ESCAPE"
             if gotKey == "\177": gotKey = "KEY_BACKSPACE"
             
-            # self.renderer.RenderStatus(self.layout.Window(Layout.WIN_STATUS), "Status: Got "+gotKey)
+            needsRefresh = False
+            secondsNow = time.time()
+            secondsRunning = secondsNow - startSeconds
 
-            if self.layout.TopDialogue().HandleKey(gotKey):
-                self.layout.Refresh()
-            else:
-                # Key not handled by dialogue, so handle the exit case
-                if gotKey == "KEY_ESCAPE": doQuit = True # Escape
+            # Initially refresh every second whilst we have no address, 
+            # so that the effect of DHCP completion is reflected on the status display
+            if secondsRunning < 30 and Data.Inst().host.address('') is '':
+                Data.Inst().Update()
+                self.layout.UpdateRootFields()
+                needsRefresh = True
+                
+            if gotKey is not None and self.layout.TopDialogue().HandleKey(gotKey):
+                needsRefresh = True
                 
             if self.layout.ExitCommand() is not None:
-                self.layout.DoUpdate()
                 doQuit = True
+            
+            if Auth.Inst().IsAuthenticated():
+                bannerStr = Lang('User')+': '+Auth.Inst().LoggedInUsername()
+            else:
+                data = Data.Inst()
+                bannerStr = data.host.software_version.product_brand('') + ' ' + data.host.software_version.product_version('')
+            timeStr = time.strftime("%H:%M:%S", time.localtime())
+            statusLine = "%-70s%10.10s" % (bannerStr ,timeStr)
+            self.renderer.RenderStatus(self.layout.Window(Layout.WIN_TOPLINE), statusLine)
+
+            if needsRefresh:
+                self.layout.Refresh()
+            
+            self.layout.DoUpdate()
 
 class Renderer:        
     def RenderStatus(self, inWindow, inText):
@@ -90,7 +113,7 @@ class Renderer:
         
 class Layout:
     WIN_MAIN = 0
-    WIN_STATUS = 1
+    WIN_TOPLINE = 1
     
     def __init__(self, inParent = None):
         self.parent = inParent
@@ -125,11 +148,17 @@ class Layout:
         self.TopDialogue().UpdateFields()
         self.Refresh()
     
+    def UpdateRootFields(self):
+        if len(self.dialogues) > 0:
+            self.dialogues[0].UpdateFields()
+    
     def Create(self):
-        self.windows.append(CursesWindow(0,1,80,22, self.parent)) # MainWindow
+        self.windows.append(CursesWindow(0,1,80,23, self.parent)) # MainWindow
+        self.windows.append(CursesWindow(0,0,80,1, self.parent)) # Top line window
         self.windows.append(CursesWindow(0,23,80,1, self.parent)) # Status window
         self.windows[self.WIN_MAIN].DefaultColourSet('MAIN_BASE')
-        self.windows[self.WIN_STATUS].DefaultColourSet('STATUS_BASE')
+        self.windows[self.WIN_TOPLINE].DefaultColourSet('TOPLINE_BASE')
+        # self.windows[self.WIN_STATUS].DefaultColourSet('STATUS_BASE')
             
         self.Window(self.WIN_MAIN).AddBox()
         self.Window(self.WIN_MAIN).TitleSet("Configuration")
