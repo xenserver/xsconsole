@@ -112,6 +112,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
                 ChoiceDef(Lang("Add/Remove DNS Servers"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_DNS'), lambda : inDialogue.ChangeStatus('DNS')),
+                ChoiceDef(Lang("Set Hostname"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_HOSTNAME'), lambda : inDialogue.ChangeStatus('HOSTNAME')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK')),
             ])

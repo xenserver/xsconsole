@@ -160,10 +160,8 @@ class Layout:
     def Create(self):
         self.windows.append(CursesWindow(0,1,80,23, self.parent)) # MainWindow
         self.windows.append(CursesWindow(0,0,80,1, self.parent)) # Top line window
-        self.windows.append(CursesWindow(0,23,80,1, self.parent)) # Status window
         self.windows[self.WIN_MAIN].DefaultColourSet('MAIN_BASE')
         self.windows[self.WIN_TOPLINE].DefaultColourSet('TOPLINE_BASE')
-        # self.windows[self.WIN_STATUS].DefaultColourSet('STATUS_BASE')
             
         self.Window(self.WIN_MAIN).AddBox()
         self.Window(self.WIN_MAIN).TitleSet("Configuration")
@@ -177,6 +175,9 @@ class Layout:
 
         for dialogue in self.dialogues:
             dialogue.Render()
+            
+        if not self.TopDialogue().NeedsCursor():
+            self.TopDialogue().CursorOff()
 
     def Redraw(self):
         for window in self.windows:

@@ -44,3 +44,14 @@ class Dialogue:
     def UpdateFields(self):
         pass        
             
+    def NeedsCursor(self):
+        retVal = False
+        for pane in self.panes.values():
+            if pane.NeedsCursor():
+                retVal = True
+        return retVal
+        
+    def CursorOff(self):
+        for pane in self.panes.values():
+            pane.CursorOff()
+        

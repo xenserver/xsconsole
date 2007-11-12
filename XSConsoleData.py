@@ -66,7 +66,8 @@ class Data:
             
             hostRecord = self.session.xenapi.host.get_record(thisHost)
             self.data['host'] = hostRecord
-
+            self.data['host']['opaqueref'] = thisHost
+            
             # Expand the items we need in the host record
             self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
             
@@ -137,6 +138,16 @@ class Data:
      
     def Dump(self):
         pprint(self.data)
+
+    def HostnameSet(self, inHostname):
+        if not Auth.Inst().IsAuthenticated():
+            raise Exception("Failed to set hostname - not authenticated")
+        if not re.match(r'[A-Za-z0-9.-]+$', inHostname):
+            raise Exception("Invalid hostname '"+inHostname+"'")
+        
+        self.RequireSession()
+        
+        self.session.xenapi.host.set_hostname(self.host.opaqueref(), inHostname)
 
     def NameserversSet(self, inServers):
         self.data['dns']['nameservers'] = inServers

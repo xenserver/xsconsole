@@ -66,6 +66,16 @@ class DialoguePane:
         if self.inputIndex is not None:
             self.CurrentInput().Activate()
 
+    def NeedsCursor(self):
+        if self.inputIndex is not None:
+            retVal = True
+        else:
+            retVal = False
+        return retVal
+
+    def CursorOff(self):
+        self.window.CursorOff()
+        
     def GetFieldValues(self):
         retVal = {}
         for fieldName in self.inputFields:
@@ -206,7 +216,7 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("System Properties"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press enter to view the properties of this system."))
+            "Press <Enter> to view the properties of this system."))
     
     def UpdateFieldsAUTH(self, inPane):
 
@@ -221,10 +231,10 @@ class RootDialogue(Dialogue):
         inPane.NewLine()
         
         if Auth.Inst().IsAuthenticated():
-            inPane.AddWrappedTextField(Lang("You are logged in.  Press Enter to log out."))
+            inPane.AddWrappedTextField(Lang("You are logged in.  Press <Enter> to log out."))
         else:
             inPane.AddWrappedTextField(Lang(
-                "You are currently not logged in. Press Enter to log in with your username and password to access privileged operations."))
+                "You are currently not logged in. Press <Enter> to log in with your username and password to access privileged operations."))
     
 
     def UpdateFieldsINTERFACE(self, inPane):
@@ -232,7 +242,7 @@ class RootDialogue(Dialogue):
     
         inPane.AddWrappedTextField(Lang(
             "The management interface is a network interface used to control this host remotely.  "
-            "Press enter to configure."))
+            "Press <Enter> to configure."))
         
     def UpdateFieldsXENSOURCE(self, inPane):
         data = Data.Inst()
@@ -380,25 +390,25 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Test Network"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press enter to test the configured network interface."))
+            "Press <Enter> to test the configured network interface."))
     
     def UpdateFieldsREBOOT(self, inPane):
         inPane.AddTitleField(Lang("Server Reboot"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press enter to reboot this server."))
+            "Press <Enter> to reboot this server."))
     
     def UpdateFieldsSHUTDOWN(self, inPane):
         inPane.AddTitleField(Lang("Server Shutdown"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press enter to shutdown this server."))
+            "Press <Enter> to shutdown this server."))
             
     def UpdateFieldsLOCALSHELL(self, inPane):
         inPane.AddTitleField(Lang("Local Command Shell"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press enter to start a local command shell on this server."))
+            "Press <Enter> to start a local command shell on this server."))
  
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
@@ -414,6 +424,19 @@ class RootDialogue(Dialogue):
                                         "interfaces are configured to used DHCP."))
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Reconfigure DNS")
+        })
+
+    def UpdateFieldsHOSTNAME(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Set Hostname"))
+    
+        inPane.AddWrappedTextField(Lang("The name of this host is"))
+        inPane.NewLine()
+        inPane.AddWrappedTextField(data.host.hostname())
+        inPane.NewLine()
+        inPane.AddWrappedTextField(Lang("Press <Enter> to change the name of this host."))
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Configure hostname")
         })
 
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
@@ -489,6 +512,8 @@ class RootDialogue(Dialogue):
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
         elif inName is 'DIALOGUE_DNS':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent)))
+        elif inName is 'DIALOGUE_HOSTNAME':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
         elif inName is 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
@@ -560,9 +585,9 @@ class LoginDialogue(Dialogue):
                     if self.successFunc is not None:
                         self.successFunc()
                     else:
-                        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login successful')))
+                        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Successful')))
                 else:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login failed: ')+Auth.Inst().ErrorMessage()))
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Failed: ')+Auth.Inst().ErrorMessage()))
                         
             else:
                 pane.ActivateNextInput()
@@ -996,6 +1021,48 @@ class DNSDialogue(Dialogue):
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, inMessage))
         except Exception, e:
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+str(e)))
+
+class HostnameDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
+        paneHeight = 6
+        pane = self.NewPane('hostname', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.Win().TitleSet("Set Hostname")
+        pane.AddBox()
+        self.UpdateFields()
+        pane.InputIndexSet(0)
+        
+    def UpdateFields(self):
+        pane = self.Pane('hostname')
+        pane.ResetFields()
+        pane.AddInputField(Lang("Hostname:", 14), Data.Inst().host.hostname(''), 'hostname')
+        pane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("OK"),
+            Lang("<Esc>") : Lang("Cancel")
+        })
+        
+    def HandleKey(self, inKey):
+        handled = True
+        pane = self.Pane('hostname')
+        if inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+        elif inKey == 'KEY_ENTER':
+                inputValues = pane.GetFieldValues()
+                self.layout.PopDialogue()
+                self.layout.DoUpdate()
+                try:
+                    Data.Inst().HostnameSet(inputValues['hostname'])
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                        Lang('Hostname Change Successful'), Lang("Hostname changed to '")+inputValues['hostname']+"'"))
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+str(e)))
+                Data.Inst().Update()
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return True
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
