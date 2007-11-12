@@ -349,6 +349,20 @@ class RootDialogue(Dialogue):
             inPane.AddStatusField(Lang("Device:", 16), pif['device'])
             inPane.NewLine()
 
+    def UpdateFieldsBMC(self, inPane):
+        data = Data.Inst()
+        
+        inPane.AddTitleField(Lang("BMC Information"))
+        
+        inPane.AddTextField(Lang("Not available"))
+        
+    def UpdateFieldsCPLD(self, inPane):
+        data = Data.Inst()
+        
+        inPane.AddTitleField(Lang("CPLD Information"))
+
+        inPane.AddTextField(Lang("Not available"))
+
     def UpdateFieldsBIOS(self, inPane):
         data = Data.Inst()
         
@@ -498,7 +512,7 @@ class RootDialogue(Dialogue):
             inFunc()
         
     def ActivateDialogue(self, inName):
-        if inName is 'DIALOGUE_AUTH':
+        if inName == 'DIALOGUE_AUTH':
             if (Auth.Inst().IsAuthenticated()):
                 name = Auth.Inst().LoggedInUsername()
                 Auth.Inst().LogOut()
@@ -506,21 +520,21 @@ class RootDialogue(Dialogue):
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
             else:
                 self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
-        elif inName is 'DIALOGUE_INTERFACE':
+        elif inName == 'DIALOGUE_INTERFACE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent)))
-        elif inName is 'DIALOGUE_TESTNETWORK':
+        elif inName == 'DIALOGUE_TESTNETWORK':
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
-        elif inName is 'DIALOGUE_DNS':
+        elif inName == 'DIALOGUE_DNS':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent)))
-        elif inName is 'DIALOGUE_HOSTNAME':
+        elif inName == 'DIALOGUE_HOSTNAME':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
-        elif inName is 'DIALOGUE_REBOOT':
+        elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
-        elif inName is 'DIALOGUE_SHUTDOWN':
+        elif inName == 'DIALOGUE_SHUTDOWN':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
-        elif inName is 'DIALOGUE_LOCALSHELL':
+        elif inName == 'DIALOGUE_LOCALSHELL':
             self.AuthenticatedOnly(lambda: self.StartLocalShell())
             
     def StartLocalShell(self):
@@ -530,12 +544,12 @@ class RootDialogue(Dialogue):
         self.layout.ExitCommandSet("/bin/bash")
             
     def RebootDialogueHandler(self,  inYesNo):
-        if inYesNo is 'y':
+        if inYesNo == 'y':
             self.layout.ExitBannerSet(Lang("Rebooting..."))
             self.layout.ExitCommandSet('/sbin/shutdown -r now')
 
     def ShutdownDialogueHandler(self,  inYesNo):
-        if inYesNo is 'y':
+        if inYesNo == 'y':
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
 
@@ -688,10 +702,10 @@ class QuestionDialogue(Dialogue):
     
     def HandleKey(self, inKey):
         handled = True
-        if inKey is 'y':
+        if inKey == 'y':
             self.layout.PopDialogue()
             self.handler('y')
-        elif inKey is 'n' or inKey is 'KEY_ESCAPE':
+        elif inKey == 'n' or inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
             self.handler('n')
         else:
@@ -728,7 +742,7 @@ class InterfaceDialogue(Dialogue):
 
             choiceDefs.append(ChoiceDef(choiceName, lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
         
-        if len(choiceDefs) is 0:
+        if len(choiceDefs) == 0:
             choiceDefs.append(ChoiceDef(Lang("None"), lambda: self.HandleNICChoice(None)))
 
         self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
@@ -798,7 +812,7 @@ class InterfaceDialogue(Dialogue):
             pane.AddStatusField(Lang("Device",  16),  pif['device'])
             pane.AddStatusField(Lang("Name",  16),  pif['metrics']['device_name'])
             pane.AddStatusField(Lang("IP Mode",  16),  self.mode)
-            if self.mode is 'Static':
+            if self.mode == 'Static':
                 pane.AddStatusField(Lang("IP Address",  16),  self.IP)
                 pane.AddStatusField(Lang("netmask Mask",  16),  self.netmask)
                 pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
@@ -880,7 +894,7 @@ class InterfaceDialogue(Dialogue):
         
     def HandleModeChoice(self,  inChoice):
         self.mode = inChoice
-        if self.mode is 'DHCP':
+        if self.mode == 'DHCP':
             self.state = 'PRECOMMIT'
             self.UpdateFields()
         else:
@@ -995,13 +1009,13 @@ class DNSDialogue(Dialogue):
         return handled
             
     def HandleAddRemoveChoice(self,  inChoice):
-        if inChoice is 'ADD':
+        if inChoice == 'ADD':
             self.state = 'ADD'
             self.UpdateFields()
-        elif inChoice is 'REMOVE':
+        elif inChoice == 'REMOVE':
             self.state = 'REMOVE'
             self.UpdateFields()
-        elif inChoice is 'REMOVEALL':
+        elif inChoice == 'REMOVEALL':
             self.layout.PopDialogue()
             Data.Inst().NameserversSet([])
             self.Commit(Lang("All nameserver entries deleted"))
@@ -1146,11 +1160,11 @@ class TestNetworkDialogue(Dialogue):
     def HandleTestChoice(self,  inChoice):
         pingTarget = None
         custom = False
-        if inChoice is 'local':
+        if inChoice == 'local':
             pingTarget = '127.0.0.1'
-        elif inChoice is 'gateway':
+        elif inChoice == 'gateway':
             pingTarget = Data.Inst().ManagementGateway()
-        elif inChoice is 'xensource':
+        elif inChoice == 'xensource':
             pingTarget = 'www.xensource.com'
         else:
             custom = True

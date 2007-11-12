@@ -62,32 +62,36 @@ class Data:
 
         self.RequireSession()
         if self.session is not None:
-            thisHost = self.session.xenapi.session.get_this_host(self.session._session)
-            
-            hostRecord = self.session.xenapi.host.get_record(thisHost)
-            self.data['host'] = hostRecord
-            self.data['host']['opaqueref'] = thisHost
-            
-            # Expand the items we need in the host record
-            self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
-            
-            convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
-            self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
-            
-            def convertPIF(inPIF):
-                retVal = self.session.xenapi.PIF.get_record(inPIF)
-                retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
-                if retVal['network'] is not 'OpaqueRef:NULL': retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
-                retVal['opaqueref'] = inPIF
-                return retVal
+            try:
+                thisHost = self.session.xenapi.session.get_this_host(self.session._session)
+                
+                hostRecord = self.session.xenapi.host.get_record(thisHost)
+                self.data['host'] = hostRecord
+                self.data['host']['opaqueref'] = thisHost
+                
+                # Expand the items we need in the host record
+                self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
+                
+                convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
+                self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
+                
+                def convertPIF(inPIF):
+                    retVal = self.session.xenapi.PIF.get_record(inPIF)
+                    retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
+                    if retVal['network'] != 'OpaqueRef:NULL': retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
+                    retVal['opaqueref'] = inPIF
+                    return retVal
+    
+                self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
+    
+                # Sort PIFs by device name for consistent order
+                self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))
+    
+                convertPBD = lambda pbd: self.session.xenapi.PBD.get_record(pbd)
+                self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
 
-            self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
-
-            # Sort PIFs by device name for consistent order
-            self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))
-
-            convertPBD = lambda pbd: self.session.xenapi.PBD.get_record(pbd)
-            self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
+            except Exception, e:
+                pass # Ignore failure - just leave data empty
 
         self.UpdateFromResolveConf()
 
@@ -138,6 +142,10 @@ class Data:
      
     def Dump(self):
         pprint(self.data)
+        #pprint("\n\nMethod list:\n\n")
+        #self.RequireSession()
+        #if self.session is not None:
+        #    pprint(self.session.xenapi.host.list_methods())
 
     def HostnameSet(self, inHostname):
         if not Auth.Inst().IsAuthenticated():

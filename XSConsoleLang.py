@@ -18,7 +18,7 @@ class Language:
         while len(text) > 0:
             spacePos = text.rfind(' ', 0, inWidth)
             retPos = text.find("\r", 0, inWidth)
-            if retPos is -1:
+            if retPos == -1:
                 retPos = text.find("\n", 0, inWidth)
             if retPos != -1:
                 spacePos = retPos

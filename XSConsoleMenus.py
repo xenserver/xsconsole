@@ -102,8 +102,8 @@ class RootMenu:
                 ChoiceDef(Lang("Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
                 ChoiceDef(Lang("System Physical NICs"),  None, lambda : inDialogue.ChangeStatus('PIF')),
                 ChoiceDef(Lang("BIOS Information"), None, lambda : inDialogue.ChangeStatus('BIOS')),
-                ChoiceDef(Lang("BMC Version")),
-                ChoiceDef(Lang("CPLD Version"))
+                ChoiceDef(Lang("BMC Version"), None, lambda : inDialogue.ChangeStatus('BMC')),
+                ChoiceDef(Lang("CPLD Version"), None, lambda : inDialogue.ChangeStatus('CPLD'))
             ]),
 
             'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', Lang("Management Interface"), [

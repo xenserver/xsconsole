@@ -15,7 +15,7 @@ class App:
         self.cursesScreen = None
     
     def Enter(self):
-        Data.Inst().Dump() # Testing
+        # Data.Inst().Dump() # Testing
 
         try:
             try:
@@ -79,7 +79,7 @@ class App:
             secondsNow = time.time()
             secondsRunning = secondsNow - startSeconds
 
-            if Data.Inst().host.address('') is '':
+            if Data.Inst().host.address('') == '':
                 # If the host doesn't yet have an IP, reload data occasionally to pick up DHCP updates
                 if secondsNow - lastDataUpdateSeconds >= 4:
                     lastDataUpdateSeconds = secondsNow
@@ -113,7 +113,7 @@ class Renderer:
         inWindow.Win().erase()
         inWindow.AddText(inText, 0, 0)
         inWindow.Refresh()
-        if cursX is not -1 and cursY is not -1:
+        if cursX != -1 and cursY != -1:
             curses.setsyx(cursY, cursX) # Restore cursor position
         
 class Layout:

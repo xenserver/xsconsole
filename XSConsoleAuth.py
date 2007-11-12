@@ -1,7 +1,10 @@
 
 import os, re
+from pprint import pprint
 
 from XSConsoleBases import *
+from XSConsoleLang import *
+
 import XenAPI
 
 class Auth:
@@ -44,6 +47,7 @@ class Auth:
         return self.error
     
     def ProcessLogin(self, inUsername, inPassword):
+        self.error = Lang('Unknown error')
         self.isAuthenticated = False
     
         # Create a local login if we can
@@ -51,8 +55,19 @@ class Auth:
         try:
             session.login_with_password(inUsername, inPassword)
 
+        except XenAPI.Failure, e:
+            session = None
+            self.error = str(e)
+            if e.details[0] == 'HOST_IS_SLAVE': # This host is a slave so authenticate with the master
+                masterIP = e.details[1] # Master IP is returned in details[1]
+                session = XenAPI.Session("http://"+masterIP)
+                try:
+                    session.login_with_password(inUsername, inPassword)
+                except Exception, e:
+                    session = None
+                    self.error = str(e)
+
         except Exception, e:
-            # Should check for slave response here
             session = None
             self.error = str(e)
 
@@ -92,6 +107,11 @@ class Auth:
             session = XenAPI.Session("http://"+self.testingHost)
             try:
                 session.login_with_password(self.loggedInUsername, self.loggedInPassword)
+                
+            except XenAPI.Failure, e:
+                if e.details[0] != 'HOST_IS_SLAVE': # Ignore slave errors when testing
+                    session = None
+                    self.error = str(e)
             except Exception, e:
                 session = None
                 self.error = str(e)
