@@ -21,6 +21,8 @@ class App:
             try:
                 sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
                 if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font.
+                if os.path.isfile("/bin/dmesg"): os.system("/bin/dmesg -n 1") # Suppress console messages.
+                
                 os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
                 
                 self.cursesScreen = CursesScreen()
