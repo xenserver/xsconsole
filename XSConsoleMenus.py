@@ -115,7 +115,14 @@ class RootMenu:
                 ChoiceDef(Lang("Set Hostname"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_HOSTNAME'), lambda : inDialogue.ChangeStatus('HOSTNAME')),
                 ChoiceDef(Lang("Test Network"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK')),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
+            ]),
+
+            'MENU_AUTH' : Menu(self, 'MENU_ROOT', Lang("Authentication"), [
+                ChoiceDef(Lang("Log Off"), lambda : inDialogue.HandleLogOff(), lambda : inDialogue.ChangeStatus('LOGOFF')),
+                ChoiceDef(Lang("Change Password"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGEPASSWORD'),
+                    lambda : inDialogue.ChangeStatus('CHANGEPASSWORD')),
             ])
         }
 

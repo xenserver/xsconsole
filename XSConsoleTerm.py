@@ -98,6 +98,11 @@ class App:
             else:
                 data = Data.Inst()
                 bannerStr = data.host.software_version.product_brand('') + ' ' + data.host.software_version.product_version('')
+                
+            # Testing
+            #if gotKey is not None:
+            #    bannerStr = gotKey
+            
             timeStr = time.strftime("%H:%M:%S", time.localtime())
             statusLine = "%-70s%10.10s" % (bannerStr ,timeStr)
             self.renderer.RenderStatus(self.layout.Window(Layout.WIN_TOPLINE), statusLine)

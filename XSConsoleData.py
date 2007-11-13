@@ -160,6 +160,11 @@ class Data:
     def NameserversSet(self, inServers):
         self.data['dns']['nameservers'] = inServers
 
+    def ChangePassword(self,  inOldPassword, inNewPassword):
+        session = Auth.Inst().TCPSession(inOldPassword)
+        session.xenapi.session.change_password(inOldPassword, inNewPassword)
+        # Caller handles exceptions
+
     def UpdateFromResolveConf(self):
         (status, output) = commands.getstatusoutput("/bin/cat /etc/resolv.conf")
         if status == 0:

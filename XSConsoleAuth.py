@@ -46,43 +46,38 @@ class Auth:
     def ErrorMessage(self):
         return self.error
     
-    def ProcessLogin(self, inUsername, inPassword):
-        self.error = Lang('Unknown error')
-        self.isAuthenticated = False
-    
+    def TCPSession(self, inPassword = None,  inUsername = None):
+        username = FirstValue(inUsername, self.loggedInUsername)
+        password = inPassword
+
         # Create a local login if we can
         session = XenAPI.Session("http://"+FirstValue(self.testingHost, "127.0.0.1"))
+        
         try:
-            session.login_with_password(inUsername, inPassword)
+            session.login_with_password(username, password)
 
         except XenAPI.Failure, e:
-            session = None
-            self.error = str(e)
             if e.details[0] == 'HOST_IS_SLAVE': # This host is a slave so authenticate with the master
                 masterIP = e.details[1] # Master IP is returned in details[1]
                 session = XenAPI.Session("http://"+masterIP)
-                try:
-                    session.login_with_password(inUsername, inPassword)
-                except Exception, e:
-                    session = None
-                    self.error = str(e)
+                session.login_with_password(username, password)
+            else:
+                raise # If the exception is not HOST_IS_SLAVE, raise it again
 
-        except Exception, e:
-            session = None
-            self.error = str(e)
+        return session
+    
+    def ProcessLogin(self, inUsername, inPassword):
+        self.isAuthenticated = False
+    
+        session= self.TCPSession(inPassword, inUsername)
 
-        if session is None:
-            retVal = False
-        else:
-            # Successful login
-            self.CloseSession(session)
-            self.loggedInUsername = inUsername
-            if self.testingHost is not None:
-                # Store password when testing only
-                self.loggedInPassword = inPassword
-            self.isAuthenticated = True
-            retVal = True
-        return retVal
+        # No exception implies a successful login
+        self.CloseSession(session)
+        self.loggedInUsername = inUsername
+        if self.testingHost is not None:
+            # Store password when testing only
+            self.loggedInPassword = inPassword
+        self.isAuthenticated = True
         
     def IsAuthenticated(self):
         return self.isAuthenticated

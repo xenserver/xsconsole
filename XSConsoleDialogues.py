@@ -231,11 +231,22 @@ class RootDialogue(Dialogue):
         inPane.NewLine()
         
         if Auth.Inst().IsAuthenticated():
-            inPane.AddWrappedTextField(Lang("You are logged in.  Press <Enter> to log out."))
+            inPane.AddWrappedTextField(Lang("You are logged in.  Press <Enter> to access the authentication menu."))
         else:
             inPane.AddWrappedTextField(Lang(
                 "You are currently not logged in. Press <Enter> to log in with your username and password to access privileged operations."))
+
+    def UpdateFieldsLOGOFF(self, inPane):
+        inPane.AddTitleField(Lang("Log Off"))
     
+        inPane.AddWrappedTextField(Lang("Press <Enter> to log off."))
+
+    def UpdateFieldsCHANGEPASSWORD(self, inPane):
+        inPane.AddTitleField(Lang("Log Off"))
+    
+        inPane.AddWrappedTextField(Lang("Press <Enter> to change the password for user 'root'.  "
+        "If this host is in a pool, this will change the password of the pool master."))
+
 
     def UpdateFieldsINTERFACE(self, inPane):
         inPane.AddTitleField(Lang("Management Interface"))
@@ -514,14 +525,13 @@ class RootDialogue(Dialogue):
     def ActivateDialogue(self, inName):
         if inName == 'DIALOGUE_AUTH':
             if (Auth.Inst().IsAuthenticated()):
-                name = Auth.Inst().LoggedInUsername()
-                Auth.Inst().LogOut()
-                Data.Inst().Update()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
+                self.ChangeMenu('MENU_AUTH')
             else:
                 self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
         elif inName == 'DIALOGUE_INTERFACE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent)))
+        elif inName == 'DIALOGUE_CHANGEPASSWORD':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_TESTNETWORK':
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_DNS':
@@ -553,6 +563,13 @@ class RootDialogue(Dialogue):
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
 
+    def HandleLogOff(self):
+        name = Auth.Inst().LoggedInUsername()
+        Auth.Inst().LogOut()
+        Data.Inst().Update()
+        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
+        self.ChangeMenu('MENU_ROOT')
+        
 class LoginDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
         Dialogue.__init__(self, inLayout, inParent);
@@ -588,23 +605,89 @@ class LoginDialogue(Dialogue):
         if inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
         elif inKey == 'KEY_ENTER':
-            if pane.IsLastInput():
+            if not pane.IsLastInput():
+                pane.ActivateNextInput()
+            else:
                 inputValues = pane.GetFieldValues()
                 self.layout.PopDialogue()
-                self.layout.DoUpdate()
-                success = Auth.Inst().ProcessLogin(inputValues['username'], inputValues['password'])
-                Data.Inst().Update()
+                self.layout.DoUpdate() # Redraw now as login can take a while
+                try:
+                    Auth.Inst().ProcessLogin(inputValues['username'], inputValues['password'])
 
-                if success:
                     if self.successFunc is not None:
                         self.successFunc()
                     else:
                         self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Successful')))
-                else:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Failed: ')+Auth.Inst().ErrorMessage()))
-                        
-            else:
+                
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Failed: ')+str(e)))
+
+                Data.Inst().Update()
+                
+        elif inKey == 'KEY_TAB':
+            pane.ActivateNextInput()
+        elif inKey == 'KEY_BTAB':
+            pane.ActivatePreviousInput()
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return True
+
+class ChangePasswordDialogue(Dialogue):
+    def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
+        Dialogue.__init__(self, inLayout, inParent);
+        self.text = inText
+        self.successFunc = inSuccessFunc
+        if self.text is None:
+            paneHeight = 8
+        else:
+            paneHeight = 10
+        pane = self.NewPane('changepassword', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.Win().TitleSet("Change Password")
+        pane.AddBox()
+        self.UpdateFields()
+        pane.InputIndexSet(0)
+        
+    def UpdateFields(self):
+        pane = self.Pane('changepassword')
+        pane.ResetFields()
+        if self.text is not None:
+            pane.AddTitleField(self.text)
+        pane.AddPasswordField(Lang("Old Password:", 21), Auth.Inst().DefaultPassword(), 'oldpassword')
+        pane.AddPasswordField(Lang("New Password:", 21), '', 'newpassword1')
+        pane.AddPasswordField(Lang("Repeat New Password:", 21), '', 'newpassword2')
+        pane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Next/OK"),
+            Lang("<Esc>") : Lang("Cancel"),
+            Lang("<Tab>") : Lang("Next"),
+            Lang("<Shift-Tab>") : Lang("Previous")
+        })
+        
+    def HandleKey(self, inKey):
+        handled = True
+        pane = self.Pane('changepassword')
+        if inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+        elif inKey == 'KEY_ENTER':
+            if not pane.IsLastInput():
                 pane.ActivateNextInput()
+            else:
+                inputValues = pane.GetFieldValues()
+                self.layout.PopDialogue()
+                try:
+                    if inputValues['newpassword1'] != inputValues['newpassword2']:
+                        raise Exception(Lang('New passwords do not match'))
+                
+                    Data.Inst().ChangePassword(inputValues['oldpassword'], inputValues['newpassword1'])
+                    
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                        Lang('Password Change Failed'), Lang('Reason: ')+str(e)))
+                    
+                Data.Inst().Update()
+
         elif inKey == 'KEY_TAB':
             pane.ActivateNextInput()
         elif inKey == 'KEY_BTAB':
@@ -698,14 +781,14 @@ class QuestionDialogue(Dialogue):
         
         pane.AddWrappedBoldTextField(self.text)
 
-        pane.AddKeyHelpField( { Lang("<Y>") : Lang("Yes"),  Lang("<N>") : Lang("No")  } )
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Yes"),  Lang("<Esc>") : Lang("No")  } )
     
     def HandleKey(self, inKey):
         handled = True
-        if inKey == 'y':
+        if inKey == 'y' or inKey == 'Y' or inKey == 'KEY_F(8)':
             self.layout.PopDialogue()
             self.handler('y')
-        elif inKey == 'n' or inKey == 'KEY_ESCAPE':
+        elif inKey == 'n' or inKey == 'N' or inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
             self.handler('n')
         else:
