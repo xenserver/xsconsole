@@ -93,7 +93,7 @@ class RootMenu:
             ]),
             
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), [
-                ChoiceDef(Lang("XenSource Product Information"), None, lambda : inDialogue.ChangeStatus('XENSOURCE')),
+                ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSOURCE')),
                 ChoiceDef(Lang("License Details"), None, lambda : inDialogue.ChangeStatus('LICENCE')),
                 ChoiceDef(Lang("Hostname"), None, lambda : inDialogue.ChangeStatus('HOST')),
                 ChoiceDef(Lang("System Details"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
