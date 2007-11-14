@@ -356,8 +356,8 @@ class RootDialogue(Dialogue):
             else:
                 inPane.AddTextField(Lang("(not connected)"))
                 
-            inPane.AddStatusField(Lang("MAC Address:", 16), pif['MAC'])
-            inPane.AddStatusField(Lang("Device:", 16), pif['device'])
+            inPane.AddStatusField(Lang("MAC Address", 16), pif['MAC'])
+            inPane.AddStatusField(Lang("Device", 16), pif['device'])
             inPane.NewLine()
 
     def UpdateFieldsBMC(self, inPane):
@@ -591,8 +591,8 @@ class LoginDialogue(Dialogue):
         pane.ResetFields()
         if self.text is not None:
             pane.AddTitleField(self.text)
-        pane.AddInputField(Lang("Username:", 14), "root", 'username')
-        pane.AddPasswordField(Lang("Password:", 14), Auth.Inst().DefaultPassword(), 'password')
+        pane.AddInputField(Lang("Username", 14), "root", 'username')
+        pane.AddPasswordField(Lang("Password", 14), Auth.Inst().DefaultPassword(), 'password')
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Next/OK"),
             Lang("<Tab>") : Lang("Next"),
@@ -655,9 +655,9 @@ class ChangePasswordDialogue(Dialogue):
         pane.ResetFields()
         if self.text is not None:
             pane.AddTitleField(self.text)
-        pane.AddPasswordField(Lang("Old Password:", 21), Auth.Inst().DefaultPassword(), 'oldpassword')
-        pane.AddPasswordField(Lang("New Password:", 21), '', 'newpassword1')
-        pane.AddPasswordField(Lang("Repeat New Password:", 21), '', 'newpassword2')
+        pane.AddPasswordField(Lang("Old Password", 21), Auth.Inst().DefaultPassword(), 'oldpassword')
+        pane.AddPasswordField(Lang("New Password", 21), '', 'newpassword1')
+        pane.AddPasswordField(Lang("Repeat New Password", 21), '', 'newpassword2')
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Next/OK"),
             Lang("<Esc>") : Lang("Cancel"),
@@ -685,6 +685,9 @@ class ChangePasswordDialogue(Dialogue):
                 except Exception, e:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
                         Lang('Password Change Failed'), Lang('Reason: ')+str(e)))
+                    
+                else:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Password Change Successful')))
                     
                 Data.Inst().Update()
 
@@ -1133,7 +1136,7 @@ class HostnameDialogue(Dialogue):
     def UpdateFields(self):
         pane = self.Pane('hostname')
         pane.ResetFields()
-        pane.AddInputField(Lang("Hostname:", 14), Data.Inst().host.hostname(''), 'hostname')
+        pane.AddInputField(Lang("Hostname", 14), Data.Inst().host.hostname(''), 'hostname')
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("OK"),
             Lang("<Esc>") : Lang("Cancel")
