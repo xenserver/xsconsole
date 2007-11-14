@@ -110,6 +110,11 @@ class Data:
         if status == 0:
             self.ScanLspci(output.split("\n"))
      
+        if os.path.isfile("/usr/bin/ipmitool"):
+            (status, output) = commands.getstatusoutput("/usr/bin/ipmitool mc info")
+            if status == 0:
+                self.ScanIpmiMcInfo(output.split("\n"))
+                
         self.DeriveData()
         
     def DeriveData(self):
@@ -278,14 +283,23 @@ class Data:
         # Spot storage controllers by looking for keywords or the phrase 'storage controller' in the lspci output
         keywords = "IDE|PATA|SATA|SCSI|SAS|RAID|Fiber Channel"
         for line in inLines:
-            if not re.search(r'[Uu]nknown [Dd]evice',  line): # Skip unknown devices
-                match = re.match(r'[0-9a-f:.]+\s+(.*)',  line)
-                name = match.group(1)
-                match1 = re.match(r'('+keywords+')',  name)
-                match2 = re.search(r'[Ss]torage [Cc]ontroller',  name)
-                
-                if match1 or match2:
-                    self.data['lspci']['storage_controllers'].append(name)
+            if not re.search(r'[Uu]nknown [Dd]evice', line): # Skip unknown devices
+                match = re.match(r'[0-9a-f:.]+\s+(.*)', line)
+                if match:
+                    name = match.group(1)
+                    match1 = re.match(r'('+keywords+')', name)
+                    match2 = re.search(r'[Ss]torage [Cc]ontroller', name)
+                    
+                    if match1 or match2:
+                        self.data['lspci']['storage_controllers'].append(name)
+            
+    def ScanIpmiMcInfo(self, inLines):
+        self.data['bmc'] = {}
+
+        for line in inLines:
+            match = re.match(r'Firmware\s+Revision\s*:\s*([0-9.-]+)', line)
+            if match:
+                self.data['bmc']['version'] = match.group(1)
             
     def ScanResolvConf(self, inLines):
         self.data['dns'] = {

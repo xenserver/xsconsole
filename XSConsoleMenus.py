@@ -1,6 +1,8 @@
 
 from XSConsoleBases import *
+from XSConsoleData import *
 from XSConsoleLang import *
+from pprint import pprint
 
 class ChoiceDef:
     def __init__(self, name, onAction = None, onEnter = None):
@@ -74,6 +76,25 @@ class Menu:
         
 class RootMenu:
     def __init__(self, inDialogue):
+        
+        propertiesChoices = [
+                ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSERVER')),
+                ChoiceDef(Lang("License Details"), None, lambda : inDialogue.ChangeStatus('LICENCE')),
+                ChoiceDef(Lang("Hostname"), None, lambda : inDialogue.ChangeStatus('HOST')),
+                ChoiceDef(Lang("System Details"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
+                ChoiceDef(Lang("Processor"), None, lambda : inDialogue.ChangeStatus('PROCESSOR')),
+                ChoiceDef(Lang("System Memory"), None, lambda : inDialogue.ChangeStatus('MEMORY')),
+                ChoiceDef(Lang("Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
+                ChoiceDef(Lang("System Physical NICs"),  None, lambda : inDialogue.ChangeStatus('PIF')),
+                ChoiceDef(Lang("BIOS Information"), None, lambda : inDialogue.ChangeStatus('BIOS'))
+            ]
+
+        if Data.Inst().bmc.version('') != '':
+           propertiesChoices.append(ChoiceDef(Lang("BMC Version"), None, lambda : inDialogue.ChangeStatus('BMC')))
+           
+        if Data.Inst().cpld.version('') != '':
+            propertiesChoices.append(ChoiceDef(Lang("CPLD Version"), None, lambda : inDialogue.ChangeStatus('CPLD')))
+        
         self.menus = {
             'MENU_ROOT' : Menu(self, None, Lang("Customize System"), [
                 ChoiceDef(Lang("Status Display"), 
@@ -92,19 +113,7 @@ class RootMenu:
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ]),
             
-            'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), [
-                ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSOURCE')),
-                ChoiceDef(Lang("License Details"), None, lambda : inDialogue.ChangeStatus('LICENCE')),
-                ChoiceDef(Lang("Hostname"), None, lambda : inDialogue.ChangeStatus('HOST')),
-                ChoiceDef(Lang("System Details"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
-                ChoiceDef(Lang("Processor"), None, lambda : inDialogue.ChangeStatus('PROCESSOR')),
-                ChoiceDef(Lang("System Memory"), None, lambda : inDialogue.ChangeStatus('MEMORY')),
-                ChoiceDef(Lang("Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
-                ChoiceDef(Lang("System Physical NICs"),  None, lambda : inDialogue.ChangeStatus('PIF')),
-                ChoiceDef(Lang("BIOS Information"), None, lambda : inDialogue.ChangeStatus('BIOS')),
-                ChoiceDef(Lang("BMC Version"), None, lambda : inDialogue.ChangeStatus('BMC')),
-                ChoiceDef(Lang("CPLD Version"), None, lambda : inDialogue.ChangeStatus('CPLD'))
-            ]),
+            'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), propertiesChoices),
 
             'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', Lang("Management Interface"), [
                 ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
@@ -125,6 +134,7 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('CHANGEPASSWORD')),
             ])
         }
+ 
 
         self.currentKey = 'MENU_ROOT'
     

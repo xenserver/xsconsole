@@ -255,10 +255,10 @@ class RootDialogue(Dialogue):
             "The management interface is a network interface used to control this host remotely.  "
             "Press <Enter> to configure."))
         
-    def UpdateFieldsXENSOURCE(self, inPane):
+    def UpdateFieldsXENSERVER(self, inPane):
         data = Data.Inst()
 
-        inPane.AddTitleField(Lang("XenSource"))
+        inPane.AddTitleField(Lang("XenServer"))
         inPane.AddStatusField(Lang("Name", 16), str(data.host.software_version.product_brand()))
         inPane.AddStatusField(Lang("Version", 16), str(data.host.software_version.product_version()))
         inPane.AddStatusField(Lang("Build Number", 16), str(data.host.software_version.build_number()))
@@ -365,7 +365,7 @@ class RootDialogue(Dialogue):
         
         inPane.AddTitleField(Lang("BMC Information"))
         
-        inPane.AddTextField(Lang("Not available"))
+        inPane.AddStatusField(Lang("BMC Firmware Version",  22), data.bmc.version())
         
     def UpdateFieldsCPLD(self, inPane):
         data = Data.Inst()
