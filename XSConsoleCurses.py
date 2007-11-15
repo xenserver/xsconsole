@@ -20,6 +20,7 @@ class CursesPalette:
     
     @classmethod
     def DefineColours(cls):
+        cls.pairIndex = 1
         # Set sensible defaults for non-colour-changing terminals
         white = curses.COLOR_WHITE
         black = curses.COLOR_BLACK

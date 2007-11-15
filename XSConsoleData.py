@@ -31,6 +31,12 @@ class Data:
             cls.instance.Update()
         return cls.instance
     
+    @classmethod
+    def Reset(cls):
+        if cls.instance is not None:
+            del cls.instance
+            cls.instance = None
+            
     def GetData(self, inNames, inDefault = None):
         data = self.data
         for name in inNames:

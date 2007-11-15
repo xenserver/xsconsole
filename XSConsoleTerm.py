@@ -16,47 +16,63 @@ class App:
     
     def Enter(self):
         # Data.Inst().Dump() # Testing
-
-        try:
-            try:
-                sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
-                if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
-                if os.path.isfile("/bin/dmesg"): os.system("/bin/dmesg -n 1") # Suppress console messages
-                
-                os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
-                
-                self.cursesScreen = CursesScreen()
-                self.renderer = Renderer()
-                self.layout = Layout(self.cursesScreen)
-                self.layout.Create()
-                self.layout.Clear()
-                
-                self.MainLoop()
-                
-            finally:
-                if self.cursesScreen is not None:
-                    self.cursesScreen.Exit()
+        doQuit = False
         
-            if self.layout.ExitCommand() is None:
+        while not doQuit:
+            try:
+                try:
+                    sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
+                    if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
+                    if os.path.isfile("/bin/dmesg"): os.system("/bin/dmesg -n 1") # Suppress console messages
+                    
+                    os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
+                    
+                    self.cursesScreen = CursesScreen()
+                    self.renderer = Renderer()
+                    self.layout = Layout(self.cursesScreen)
+                    self.layout.Create()
+                    self.layout.Clear()
+                    
+                    self.MainLoop()
+                    
+                finally:
+                    if self.cursesScreen is not None:
+                        self.cursesScreen.Exit()
+            
+                if self.layout.ExitCommand() is None:
+                    doQuit = True
+                else:
+                    os.system('/usr/bin/reset') # Reset terminal
+                    if self.layout.ExitBanner() is not None:
+                        # print no longer works here
+                        reflowed = Language.ReflowText(self.layout.ExitBanner(),  80)
+                        for line in reflowed:
+                            print(line)
+                        sys.stdout.flush()
+                    commandList = self.layout.ExitCommand().split()
+                    # Double-check authentication
+                    if not Auth.Inst().IsAuthenticated():
+                        raise Exception("Failed to execute command - not authenticated")
+                    if self.layout.ExitCommandIsExec():
+                        os.execv(commandList[0], commandList)
+                        # Does not return
+                    else:
+                        os.system(self.layout.ExitCommand())
+                   
+
+            
+            except KeyboardInterrupt, e:
+                Data.Reset()
+                sys.stderr.write("\033[H\033[J"+Lang("Resetting..."))
+                try:
+                    time.sleep(0.5) # Prevent flicker
+                except Exception, e:
+                    pass # Catch repeated Ctrl-C
+            
+            except Exception, e:
+                sys.stderr.write(str(e)+"\n")
                 doQuit = True
-            else:
-                os.system('/usr/bin/reset') # Reset terminal
-                if self.layout.ExitBanner() is not None:
-                    # print no longer works here
-                    reflowed = Language.ReflowText(self.layout.ExitBanner(),  80)
-                    for line in reflowed:
-                        print(line)
-                    sys.stdout.flush()
-                commandList = self.layout.ExitCommand().split()
-                # Double-check authentication
-                if not Auth.Inst().IsAuthenticated():
-                    raise Exception("Failed to execute command - not authenticated")
-                os.execv(commandList[0],  commandList)
-                # Does not return
-                
-        except Exception, e:
-            sys.stderr.write(str(e)+"\n")
-            doQuit = True
+        
 
     def MainLoop(self):
         
@@ -102,8 +118,8 @@ class App:
                 bannerStr = data.host.software_version.product_brand('') + ' ' + data.host.software_version.product_version('')
                 
             # Testing
-            #if gotKey is not None:
-            #    bannerStr = gotKey
+            # if gotKey is not None:
+            #     bannerStr = gotKey
             
             timeStr = time.strftime("%H:%M:%S", time.localtime())
             statusLine = "%-70s%10.10s" % (bannerStr ,timeStr)
@@ -130,8 +146,9 @@ class Layout:
     def __init__(self, inParent = None):
         self.parent = inParent
         self.windows = []
-        self.exitCommand = None # Not layout, but keep with layout for convinience
-        self.exitBanner = None # Not layout, but keep with layout for convinience
+        self.exitCommand = None # Not layout, but keep with layout for convenience
+        self.exitBanner = None # Not layout, but keep with layout for convenience
+        self.exitCommandIsExec = True # Not layout, but keep with layout for convenience
 
     def ExitBanner(self):
         return self.exitBanner;
@@ -144,6 +161,14 @@ class Layout:
         
     def ExitCommandSet(self,  inCommand):
         self.exitCommand = inCommand
+        self.exitCommandIsExec = True
+
+    def SubshellCommandSet(self, inCommand):
+        self.exitCommand = inCommand
+        self.exitCommandIsExec = False
+
+    def ExitCommandIsExec(self):
+        return self.exitCommandIsExec
 
     def Window(self, inNum):
         return self.windows[inNum]
