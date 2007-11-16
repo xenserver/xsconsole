@@ -560,48 +560,77 @@ class DNSDialogue(Dialogue):
         except Exception, e:
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+str(e)))
 
-class HostnameDialogue(Dialogue):
+class InputDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         paneHeight = 6
-        pane = self.NewPane('hostname', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane('input', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.Win().TitleSet("Set Hostname")
+        pane.Win().TitleSet(self.Custom('title'))
         pane.AddBox()
         self.UpdateFields()
         pane.InputIndexSet(0)
-        
+    
+    def Custom(self, inKey):
+        return self.custom.get(inKey, Lang('Unknown'))
+    
     def UpdateFields(self):
-        pane = self.Pane('hostname')
+        pane = self.Pane('input')
         pane.ResetFields()
-        pane.AddInputField(Lang("Hostname", 14), Data.Inst().host.hostname(''), 'hostname')
+        pane.AddInputField(*self.Custom('fields')[0])
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("OK"),
             Lang("<Esc>") : Lang("Cancel")
         })
-        
+    
+    def HandleCommit(self, inValues): # Override this
+        self.layout.PopDialogue()
+    
     def HandleKey(self, inKey):
         handled = True
-        pane = self.Pane('hostname')
+        pane = self.Pane('input')
         if inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
         elif inKey == 'KEY_ENTER':
-                inputValues = pane.GetFieldValues()
+            try:
                 self.layout.PopDialogue()
                 self.layout.DoUpdate()
-                try:
-                    Data.Inst().HostnameSet(inputValues['hostname'])
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
-                        Lang('Hostname Change Successful'), Lang("Hostname changed to '")+inputValues['hostname']+"'"))
-                except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+str(e)))
-                Data.Inst().Update()
+                title, info = self.HandleCommit(self.Pane('input').GetFieldValues())
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, title, info))
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+str(e)))
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
             handled = False
         return True
 
+class HostnameDialogue(InputDialogue):
+    def __init__(self, inLayout, inParent):
+        self.custom = {
+            'title' : Lang("Change Hostname"),
+            'fields' : [ [Lang("Hostname", 14), Data.Inst().host.hostname(''), 'hostname'] ]
+            }
+        InputDialogue.__init__(self, inLayout, inParent)
+
+    def HandleCommit(self, inValues):
+        Data.Inst().HostnameSet(inValues['hostname'])
+        Data.Inst().Update()
+        return Lang('Hostname Change Successful'), Lang("Hostname changed to '")+inValues['hostname']+"'"
+
+class ChangeTimeoutDialogue(InputDialogue):
+    def __init__(self, inLayout, inParent):
+        self.custom = {
+            'title' : Lang("Change Auto-Logoff Timeout"),
+            'fields' : [ [Lang("Timeout (minutes)", 20), 5, 'timeout'] ]
+            }
+        InputDialogue.__init__(self, inLayout, inParent)
+
+    def HandleCommit(self, inValues):
+        State.Inst().AuthTimeoutSecondsSet(inValues['timeout'] * 60)
+        State.Inst().SaveIfRequired()
+        return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+" minutes"
+        
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);

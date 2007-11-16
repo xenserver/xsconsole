@@ -79,9 +79,9 @@ class RootDialogue(Dialogue):
         "If this host is in a pool, this will change the password of the pool master."))
 
     def UpdateFieldsCHANGETIMEOUT(self, inPane):
-        inPane.AddTitleField(Lang("Change Auto-Logoff Timeout"))
+        inPane.AddTitleField(Lang("Change Auto-Logoff Time"))
     
-        inPane.AddWrappedTextField(Lang("The current auto-logoff timeout is ") +
+        inPane.AddWrappedTextField(Lang("The current auto-logoff time is ") +
             str(State.Inst().AuthTimeoutMinutes()) + ' minutes.  '+
             Lang("Users will be automatically logged out after there has been no activity for this time.  "+
                 "Press <Enter> to change this timeout.")
@@ -371,6 +371,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGEPASSWORD':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
+        elif inName == 'DIALOGUE_CHANGETIMEOUT':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_TESTNETWORK':
             self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_DNS':

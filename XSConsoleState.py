@@ -49,6 +49,11 @@ class State:
     def AuthTimeoutSeconds(self):
         return self.authTimeoutSeconds
     
+    def AuthTimeoutSecondsSet(self, inSeconds):
+        if self.authTimeoutSeconds != inSeconds:
+            self.authTimeoutSeconds = inSeconds
+            self.modified = True
+        
     def AuthTimeoutMinutes(self):
         return int((self.AuthTimeoutSeconds() + 30) / 60)
     

@@ -132,9 +132,9 @@ class RootMenu:
                 ChoiceDef(Lang("Change Password"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGEPASSWORD'),
                     lambda : inDialogue.ChangeStatus('CHANGEPASSWORD')),
-                #ChoiceDef(Lang("Change Auto-Logout Time"),
-                 #   lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGETIMEOUT'),
-                  #  lambda : inDialogue.ChangeStatus('CHANGETIMEOUT')),
+                ChoiceDef(Lang("Change Auto-Logoff Time"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGETIMEOUT'),
+                    lambda : inDialogue.ChangeStatus('CHANGETIMEOUT')),
             ])
         }
  
