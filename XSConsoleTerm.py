@@ -9,6 +9,8 @@ from XSConsoleData import *
 from XSConsoleDialogues import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
+from XSConsoleRootDialogue import *
+from XSConsoleState import *
 
 class App:
     def __init__(self):
@@ -33,7 +35,9 @@ class App:
                     self.layout.Create()
                     self.layout.Clear()
                     
+                    State.Inst().SaveIfRequired()
                     self.MainLoop()
+                    State.Inst().SaveIfRequired()
                     
                 finally:
                     if self.cursesScreen is not None:
@@ -105,14 +109,17 @@ class App:
                     self.layout.UpdateRootFields()
                     needsRefresh = True
     
-            if gotKey is not None and self.layout.TopDialogue().HandleKey(gotKey):
-                needsRefresh = True
+            if gotKey is not None:
+                Auth.Inst().KeepAlive()
+                if self.layout.TopDialogue().HandleKey(gotKey):
+                    needsRefresh = True
                 
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             
             if Auth.Inst().IsAuthenticated():
                 bannerStr = Lang('User')+': '+Auth.Inst().LoggedInUsername()
+                # Testing: bannerStr += ' ('+str(int(Auth.Inst().AuthAge()))+')'
             else:
                 data = Data.Inst()
                 bannerStr = data.host.software_version.product_brand('') + ' ' + data.host.software_version.product_version('')

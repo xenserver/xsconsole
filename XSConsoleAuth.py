@@ -1,9 +1,9 @@
 
-import os, re
-from pprint import pprint
+import os, time
 
 from XSConsoleBases import *
 from XSConsoleLang import *
+from XSConsoleState import *
 
 import XenAPI
 
@@ -16,14 +16,17 @@ class Auth:
         self.loggedInPassword = '' # Testing only
         self.defaultPassword = ''
         self.testingHost = None
+        self.authTimestampSeconds = None
         # The testing.txt file is used for testing only
         if os.path.isfile("testing.txt"):
             testingFile = open("testing.txt")
             for line in testingFile:
                 match = re.match(r'host=(\w+)', line)
-                if match: self.testingHost = match.group(1)
+                if match:
+                    self.testingHost = match.group(1)
                 match = re.match(r'password=(\w+)', line)
-                if match: self.defaultPassword = match.group(1)
+                if match:
+                    self.defaultPassword = match.group(1)
 
             testingFile.close()
 
@@ -32,6 +35,19 @@ class Auth:
         if cls.instance is None:
             cls.instance = Auth()
         return cls.instance
+    
+    def AuthAge(self):
+        if self.isAuthenticated:
+            retVal = time.time() - self.authTimestampSeconds
+        else:
+            raise(Exception, "Cannot get age - not authenticated")
+        return retVal
+    
+    def KeepAlive(self):
+        if self.isAuthenticated:
+            if self.AuthAge() <= State.Inst().AuthTimeoutSeconds():
+                # Auth still valid, so update timestamp to now
+                self.authTimestampSeconds = time.time()
     
     def LoggedInUsername(self):
         if (self.isAuthenticated):
@@ -77,10 +93,15 @@ class Auth:
         if self.testingHost is not None:
             # Store password when testing only
             self.loggedInPassword = inPassword
+        self.authTimestampSeconds = time.time()
         self.isAuthenticated = True
         
     def IsAuthenticated(self):
-        return self.isAuthenticated
+        if self.isAuthenticated and self.AuthAge() <= State.Inst().AuthTimeoutSeconds():
+            retVal = True
+        else:
+            retVal = False
+        return retVal
         
     def LogOut(self):
         self.isAuthenticated = False

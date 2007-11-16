@@ -1,6 +1,9 @@
 
-import inspect
+# App-wide imports
+import inspect,  re
+from pprint import pprint
 
+# Global functions
 def ParamsToAttr():
         d = inspect.currentframe().f_back.f_locals
         obj = d.pop("self")
