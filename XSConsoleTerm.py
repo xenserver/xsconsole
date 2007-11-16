@@ -3,6 +3,7 @@
 import sys, os, time, string
 import curses
 
+from XSConsoleAuth import *
 from XSConsoleBases import *
 from XSConsoleCurses import *
 from XSConsoleData import *
@@ -35,9 +36,7 @@ class App:
                     self.layout.Create()
                     self.layout.Clear()
                     
-                    State.Inst().SaveIfRequired()
                     self.MainLoop()
-                    State.Inst().SaveIfRequired()
                     
                 finally:
                     if self.cursesScreen is not None:
@@ -55,8 +54,8 @@ class App:
                         sys.stdout.flush()
                     commandList = self.layout.ExitCommand().split()
                     # Double-check authentication
-                    if not Auth.Inst().IsAuthenticated():
-                        raise Exception("Failed to execute command - not authenticated")
+                    Auth.Inst().AssertAuthenticated()
+
                     if self.layout.ExitCommandIsExec():
                         os.execv(commandList[0], commandList)
                         # Does not return

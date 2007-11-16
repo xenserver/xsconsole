@@ -8,6 +8,13 @@ def Lang(inLabel, inPad = 0):
     
 class Language:
     @classmethod
+    def Quantity(cls, inText, inNumber):
+        if inNumber == 1:
+            return Lang(inText)
+        else:
+            return Lang(inText+"s")
+
+    @classmethod
     def ToString(cls, inLabel):
         return inLabel
 

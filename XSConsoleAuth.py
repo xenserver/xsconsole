@@ -102,7 +102,13 @@ class Auth:
         else:
             retVal = False
         return retVal
-        
+    
+    def AssertAuthenticated(self):
+        if not self.isAuthenticated:
+            raise Exception("Not logged in")
+        if self.AuthAge() > State.Inst().AuthTimeoutSeconds():
+            raise Exception("Session has timed out")
+
     def LogOut(self):
         self.isAuthenticated = False
         self.loggedInUsername = None
@@ -136,3 +142,7 @@ class Auth:
     def CloseSession(self, inSession):
         # inSession.logout()
         return None
+
+    def TimeoutSecondsSet(self, inSeconds):
+        Auth.Inst().AssertAuthenticated()
+        State.Inst().AuthTimeoutSecondsSet(inSeconds)

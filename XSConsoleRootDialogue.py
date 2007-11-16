@@ -81,11 +81,14 @@ class RootDialogue(Dialogue):
     def UpdateFieldsCHANGETIMEOUT(self, inPane):
         inPane.AddTitleField(Lang("Change Auto-Logoff Time"))
     
-        inPane.AddWrappedTextField(Lang("The current auto-logoff time is ") +
-            str(State.Inst().AuthTimeoutMinutes()) + ' minutes.  '+
-            Lang("Users will be automatically logged out after there has been no activity for this time.  "+
+        timeout = State.Inst().AuthTimeoutMinutes()
+        message = Lang("The current auto-logoff time is ") + str(timeout) + " "
+
+        message += Language.Quantity("minute", timeout) + ".  "
+        message += Lang("Users will be automatically logged out after there has been no activity for this time.  "+
                 "Press <Enter> to change this timeout.")
-        )
+    
+        inPane.AddWrappedTextField(message)
 
     def UpdateFieldsINTERFACE(self, inPane):
         inPane.AddTitleField(Lang("Management Interface"))

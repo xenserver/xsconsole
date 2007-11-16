@@ -122,7 +122,7 @@ class ChangePasswordDialogue(Dialogue):
                     
                 except Exception, e:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
-                        Lang('Password Change Failed'), Lang('Reason: ')+str(e)))
+                        Lang('Password Change Failed: ')+str(e)))
                     
                 else:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Password Change Successful')))
@@ -627,9 +627,10 @@ class ChangeTimeoutDialogue(InputDialogue):
         InputDialogue.__init__(self, inLayout, inParent)
 
     def HandleCommit(self, inValues):
-        State.Inst().AuthTimeoutSecondsSet(inValues['timeout'] * 60)
+        timeoutMinutes = int(inValues['timeout'])
+        Auth.Inst().TimeoutSecondsSet(timeoutMinutes * 60)
         State.Inst().SaveIfRequired()
-        return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+" minutes"
+        return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+Language.Quantity(" minute",  timeoutMinutes)+'.'
         
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):

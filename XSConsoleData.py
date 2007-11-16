@@ -159,8 +159,8 @@ class Data:
         #    pprint(self.session.xenapi.host.list_methods())
 
     def HostnameSet(self, inHostname):
-        if not Auth.Inst().IsAuthenticated():
-            raise Exception("Failed to set hostname - not authenticated")
+        Auth.Inst().AssertAuthenticated()
+
         if not re.match(r'[A-Za-z0-9.-]+$', inHostname):
             raise Exception("Invalid hostname '"+inHostname+"'")
         
@@ -183,8 +183,7 @@ class Data:
     
     def SaveToResolvConf(self):
         # Double-check authentication
-        if not Auth.Inst().IsAuthenticated():
-            raise Exception("Failed to save resolv.conf - not authenticated")
+        Auth.Inst().AssertAuthenticated()
         
         file = None
         try:
@@ -321,8 +320,7 @@ class Data:
                 
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
         # Double-check authentication
-        if not Auth.Inst().IsAuthenticated():
-            raise Exception("Failed to reconfigure management - not authenticated")
+        Auth.Inst().AssertAuthenticated()
         try:
             self.RequireSession()
             self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)

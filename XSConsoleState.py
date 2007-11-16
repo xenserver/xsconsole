@@ -41,23 +41,31 @@ class State:
                 cls.instance = State()
             
             cls.instance.isFirstBoot = isFirstBoot
-            
-            
+            cls.instance.MakeSane()
             
         return cls.instance
         
     def AuthTimeoutSeconds(self):
         return self.authTimeoutSeconds
     
-    def AuthTimeoutSecondsSet(self, inSeconds):
+    def AuthTimeoutSecondsSet(self, inSeconds): # Don't call this directly - use Auth.TimeoutSecondsSet
+        if inSeconds < 60:
+            raise Exception("Cannot set a session timeout of less than one minute")
         if self.authTimeoutSeconds != inSeconds:
             self.authTimeoutSeconds = inSeconds
             self.modified = True
+        self.SaveIfRequired()
         
     def AuthTimeoutMinutes(self):
         return int((self.AuthTimeoutSeconds() + 30) / 60)
     
+    def MakeSane(self):
+        self.authTimeoutSeconds = int(self.authTimeoutSeconds)
+        if self.authTimeoutSeconds < 60:
+            AuthTimeoutSecondsSet(60)
+    
     def SaveIfRequired(self):
+        self.MakeSane()
         try:
             if not os.path.isdir(self.savePath):
                 os.mkdir(self.savePath, 0700)
@@ -70,4 +78,4 @@ class State:
         except Exception, e:
             pass # Ignore failure
 
-        
+
