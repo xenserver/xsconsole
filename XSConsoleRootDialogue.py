@@ -135,7 +135,7 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("Hostname"))
-        inPane.AddWrappedTextField(data.host.hostname())
+        inPane.AddWrappedTextField(data.host.name_label())
         inPane.NewLine()
 
     def UpdateFieldsSYSTEM(self, inPane):
@@ -303,11 +303,26 @@ class RootDialogue(Dialogue):
     
         inPane.AddWrappedTextField(Lang("The name of this host is"))
         inPane.NewLine()
-        inPane.AddWrappedTextField(data.host.hostname())
+        inPane.AddWrappedTextField(data.host.name_label())
         inPane.NewLine()
         inPane.AddWrappedTextField(Lang("Press <Enter> to change the name of this host."))
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Configure hostname")
+        })
+
+    def UpdateFieldsSYSLOG(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Remote Logging (syslog)"))
+    
+        if data.host.logging.syslog_destination('') == '':
+            inPane.AddWrappedTextField(Lang("Remote logging is not configured on this host."))
+        else:
+            inPane.AddWrappedTextField(Lang("The remote logging destination for this host is"))
+            inPane.NewLine()
+            inPane.AddWrappedTextField(data.host.logging.syslog_destination())
+    
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Configure logging")
         })
 
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
@@ -382,6 +397,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_HOSTNAME':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_SYSLOG':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))

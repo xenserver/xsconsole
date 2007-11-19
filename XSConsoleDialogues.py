@@ -569,7 +569,10 @@ class DNSDialogue(Dialogue):
 class InputDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        paneHeight = 6
+        if self.Custom('info') is None:
+            paneHeight = 6
+        else:
+            paneHeight = 7+len(Language.ReflowText(self.Custom('info'), 70))
         pane = self.NewPane('input', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.Win().TitleSet(self.Custom('title'))
@@ -578,11 +581,14 @@ class InputDialogue(Dialogue):
         pane.InputIndexSet(0)
     
     def Custom(self, inKey):
-        return self.custom.get(inKey, Lang('Unknown'))
+        return self.custom.get(inKey, None)
     
     def UpdateFields(self):
         pane = self.Pane('input')
         pane.ResetFields()
+        if self.Custom('info') is not None:
+            pane.AddWrappedTextField(self.Custom('info'))
+            pane.NewLine()
         pane.AddInputField(*self.Custom('fields')[0])
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("OK"),
@@ -615,7 +621,7 @@ class HostnameDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
         self.custom = {
             'title' : Lang("Change Hostname"),
-            'fields' : [ [Lang("Hostname", 14), Data.Inst().host.hostname(''), 'hostname'] ]
+            'fields' : [ [Lang("Hostname", 14), Data.Inst().host.name_label(''), 'hostname'] ]
             }
         InputDialogue.__init__(self, inLayout, inParent)
 
@@ -637,6 +643,25 @@ class ChangeTimeoutDialogue(InputDialogue):
         Auth.Inst().TimeoutSecondsSet(timeoutMinutes * 60)
         return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+Language.Quantity(" minute",  timeoutMinutes)+'.'
         
+class SyslogDialogue(InputDialogue):
+    def __init__(self, inLayout, inParent):
+        self.custom = {
+            'title' : Lang("Change Logging Destination"),
+            'info' : Lang("Please enter the hostname or IP address for remote logging (or blank for none)"), 
+            'fields' : [ [Lang("Destination", 20), '', 'destination'] ]
+            }
+        InputDialogue.__init__(self, inLayout, inParent)
+
+    def HandleCommit(self, inValues):
+        Data.Inst().LoggingDestinationSet(inValues['destination'])
+        Data.Inst().Update()
+        
+        if inValues['destination'] == '':
+            message = Lang("Remote logging disabled.")
+        else:
+            message = Lang("Logging destination set to '")+inValues['destination'] + "'."
+        return Lang('Logging Destination Change Successful'), message        
+
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);

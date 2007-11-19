@@ -166,10 +166,19 @@ class Data:
         
         self.RequireSession()
         
-        self.session.xenapi.host.set_hostname(self.host.opaqueref(), inHostname)
+        self.session.xenapi.host.set_name_label(self.host.opaqueref(), inHostname)
 
     def NameserversSet(self, inServers):
         self.data['dns']['nameservers'] = inServers
+
+    def LoggingDestinationSet(self, inDestination):
+        Auth.Inst().AssertAuthenticated()
+        
+        self.RequireSession()
+        
+        self.session.xenapi.host.remove_from_logging(self.host.opaqueref(), 'syslog_destination')
+        self.session.xenapi.host.add_to_logging(self.host.opaqueref(), 'syslog_destination', inDestination)
+        self.session.xenapi.host.syslog_reconfigure()
 
     def ChangePassword(self,  inOldPassword, inNewPassword):
         session = Auth.Inst().TCPSession(inOldPassword)
