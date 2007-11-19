@@ -34,8 +34,13 @@ class App:
                     self.renderer = Renderer()
                     self.layout = Layout(self.cursesScreen)
                     self.layout.Create()
-                    self.layout.Clear()
+
+                    # Request password change on first boot
+                    if State.Inst().PasswordChangeRequired():
+                        self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
+                            self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
                     
+                    self.layout.Clear()
                     self.MainLoop()
                     
                 finally:
@@ -47,7 +52,6 @@ class App:
                 else:
                     os.system('/usr/bin/reset') # Reset terminal
                     if self.layout.ExitBanner() is not None:
-                        # print no longer works here
                         reflowed = Language.ReflowText(self.layout.ExitBanner(),  80)
                         for line in reflowed:
                             print(line)
@@ -61,10 +65,8 @@ class App:
                         # Does not return
                     else:
                         os.system(self.layout.ExitCommand())
-                   
 
-            
-            except KeyboardInterrupt, e:
+            except KeyboardInterrupt, e: # Catch Ctrl-C
                 Data.Reset()
                 sys.stderr.write("\033[H\033[J"+Lang("Resetting..."))
                 try:
@@ -111,6 +113,7 @@ class App:
             if gotKey is not None:
                 Auth.Inst().KeepAlive()
                 if self.layout.TopDialogue().HandleKey(gotKey):
+                    State.Inst().SaveIfRequired()
                     needsRefresh = True
                 
             if self.layout.ExitCommand() is not None:

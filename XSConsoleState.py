@@ -13,6 +13,7 @@ class State:
     def __init__(self):
         self.version = self.thisVersion
         self.authTimeoutSeconds = 5*60
+        self.passwordChangeRequired = True
         self.modified = True
     
     @classmethod
@@ -32,7 +33,7 @@ class State:
                     saveFile.close()
                     isFirstBoot = False
                     if cls.instance.version != cls.instance.thisVersion:
-                        # Version mismatch - don't use
+                        # Version mismatch - don't use the state information
                         cls.instance = None
             except Exception, e:
                 cls.instance = None
@@ -47,6 +48,16 @@ class State:
         
     def AuthTimeoutSeconds(self):
         return self.authTimeoutSeconds
+        
+    def PasswordChangeRequired(self):
+        return self.passwordChangeRequired
+        
+    def PasswordChangeRequiredSet(self, inValue):
+        self.passwordChangeRequired = inValue
+        self.modified = True
+    
+    def IsFirstBoot(self):
+        return self.isFirstBoot
     
     def AuthTimeoutSecondsSet(self, inSeconds): # Don't call this directly - use Auth.TimeoutSecondsSet
         if inSeconds < 60:
@@ -54,7 +65,6 @@ class State:
         if self.authTimeoutSeconds != inSeconds:
             self.authTimeoutSeconds = inSeconds
             self.modified = True
-        self.SaveIfRequired()
         
     def AuthTimeoutMinutes(self):
         return int((self.AuthTimeoutSeconds() + 30) / 60)

@@ -32,9 +32,9 @@ class LoginDialogue(Dialogue):
         pane.AddInputField(Lang("Username", 14), "root", 'username')
         pane.AddPasswordField(Lang("Password", 14), Auth.Inst().DefaultPassword(), 'password')
         pane.AddKeyHelpField( {
+            Lang("<Esc>") : Lang("Cancel"),
             Lang("<Enter>") : Lang("Next/OK"),
-            Lang("<Tab>") : Lang("Next"),
-            Lang("<Shift-Tab>") : Lang("Previous")
+            Lang("<Tab>") : Lang("Next")
         })
         
     def HandleKey(self, inKey):
@@ -94,13 +94,12 @@ class ChangePasswordDialogue(Dialogue):
         if self.text is not None:
             pane.AddTitleField(self.text)
         pane.AddPasswordField(Lang("Old Password", 21), Auth.Inst().DefaultPassword(), 'oldpassword')
-        pane.AddPasswordField(Lang("New Password", 21), '', 'newpassword1')
-        pane.AddPasswordField(Lang("Repeat New Password", 21), '', 'newpassword2')
+        pane.AddPasswordField(Lang("New Password", 21), Auth.Inst().DefaultPassword(), 'newpassword1')
+        pane.AddPasswordField(Lang("Repeat New Password", 21), Auth.Inst().DefaultPassword(), 'newpassword2')
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Next/OK"),
             Lang("<Esc>") : Lang("Cancel"),
-            Lang("<Tab>") : Lang("Next"),
-            Lang("<Shift-Tab>") : Lang("Previous")
+            Lang("<Tab>") : Lang("Next")
         })
         
     def HandleKey(self, inKey):
@@ -115,6 +114,10 @@ class ChangePasswordDialogue(Dialogue):
                 inputValues = pane.GetFieldValues()
                 self.layout.PopDialogue()
                 try:
+                    if not Auth.Inst().IsAuthenticated():
+                        # Log in if we're not, to support the 'Change password on first boot' dialogue
+                        Auth.Inst().ProcessLogin('root', inputValues['oldpassword'])
+                    
                     if inputValues['newpassword1'] != inputValues['newpassword2']:
                         raise Exception(Lang('New passwords do not match'))
                 
@@ -126,6 +129,7 @@ class ChangePasswordDialogue(Dialogue):
                     
                 else:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Password Change Successful')))
+                    State.Inst().PasswordChangeRequiredSet(False)
                     
                 Data.Inst().Update()
 
@@ -629,7 +633,6 @@ class ChangeTimeoutDialogue(InputDialogue):
     def HandleCommit(self, inValues):
         timeoutMinutes = int(inValues['timeout'])
         Auth.Inst().TimeoutSecondsSet(timeoutMinutes * 60)
-        State.Inst().SaveIfRequired()
         return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+Language.Quantity(" minute",  timeoutMinutes)+'.'
         
 class TestNetworkDialogue(Dialogue):

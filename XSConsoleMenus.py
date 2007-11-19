@@ -100,7 +100,7 @@ class RootMenu:
                 ChoiceDef(Lang("Status Display"), 
                     None,  lambda : inDialogue.ChangeStatus('STATUS')),
                 ChoiceDef(Lang("Authentication"), 
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
+                    lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
                 ChoiceDef(Lang("System Properties"), 
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
                 ChoiceDef(Lang("Management Interface"), 
@@ -128,7 +128,7 @@ class RootMenu:
             ]),
 
             'MENU_AUTH' : Menu(self, 'MENU_ROOT', Lang("Authentication"), [
-                ChoiceDef(Lang("Log Off"), lambda : inDialogue.HandleLogOff(), lambda : inDialogue.ChangeStatus('LOGOFF')),
+                ChoiceDef(Lang("Log On/Off"), lambda : inDialogue.HandleLogOnOff(), lambda : inDialogue.ChangeStatus('LOGONOFF')),
                 ChoiceDef(Lang("Change Password"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGEPASSWORD'),
                     lambda : inDialogue.ChangeStatus('CHANGEPASSWORD')),

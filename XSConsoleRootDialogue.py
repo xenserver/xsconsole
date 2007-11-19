@@ -67,10 +67,13 @@ class RootDialogue(Dialogue):
             inPane.AddWrappedTextField(Lang(
                 "You are currently not logged in. Press <Enter> to log in with your username and password to access privileged operations."))
 
-    def UpdateFieldsLOGOFF(self, inPane):
-        inPane.AddTitleField(Lang("Log Off"))
-    
-        inPane.AddWrappedTextField(Lang("Press <Enter> to log off."))
+    def UpdateFieldsLOGONOFF(self, inPane):
+        if Auth.Inst().IsAuthenticated():
+            inPane.AddTitleField(Lang("Log Off"))
+            inPane.AddWrappedTextField(Lang("Press <Enter> to log off."))
+        else:
+            inPane.AddTitleField(Lang("Log In"))
+            inPane.AddWrappedTextField(Lang("Press <Enter> to log in."))
 
     def UpdateFieldsCHANGEPASSWORD(self, inPane):
         inPane.AddTitleField(Lang("Change Password"))
@@ -365,15 +368,11 @@ class RootDialogue(Dialogue):
             inFunc()
         
     def ActivateDialogue(self, inName):
-        if inName == 'DIALOGUE_AUTH':
-            if (Auth.Inst().IsAuthenticated()):
-                self.ChangeMenu('MENU_AUTH')
-            else:
-                self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
-        elif inName == 'DIALOGUE_INTERFACE':
+        if inName == 'DIALOGUE_INTERFACE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGEPASSWORD':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
+            # Allow password change when not authenticated, to mitigate problems in pools
+            self.layout.PushDialogue(ChangePasswordDialogue(self.layout, self.parent))
         elif inName == 'DIALOGUE_CHANGETIMEOUT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_TESTNETWORK':
@@ -407,10 +406,11 @@ class RootDialogue(Dialogue):
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
 
-    def HandleLogOff(self):
-        name = Auth.Inst().LoggedInUsername()
-        Auth.Inst().LogOut()
-        Data.Inst().Update()
-        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
-        self.ChangeMenu('MENU_ROOT')
-        
+    def HandleLogOnOff(self):
+        if Auth.Inst().IsAuthenticated():
+            name = Auth.Inst().LoggedInUsername()
+            Auth.Inst().LogOut()
+            Data.Inst().Update()
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
+        else:
+            self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
