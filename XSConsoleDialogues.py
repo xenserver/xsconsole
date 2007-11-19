@@ -648,7 +648,7 @@ class SyslogDialogue(InputDialogue):
         self.custom = {
             'title' : Lang("Change Logging Destination"),
             'info' : Lang("Please enter the hostname or IP address for remote logging (or blank for none)"), 
-            'fields' : [ [Lang("Destination", 20), '', 'destination'] ]
+            'fields' : [ [Lang("Destination", 20), Data.Inst().host.logging.syslog_destination(''), 'destination'] ]
             }
         InputDialogue.__init__(self, inLayout, inParent)
 

@@ -84,10 +84,10 @@ class App:
         doQuit= False
         startSeconds = time.time()
         lastDataUpdateSeconds = startSeconds
+        resized = False
         
         self.layout.DoUpdate()
         while not doQuit:
-            
             try:
                 gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
             except Exception, e:
@@ -98,6 +98,12 @@ class App:
             if gotKey == "\033": gotKey = "KEY_ESCAPE"
             if gotKey == "\177": gotKey = "KEY_BACKSPACE"
             
+            if gotKey == 'KEY_RESIZE':
+                resized = True
+            elif resized and gotKey is not None:
+                if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
+                resized = False
+                
             needsRefresh = False
             secondsNow = time.time()
             secondsRunning = secondsNow - startSeconds
