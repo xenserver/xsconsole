@@ -103,7 +103,7 @@ class RootMenu:
                     lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
                 ChoiceDef(Lang("System Properties"), 
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
-                ChoiceDef(Lang("Management Interface"), 
+                ChoiceDef(Lang("Server Management"), 
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
                 ChoiceDef(Lang("Server Reboot"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
@@ -115,7 +115,7 @@ class RootMenu:
             
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), propertiesChoices),
 
-            'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', Lang("Management Interface"), [
+            'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', Lang("Server Management"), [
                 ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
                 ChoiceDef(Lang("Select Management NIC"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
@@ -128,11 +128,11 @@ class RootMenu:
             ]),
 
             'MENU_AUTH' : Menu(self, 'MENU_ROOT', Lang("Authentication"), [
-                ChoiceDef(Lang("Log On/Off"), lambda : inDialogue.HandleLogOnOff(), lambda : inDialogue.ChangeStatus('LOGONOFF')),
+                ChoiceDef(Lang("Log In/Out"), lambda : inDialogue.HandleLogInOut(), lambda : inDialogue.ChangeStatus('LOGINOUT')),
                 ChoiceDef(Lang("Change Password"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGEPASSWORD'),
                     lambda : inDialogue.ChangeStatus('CHANGEPASSWORD')),
-                ChoiceDef(Lang("Change Auto-Logoff Time"),
+                ChoiceDef(Lang("Change Auto-Logout Time"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGETIMEOUT'),
                     lambda : inDialogue.ChangeStatus('CHANGETIMEOUT')),
             ])

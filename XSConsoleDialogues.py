@@ -113,11 +113,13 @@ class ChangePasswordDialogue(Dialogue):
             else:
                 inputValues = pane.GetFieldValues()
                 self.layout.PopDialogue()
+                successMessage = Lang('Password Change Successful')
                 try:
                     if not Auth.Inst().IsAuthenticated():
                         # Log in if we're not, to support the 'Change password on first boot' dialogue
                         Auth.Inst().ProcessLogin('root', inputValues['oldpassword'])
-                    
+                        successMessage += Lang(".  User 'root' logged in.")
+                        
                     if inputValues['newpassword1'] != inputValues['newpassword2']:
                         raise Exception(Lang('New passwords do not match'))
                 
@@ -128,7 +130,7 @@ class ChangePasswordDialogue(Dialogue):
                         Lang('Password Change Failed: ')+str(e)))
                     
                 else:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Password Change Successful')))
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, successMessage))
                     State.Inst().PasswordChangeRequiredSet(False)
                     
                 Data.Inst().Update()
@@ -625,7 +627,7 @@ class HostnameDialogue(InputDialogue):
 class ChangeTimeoutDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
         self.custom = {
-            'title' : Lang("Change Auto-Logoff Timeout"),
+            'title' : Lang("Change Auto-Logout Timeout"),
             'fields' : [ [Lang("Timeout (minutes)", 20), 5, 'timeout'] ]
             }
         InputDialogue.__init__(self, inLayout, inParent)

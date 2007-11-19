@@ -62,15 +62,16 @@ class RootDialogue(Dialogue):
         inPane.NewLine()
         
         if Auth.Inst().IsAuthenticated():
-            inPane.AddWrappedTextField(Lang("You are logged in.  Press <Enter> to access the authentication menu."))
+            inPane.AddWrappedTextField(Lang("You are logged in.  Press <Enter> to log out, change the password or alter login characteristics."))
         else:
-            inPane.AddWrappedTextField(Lang(
-                "You are currently not logged in. Press <Enter> to log in with your username and password to access privileged operations."))
+            inPane.AddWrappedTextField(Lang("You are currently not logged in.  Press <Enter> to access the login menu."))
+                
 
-    def UpdateFieldsLOGONOFF(self, inPane):
+
+    def UpdateFieldsLOGINOUT(self, inPane):
         if Auth.Inst().IsAuthenticated():
-            inPane.AddTitleField(Lang("Log Off"))
-            inPane.AddWrappedTextField(Lang("Press <Enter> to log off."))
+            inPane.AddTitleField(Lang("Log Out"))
+            inPane.AddWrappedTextField(Lang("Press <Enter> to log out."))
         else:
             inPane.AddTitleField(Lang("Log In"))
             inPane.AddWrappedTextField(Lang("Press <Enter> to log in."))
@@ -82,10 +83,10 @@ class RootDialogue(Dialogue):
         "If this host is in a pool, this will change the password of the pool master."))
 
     def UpdateFieldsCHANGETIMEOUT(self, inPane):
-        inPane.AddTitleField(Lang("Change Auto-Logoff Time"))
+        inPane.AddTitleField(Lang("Change Auto-Logout Time"))
     
         timeout = State.Inst().AuthTimeoutMinutes()
-        message = Lang("The current auto-logoff time is ") + str(timeout) + " "
+        message = Lang("The current auto-logout time is ") + str(timeout) + " "
 
         message += Language.Quantity("minute", timeout) + ".  "
         message += Lang("Users will be automatically logged out after there has been no activity for this time.  "+
@@ -406,7 +407,7 @@ class RootDialogue(Dialogue):
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
 
-    def HandleLogOnOff(self):
+    def HandleLogInOut(self):
         if Auth.Inst().IsAuthenticated():
             name = Auth.Inst().LoggedInUsername()
             Auth.Inst().LogOut()

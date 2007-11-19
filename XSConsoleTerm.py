@@ -68,7 +68,7 @@ class App:
 
             except KeyboardInterrupt, e: # Catch Ctrl-C
                 Data.Reset()
-                sys.stderr.write("\033[H\033[J"+Lang("Resetting..."))
+                sys.stderr.write("\033[H\033[J"+Lang("Resetting...")) # Clear screen and print banner
                 try:
                     time.sleep(0.5) # Prevent flicker
                 except Exception, e:
