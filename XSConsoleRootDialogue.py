@@ -281,6 +281,36 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to start a local command shell on this server."))
  
+    def UpdateFieldsTECHNICAL(self, inPane):
+        inPane.AddTitleField(Lang("Technical Support"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "From the Technical Support menu you can enable local and remote shells, "
+            "validate the configuration of this server and upload bug reports."))
+ 
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Technical Support Menu")
+        } )
+        
+    def UpdateFieldsREMOTESHELL(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Remote Shell (ssh)"))
+    
+        if data.chkconfig.sshd() is None:
+            message = Lang('unknown.  To enable or disable')
+        elif data.chkconfig.sshd():
+            message = Lang('enabled.  To disable')
+        else:
+            message = Lang('disabled.  To enable')
+            
+        inPane.AddWrappedTextField(Lang(
+            "This server can accept a remote login via ssh.  Currently remote login is ") +
+            message + Lang(" this feature, press <Enter>."))
+ 
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Configure Remote Shell")
+        } )
+ 
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("DNS Servers"))
@@ -399,6 +429,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SYSLOG':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_REMOTESHELL':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))

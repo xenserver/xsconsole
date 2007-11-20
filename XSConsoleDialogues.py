@@ -662,6 +662,58 @@ class SyslogDialogue(InputDialogue):
             message = Lang("Logging destination set to '")+inValues['destination'] + "'."
         return Lang('Logging Destination Change Successful'), message        
 
+class RemoteShellDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent);
+
+        paneHeight = 9
+        pane = self.NewPane('remoteshell', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(Lang("Configure Remote Shell"))
+        pane.AddBox()
+
+        self.remoteShellMenu = Menu(self, None, Lang("Configure Remote Shell"), [
+            ChoiceDef(Lang("Enable"), lambda: self.HandleChoice(True) ), 
+            ChoiceDef(Lang("Disable"), lambda: self.HandleChoice(False) )
+            ])
+    
+        self.UpdateFields()
+        
+    def UpdateFields(self):
+        pane = self.Pane('remoteshell')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please select an option"))
+        pane.AddMenuField(self.remoteShellMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def HandleKey(self, inKey):
+        handled = self.remoteShellMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+                
+    def HandleChoice(self,  inChoice):
+        data = Data.Inst()
+        self.layout.PopDialogue()
+        
+        try:
+            data.ConfigureRemoteShell(inChoice)
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+str(e)))
+        else:
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Configuration Updated.  Resetting the sshd process...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            time.sleep(2)
+            if inChoice:
+                self.layout.SubshellCommandSet('/etc/init.d/sshd start && sleep 2')
+            else:
+                self.layout.SubshellCommandSet('/etc/init.d/sshd stop && sleep 2')
+
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent);

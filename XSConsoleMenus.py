@@ -105,6 +105,8 @@ class RootMenu:
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
                 ChoiceDef(Lang("Server Management"), 
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+                ChoiceDef(Lang("Technical Support"), 
+                    lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
                 ChoiceDef(Lang("Server Reboot"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
                 ChoiceDef(Lang("Server Shutdown"), 
@@ -136,10 +138,15 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('CHANGEPASSWORD')),
                 ChoiceDef(Lang("Change Auto-Logout Time"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_CHANGETIMEOUT'),
-                    lambda : inDialogue.ChangeStatus('CHANGETIMEOUT')),
+                    lambda : inDialogue.ChangeStatus('CHANGETIMEOUT'))
+            ]), 
+ 
+        'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
+                ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
+                    lambda : inDialogue.ChangeStatus('REMOTESHELL'))
             ])
         }
- 
+        
         self.currentKey = 'MENU_ROOT'
     
     def CurrentMenu(self):

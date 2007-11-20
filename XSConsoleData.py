@@ -56,6 +56,9 @@ class Data:
     #   self.host.software_version.oem_model('Default')
     # is similar but returns the parameter ('Default' in this case) if the element doesn't exist
     def __getattr__(self, inName):
+        if inName[0].isupper():
+            # Don't expect elements to start with upper case, so probably an unknown method name
+            raise Exception("Unknown method Data."+inName)
         return DataMethod(self.GetData, [inName])
     
     def RequireSession(self):
@@ -100,6 +103,11 @@ class Data:
                 pass # Ignore failure - just leave data empty
 
         self.UpdateFromResolveConf()
+
+        if os.path.isfile("/sbin/chkconfig"):
+            (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
+            if status == 0:
+                self.ScanChkConfig(output.split("\n"))
 
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
@@ -161,7 +169,7 @@ class Data:
     def HostnameSet(self, inHostname):
         Auth.Inst().AssertAuthenticated()
 
-        if not re.match(r'[A-Za-z0-9.-]+$', inHostname):
+        if not re.match(r'[-A-Za-z0-9.]+$', inHostname):
             raise Exception("Invalid hostname '"+inHostname+"'")
         
         self.RequireSession()
@@ -311,10 +319,21 @@ class Data:
         self.data['bmc'] = {}
 
         for line in inLines:
-            match = re.match(r'Firmware\s+Revision\s*:\s*([0-9.-]+)', line)
+            match = re.match(r'Firmware\s+Revision\s*:\s*([-0-9.]+)', line)
             if match:
                 self.data['bmc']['version'] = match.group(1)
-            
+    
+    def ScanChkConfig(self, inLines):
+        self.data['chkconfig'] = {}
+
+        for line in inLines:
+            # Is sshd on for runlevel 5?
+            if re.match(r'sshd.*5\s*:\s*on', line, re.IGNORECASE):
+                self.data['chkconfig']['sshd'] = True
+            elif re.match(r'sshd.*5\s*:\s*off', line, re.IGNORECASE):
+                self.data['chkconfig']['sshd'] = False
+            # else leave as Unknown
+    
     def ScanResolvConf(self, inLines):
         self.data['dns'] = {
             'nameservers' : [], 
@@ -337,10 +356,19 @@ class Data:
         finally:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.Inst().CloseSession(self.session)
+    
+    def ConfigureRemoteShell(self, inEnable):
+        if inEnable:
+            status, output = commands.getstatusoutput("/sbin/chkconfig sshd on")
+        else:
+            status, output = commands.getstatusoutput("/sbin/chkconfig sshd off")
         
+        if status != 0:
+            raise Exception(output)
+    
     def Ping(self,  inDest):
         # Must be careful that no unsanitised data is passed to the shell
-        if not re.match(r'([0-9a-zA-Z.-]+)$',  inDest):
+        if not re.match(r'([-0-9a-zA-Z.]+)$',  inDest):
             raise Exception("Invalid destination '"+inDest+"'")
         
         command = "/bin/ping -c 1 -w 2 '"+inDest+"'"
