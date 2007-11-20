@@ -1,4 +1,6 @@
 
+import XenAPI
+
 # Global function
 def Lang(inLabel, inPad = 0):
     retStr = Language.ToString(inLabel)
@@ -16,7 +18,14 @@ class Language:
 
     @classmethod
     def ToString(cls, inLabel):
-        return inLabel
+        if isinstance(inLabel, XenAPI.Failure):
+            retVal = inLabel.details[0]
+        elif isinstance(inLabel, Exception):
+            retVal = str(inLabel)
+        else:
+            retVal = inLabel
+                
+        return retVal
 
     @classmethod
     def ReflowText(cls, inText, inWidth):

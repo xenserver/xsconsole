@@ -186,7 +186,7 @@ class Data:
         
         self.session.xenapi.host.remove_from_logging(self.host.opaqueref(), 'syslog_destination')
         self.session.xenapi.host.add_to_logging(self.host.opaqueref(), 'syslog_destination', inDestination)
-        self.session.xenapi.host.syslog_reconfigure()
+        self.session.xenapi.host.syslog_reconfigure(self.host.opaqueref())
 
     def ChangePassword(self,  inOldPassword, inNewPassword):
         session = Auth.Inst().TCPSession(inOldPassword)

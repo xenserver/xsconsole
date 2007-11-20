@@ -58,7 +58,7 @@ class LoginDialogue(Dialogue):
                         self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Successful')))
                 
                 except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Failed: ')+str(e)))
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Failed: ')+Lang(e)))
 
                 Data.Inst().Update()
                 
@@ -127,7 +127,7 @@ class ChangePasswordDialogue(Dialogue):
                     
                 except Exception, e:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
-                        Lang('Password Change Failed: ')+str(e)))
+                        Lang('Password Change Failed: ')+Lang(e)))
                     
                 else:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, successMessage))
@@ -397,7 +397,7 @@ class InterfaceDialogue(Dialogue):
                 
             except Exception, e:
                 self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Failed: "+str(e))))
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Failed: "+Lang(e))))
                 
         else:
             handled = False
@@ -564,7 +564,7 @@ class DNSDialogue(Dialogue):
             Data.Inst().SaveToResolvConf()
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, inMessage))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+str(e)))
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+Lang(e)))
 
 class InputDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -610,7 +610,7 @@ class InputDialogue(Dialogue):
                 title, info = self.HandleCommit(self.Pane('input').GetFieldValues())
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, title, info))
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+str(e)))
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+Lang(e)))
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
@@ -703,7 +703,7 @@ class RemoteShellDialogue(Dialogue):
         try:
             data.ConfigureRemoteShell(inChoice)
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+str(e)))
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
         else:
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Configuration Updated.  Resetting the sshd process...")))
             self.layout.Refresh()
@@ -820,7 +820,7 @@ class TestNetworkDialogue(Dialogue):
             try:
                 (success,  output) = Data.Inst().Ping(inAddress)
             except Exception,  e:
-                output = str(e)
+                output = Lang(e)
             
         if success:
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping successful"), output))

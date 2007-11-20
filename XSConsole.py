@@ -2,6 +2,7 @@
 
 import sys
 from XSConsoleTerm import *
+from XSConsoleLang import *
 
 def main():
     app = App()
@@ -11,5 +12,5 @@ if __name__ == "__main__":
     try:
         main()
     except Exception, e:
-        print str(e)
+        print Lang(e)
         raise

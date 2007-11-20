@@ -75,7 +75,7 @@ class App:
                     pass # Catch repeated Ctrl-C
             
             except Exception, e:
-                sys.stderr.write(str(e)+"\n")
+                sys.stderr.write(Lang(e)+"\n")
                 doQuit = True
         
 

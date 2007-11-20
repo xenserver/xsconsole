@@ -95,7 +95,7 @@ class CursesPane:
                         # character in a window, but still completes the write, so ignore it
                         pass
                     else:
-                        raise Exception("addstr failed with "+str(e)+" for '"+inString+"' at "+str(xPos)+', '+str(inY))
+                        raise Exception("addstr failed with "+Lang(e)+" for '"+inString+"' at "+str(xPos)+', '+str(inY))
         
     def AddBox(self):
         self.hasBox = True
