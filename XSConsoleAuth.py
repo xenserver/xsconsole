@@ -99,6 +99,8 @@ class Auth:
     def IsAuthenticated(self):
         if self.isAuthenticated and self.AuthAge() <= State.Inst().AuthTimeoutSeconds():
             retVal = True
+        elif State.Inst().IsRecoveryMode():
+            retVal = True
         else:
             retVal = False
         return retVal

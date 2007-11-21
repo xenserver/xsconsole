@@ -76,6 +76,36 @@ class Menu:
         
 class RootMenu:
     def __init__(self, inDialogue):
+        if State.Inst().IsRecoveryMode():
+            rootMenu = Menu(self, None, Lang("Customize System"), [
+                ChoiceDef(Lang("Status Display"), 
+                    None,  lambda : inDialogue.ChangeStatus('STATUS')),
+                ChoiceDef(Lang("Server Reboot"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
+                ChoiceDef(Lang("Server Shutdown"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
+                ChoiceDef(Lang("Local Command Shell"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
+            ])
+        else:
+            rootMenu = Menu(self, None, Lang("Customize System"), [
+                ChoiceDef(Lang("Status Display"), 
+                    None,  lambda : inDialogue.ChangeStatus('STATUS')),
+                ChoiceDef(Lang("Authentication"), 
+                    lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
+                ChoiceDef(Lang("System Properties"), 
+                    lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
+                ChoiceDef(Lang("Server Management"), 
+                    lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+                ChoiceDef(Lang("Technical Support"), 
+                    lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
+                ChoiceDef(Lang("Server Reboot"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
+                ChoiceDef(Lang("Server Shutdown"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
+                ChoiceDef(Lang("Local Command Shell"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
+            ])
         
         propertiesChoices = [
                 ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSERVER')),
@@ -96,24 +126,7 @@ class RootMenu:
             propertiesChoices.append(ChoiceDef(Lang("CPLD Version"), None, lambda : inDialogue.ChangeStatus('CPLD')))
         
         self.menus = {
-            'MENU_ROOT' : Menu(self, None, Lang("Customize System"), [
-                ChoiceDef(Lang("Status Display"), 
-                    None,  lambda : inDialogue.ChangeStatus('STATUS')),
-                ChoiceDef(Lang("Authentication"), 
-                    lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
-                ChoiceDef(Lang("System Properties"), 
-                    lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
-                ChoiceDef(Lang("Server Management"), 
-                    lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
-                ChoiceDef(Lang("Technical Support"), 
-                    lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
-                ChoiceDef(Lang("Server Reboot"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
-                ChoiceDef(Lang("Server Shutdown"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
-                ChoiceDef(Lang("Local Command Shell"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
-            ]),
+            'MENU_ROOT' : rootMenu,
             
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), propertiesChoices),
 
@@ -143,7 +156,11 @@ class RootMenu:
  
         'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
                 ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
-                    lambda : inDialogue.ChangeStatus('REMOTESHELL'))
+                    lambda : inDialogue.ChangeStatus('REMOTESHELL')),
+                ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
+                    lambda : inDialogue.ChangeStatus('VALIDATE')),
+                ChoiceDef(Lang("Apply Upgrade or Patch"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
+                    lambda : inDialogue.ChangeStatus('PATCH'))
             ])
         }
         

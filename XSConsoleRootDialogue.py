@@ -12,7 +12,7 @@ from XSConsoleMenus import *
 class RootDialogue(Dialogue):
     
     def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         menuPane = self.NewPane('menu', DialoguePane(1, 2, 38, 21, self.parent))
         menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT')
         statusPane = self.NewPane('status', DialoguePane(41, 2, 38, 21, self.parent))
@@ -311,6 +311,30 @@ class RootDialogue(Dialogue):
             Lang("<Enter>") : Lang("Configure Remote Shell")
         } )
  
+    def UpdateFieldsVALIDATE(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Validate Server Cnfigration"))
+
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to check the basic configuration of this server."))
+ 
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Validate")
+        } )
+        
+    def UpdateFieldsPATCH(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Apply Upgrade or Patch"))
+
+        if State.Inst().IsRecoveryMode():
+            inPane.AddWrappedTextField(Lang(
+                "Press <Enter> to apply a software upgrade or patch."))
+            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Validate") } )   
+        else:
+            inPane.AddWrappedTextField(Lang(
+                "Please enter Recovery Mode from the Reboot menu before applying an upgrade or patch."))
+ 
+    
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("DNS Servers"))
@@ -362,19 +386,19 @@ class RootDialogue(Dialogue):
 
     def UpdateFields(self):
         menuPane = self.Pane('menu')
-        menuPane.ResetFields();
-        menuPane.ResetPosition();
+        menuPane.ResetFields()
+        menuPane.ResetPosition()
         menuPane.AddTitleField(self.menu.CurrentMenu().Title())
         menuPane.AddMenuField(self.menu.CurrentMenu())
         statusPane = self.Pane('status')
         try:
-            statusPane.ResetFields();
-            statusPane.ResetPosition();
+            statusPane.ResetFields()
+            statusPane.ResetPosition()
             getattr(self, 'UpdateFields'+self.currentStatus)(statusPane) # Despatch method named 'UpdateFields'+self.currentStatus
 
         except Exception, e:
-            statusPane.ResetFields();
-            statusPane.ResetPosition();
+            statusPane.ResetFields()
+            statusPane.ResetPosition()
             self.UpdateFieldsEXCEPTION(statusPane,  e)
         
         keyHash = { Lang("<Up/Down>") : Lang("Select") }
@@ -396,7 +420,7 @@ class RootDialogue(Dialogue):
         handled = currentMenu.HandleKey(inKey)
 
         if handled:
-            self.UpdateFields();
+            self.UpdateFields()
             self.Pane('menu').Refresh()
             self.Pane('status').Refresh()
             
@@ -431,6 +455,10 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_VALIDATE':
+            self.layout.PushDialogue(ValidateDialogue(self.layout,  self.parent))
+        elif inName == 'DIALOGUE_PATCH':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(PatchDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))

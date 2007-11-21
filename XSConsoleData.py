@@ -28,7 +28,7 @@ class Data:
     def Inst(cls):
         if cls.instance is None:
             cls.instance = Data()
-            cls.instance.Update()
+            cls.instance.Create()
         return cls.instance
     
     @classmethod
@@ -64,51 +64,10 @@ class Data:
     def RequireSession(self):
         if self.session is None: self.session = Auth.Inst().OpenSession()
     
-    def Update(self):
-        self.data = {
-            'host' : {}
-            }
-
-        self.RequireSession()
-        if self.session is not None:
-            try:
-                thisHost = self.session.xenapi.session.get_this_host(self.session._session)
-                
-                hostRecord = self.session.xenapi.host.get_record(thisHost)
-                self.data['host'] = hostRecord
-                self.data['host']['opaqueref'] = thisHost
-                
-                # Expand the items we need in the host record
-                self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
-                
-                convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
-                self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
-                
-                def convertPIF(inPIF):
-                    retVal = self.session.xenapi.PIF.get_record(inPIF)
-                    retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
-                    if retVal['network'] != 'OpaqueRef:NULL': retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
-                    retVal['opaqueref'] = inPIF
-                    return retVal
-    
-                self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
-    
-                # Sort PIFs by device name for consistent order
-                self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))
-    
-                convertPBD = lambda pbd: self.session.xenapi.PBD.get_record(pbd)
-                self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
-
-            except Exception, e:
-                pass # Ignore failure - just leave data empty
-
-        self.UpdateFromResolveConf()
-
-        if os.path.isfile("/sbin/chkconfig"):
-            (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
-            if status == 0:
-                self.ScanChkConfig(output.split("\n"))
-
+    def Create(self):
+        # Create fills in data that never changes.  Update fills volatile data
+        self.data = {}
+        
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
             # Use test dmidecode file if there's no real output
@@ -128,7 +87,67 @@ class Data:
             (status, output) = commands.getstatusoutput("/usr/bin/ipmitool mc info")
             if status == 0:
                 self.ScanIpmiMcInfo(output.split("\n"))
+        
+        self.Update()
+    
+    def Update(self):
+        self.data['host'] = {}
+        self.data['sr'] = {}
+
+        self.RequireSession()
+        if self.session is not None:
+            try:
+                thisHost = self.session.xenapi.session.get_this_host(self.session._session)
                 
+                hostRecord = self.session.xenapi.host.get_record(thisHost)
+                self.data['host'] = hostRecord
+                self.data['host']['opaqueref'] = thisHost
+                
+                # Expand the items we need in the host record
+                self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
+                
+                convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
+                self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
+                
+                def convertPIF(inPIF):
+                    retVal = self.session.xenapi.PIF.get_record(inPIF)
+                    retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
+                    if retVal['network'] != 'OpaqueRef:NULL':
+                        retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
+                    retVal['opaqueref'] = inPIF
+                    return retVal
+    
+                self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
+    
+                # Sort PIFs by device name for consistent order
+                self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))
+    
+                def convertPBD(inPBD):
+                    retVal = self.session.xenapi.PBD.get_record(inPBD)
+                    if retVal['SR'] != 'OpaqueRef:NULL':
+                        srRef = retVal['SR']
+                        retVal['SR'] = self.session.xenapi.SR.get_record(retVal['SR'])
+                        retVal['SR']['opaqueref'] = srRef
+                        
+                        convertVDI = lambda vdi: self.session.xenapi.VDI.get_record(vdi)
+                        
+                        retVal['SR']['VDIs'] = map(convertVDI, retVal['SR']['VDIs'])
+                        
+                    retVal['opaqueref'] = inPBD
+                    return retVal
+                    
+                self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
+
+            except Exception, e:
+                pass # Ignore failure - just leave data empty
+
+        self.UpdateFromResolveConf()
+
+        if os.path.isfile("/sbin/chkconfig"):
+            (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
+            if status == 0:
+                self.ScanChkConfig(output.split("\n"))
+
         self.DeriveData()
         
     def DeriveData(self):
@@ -149,8 +168,8 @@ class Data:
                 if name in cpuNameSummary:
                     cpuNameSummary[name] += 1
                 else:
-                    cpuNameSummary[name] = 1
-                
+                    cpuNameSummary[name] = 1        
+        
         # Select the current management PIFs
         self.data['derived']['managementpifs'] = []
         if 'PIFs' in self.data['host']:

@@ -41,7 +41,10 @@ class State:
             if cls.instance is None:
                 cls.instance = State()
             
+            # Fill in pseudo-state
             cls.instance.isFirstBoot = isFirstBoot
+            cls.instance.isRecoveryMode = os.path.isfile('/recovery')
+                
             cls.instance.MakeSane()
             
         return cls.instance
@@ -58,6 +61,9 @@ class State:
     
     def IsFirstBoot(self):
         return self.isFirstBoot
+    
+    def IsRecoveryMode(self):
+        return self.isRecoveryMode
     
     def AuthTimeoutSecondsSet(self, inSeconds): # Don't call this directly - use Auth.TimeoutSecondsSet
         if inSeconds < 60:

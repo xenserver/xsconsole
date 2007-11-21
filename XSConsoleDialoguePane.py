@@ -78,7 +78,7 @@ class DialoguePane:
         return retVal
 
     def Refresh(self):
-        self.Win().Refresh();
+        self.Win().Refresh()
 
     def ColoursSet(self, inBase, inBright, inHighlight = None, inTitle = None):
         self.baseColour = inBase

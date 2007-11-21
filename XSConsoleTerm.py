@@ -18,8 +18,8 @@ class App:
         self.cursesScreen = None
     
     def Enter(self):
-        # Data.Inst().Dump() # Testing
         doQuit = False
+        # Data.Inst().Dump() ; doQuit = True # Testing
         
         while not doQuit:
             try:
@@ -36,7 +36,7 @@ class App:
                     self.layout.Create()
 
                     # Request password change on first boot
-                    if State.Inst().PasswordChangeRequired():
+                    if State.Inst().PasswordChangeRequired() and not State.Inst().IsRecoveryMode():
                         self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
                             self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
                     
@@ -125,7 +125,9 @@ class App:
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             
-            if Auth.Inst().IsAuthenticated():
+            if State.Inst().IsRecoveryMode():
+                bannerStr = Lang("Recovery Mode")
+            elif Auth.Inst().IsAuthenticated():
                 bannerStr = Lang('User')+': '+Auth.Inst().LoggedInUsername()
                 # Testing: bannerStr += ' ('+str(int(Auth.Inst().AuthAge()))+')'
             else:
@@ -166,13 +168,13 @@ class Layout:
         self.exitCommandIsExec = True # Not layout, but keep with layout for convenience
 
     def ExitBanner(self):
-        return self.exitBanner;
+        return self.exitBanner
         
     def ExitBannerSet(self,  inBanner):
         self.exitBanner = inBanner
         
     def ExitCommand(self):
-        return self.exitCommand;
+        return self.exitCommand
         
     def ExitCommandSet(self,  inCommand):
         self.exitCommand = inCommand

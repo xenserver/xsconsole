@@ -10,7 +10,7 @@ from XSConsoleMenus import *
 
 class LoginDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.successFunc = inSuccessFunc
         if self.text is None:
@@ -74,7 +74,7 @@ class LoginDialogue(Dialogue):
 
 class ChangePasswordDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.successFunc = inSuccessFunc
         if self.text is None:
@@ -147,7 +147,7 @@ class ChangePasswordDialogue(Dialogue):
 
 class InfoDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText,  inInfo = None):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         if inInfo is None:
             self.info = None
@@ -169,13 +169,13 @@ class InfoDialogue(Dialogue):
         pane.ResetFields()
         if len(self.text) < 70:
             # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 1);
+            pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(3, 1);
+            pane.ResetPosition(3, 1)
         
         pane.AddWrappedBoldTextField(self.text)
         if self.info is not None:
-            pane.ResetPosition(1, 3);
+            pane.ResetPosition(1, 3)
             pane.AddWrappedTextField(self.info)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
@@ -189,7 +189,7 @@ class InfoDialogue(Dialogue):
 
 class BannerDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         pane = self.NewPane('banner', DialoguePane(3, 9, 74, 5, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
@@ -201,15 +201,15 @@ class BannerDialogue(Dialogue):
         pane.ResetFields()
         if len(self.text) < 70:
             # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 1);
+            pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(30, 1);
+            pane.ResetPosition(30, 1)
         
         pane.AddWrappedBoldTextField(self.text)
 
 class QuestionDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText,  inHandler):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.handler = inHandler
         pane = self.NewPane('question', DialoguePane(3, 9, 74, 5, self.parent))
@@ -222,9 +222,9 @@ class QuestionDialogue(Dialogue):
         pane.ResetFields()
         if len(self.text) < 70:
             # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 1);
+            pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(30, 1);
+            pane.ResetPosition(30, 1)
         
         pane.AddWrappedBoldTextField(self.text)
 
@@ -245,7 +245,7 @@ class QuestionDialogue(Dialogue):
 
 class InterfaceDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         numNICs = len(Data.Inst().host.PIFs([]))
         paneHeight = max(numNICs,  5) + 6
         paneHeight = min(paneHeight,  22)
@@ -443,7 +443,7 @@ class InterfaceDialogue(Dialogue):
             
 class DNSDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
         data=Data.Inst()
         paneHeight = 10
         pane = self.NewPane('dns', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
@@ -664,7 +664,7 @@ class SyslogDialogue(InputDialogue):
 
 class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
 
         paneHeight = 9
         pane = self.NewPane('remoteshell', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
@@ -714,9 +714,170 @@ class RemoteShellDialogue(Dialogue):
             else:
                 self.layout.SubshellCommandSet('/etc/init.d/sshd stop && sleep 2')
 
+class ValidateDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        paneHeight = 10
+        pane = self.NewPane('validate', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.Win().TitleSet(Lang("Validate Server Configuration"))
+        pane.AddBox()
+    
+        self.vtResult = "Unknown"
+        self.srResult = "Unknown"
+        self.netResult = "Unknown"
+    
+        self.UpdateFields()
+        
+    def UpdateFields(self):
+        pane = self.Pane('validate')
+        pane.ResetFields()
+        
+        
+        
+        pane.AddTitleField(Lang("Validation Results (feature not complete)"))
+        pane.AddStatusField(Lang("VT enabled on CPU", 40), self.vtResult)
+        pane.AddStatusField(Lang("Default storage repository", 40), self.srResult)
+        pane.AddStatusField(Lang("Management network", 40), self.netResult)
+        
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+
+    def HandleKey(self, inKey):
+        handled = False
+        if inKey == 'KEY_ENTER' or inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+
+class FileUtils:
+    @classmethod
+    def PatchDeviceList(cls):
+        retVal = []
+        
+        for pbd in Data.Inst().host.PBDs([]):
+            sr = pbd.get('SR', {})
+            for vdi in sr.get('VDIs', []):
+                nameLabel = vdi.get('name_label', Lang('Unknown'))
+                if re.match(r'(SCSI|USB)', nameLabel): # Skip if not USB or SCSI
+                    match = True
+                    while match:
+                        match = re.match(r'(.*):0$', nameLabel)
+                        if match:
+                            # Remove multiple trailing :0
+                            nameLabel = match.group(1)
+                    nameDesc = vdi.get('name_description', Lang('Unknown device'))
+                    match = re.match(r'(.*)\srev\b', nameDesc)
+                    if match:
+                        # Remove revision information
+                        nameDesc = match.group(1)
+                        
+                    deviceSize = int(vdi.get('physical_utilisation', 0))
+                    if deviceSize >= 2**30:
+                        nameSize = str(int(deviceSize * 10 / 2**30) / 10)+'GB'
+                    else:
+                        nameSize = str(int(deviceSize / 2**20))+'MB'
+                    
+                    name =  "%-50s%10.10s%10.10s" % (nameDesc, nameLabel, nameSize)
+                    retVal.append(name)
+
+        retVal.sort()
+
+        return retVal
+
+class PatchDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+        
+        deviceList = FileUtils.PatchDeviceList()
+        
+        paneHeight = 7+len(deviceList)
+        paneHeight = min(paneHeight,  22)
+        pane = self.NewPane('patch', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(Lang("Apply Software Upgrade or Patch"))
+        pane.AddBox()
+
+        choiceDefs = []
+        for device in deviceList:
+            choiceDefs.append(ChoiceDef(device, lambda: self.HandleTestChoice(device) ) )
+
+        self.patchMenu = Menu(self, None, Lang("Select Patch"), choiceDefs)
+    
+        self.state = 'INITIAL'
+    
+        self.UpdateFields()
+
+    def UpdateFields(self):
+        self.Pane('patch').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('patch')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Select the Device Containing the Patch"))
+        pane.AddMenuField(self.patchMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        
+    def UpdateFieldsCUSTOM(self):
+        pane = self.Pane('patch')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Enter hostname or IP address to ping"))
+        pane.AddInputField(Lang("Address",  16), self.customIP, 'address')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        return self.patchMenu.HandleKey(inKey)
+        
+    def HandleKeyCUSTOM(self, inKey):
+        handled = True
+        pane = self.Pane('patch')
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            inputValues = pane.GetFieldValues()
+            self.customIP = inputValues['address']
+            self.DoPing(self.customIP)
+            
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+        
+    def HandleTestChoice(self,  inChoice):
+            self.DoPatch(inChoice)
+
+    def DoPatch(self, inChoice):
+        self.layout.PopDialogue()
+        success = False
+            
+        if success:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Patch successful")))
+        else:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Patch failed: Feature unsupported")))
+
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent);
+        Dialogue.__init__(self, inLayout, inParent)
 
         paneHeight = 12
         paneHeight = min(paneHeight,  22)

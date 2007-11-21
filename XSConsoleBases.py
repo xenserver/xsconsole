@@ -23,7 +23,7 @@ class Struct:
         
 class Dialogue:
     def __init__(self, layout = None, parent = None):
-        ParamsToAttr();
+        ParamsToAttr()
         self.panes = {}
 
     def Pane(self, inName):

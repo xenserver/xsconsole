@@ -80,7 +80,7 @@ class WrappedTextField:
 
 class MenuField:
     def __init__(self, menu, colour, highlight):
-        ParamsToAttr();
+        ParamsToAttr()
     
     def Width(self):
         if len(self.menu.ChoiceDefs()) == 0:

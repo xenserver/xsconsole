@@ -2,6 +2,8 @@
 import curses, sys, commands
 
 from XSConsoleBases import *
+from XSConsoleLang import *
+from XSConsoleState import *
 
 class CursesPalette:
     pairIndex = 1
@@ -29,16 +31,33 @@ class CursesPalette:
         lightgrey = curses.COLOR_WHITE
         darkgrey = curses.COLOR_BLACK
 
-        if curses.can_change_color():
-            curses.init_color(curses.COLOR_BLUE, 666, 666, 500)
-            lightgrey = curses.COLOR_BLUE
-            curses.init_color(curses.COLOR_GREEN, 444, 444, 333)
-            darkgrey = curses.COLOR_GREEN
-            curses.init_color(curses.COLOR_RED, 333, 0, 0)
-            darkred = curses.COLOR_RED
-            curses.init_color(curses.COLOR_MAGENTA, 500, 0, 0)
-            red = curses.COLOR_MAGENTA
-            curses.init_color(curses.COLOR_WHITE, 999, 999, 750)
+
+        
+        if State.Inst().IsRecoveryMode():
+            darkred = curses.COLOR_BLUE
+            red = curses.COLOR_BLUE
+            
+            if curses.can_change_color():
+                lightgrey = curses.COLOR_GREEN
+                curses.init_color(lightgrey, 666, 666, 500)
+                darkgrey = curses.COLOR_RED
+                curses.init_color(darkgrey, 444, 444, 333)
+                darkred = curses.COLOR_BLUE
+                curses.init_color(darkred, 0, 150, 200) # Reds become blue
+                red = curses.COLOR_MAGENTA
+                curses.init_color(red, 0, 200, 266)
+                curses.init_color(curses.COLOR_WHITE, 999, 999, 750)
+        else:
+            if curses.can_change_color():
+                lightgrey = curses.COLOR_BLUE
+                curses.init_color(lightgrey, 666, 666, 500)
+                darkgrey = curses.COLOR_GREEN
+                curses.init_color(darkgrey, 444, 444, 333)
+                darkred = curses.COLOR_RED
+                curses.init_color(darkred, 333, 0, 0)
+                red = curses.COLOR_MAGENTA
+                curses.init_color(red, 500, 0, 0)
+                curses.init_color(curses.COLOR_WHITE, 999, 999, 750)
             
         cls.colours['MAIN_BASE'] = cls.ColourCreate(lightgrey, darkred)
         cls.colours['MENU_BASE'] = cls.ColourCreate(lightgrey, darkred)
@@ -194,7 +213,7 @@ class CursesScreen(CursesPane):
         
         self.win = curses.initscr()
 
-        (ySize, xSize) = self.win.getmaxyx();
+        (ySize, xSize) = self.win.getmaxyx()
         CursesPane.__init__(self, 0, 0, xSize, ySize)
         curses.noecho()
         curses.cbreak()
