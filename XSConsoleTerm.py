@@ -19,7 +19,11 @@ class App:
     
     def Enter(self):
         doQuit = False
-        # Data.Inst().Dump() ; doQuit = True # Testing
+
+        if '--dump' in sys.argv:
+            # Testing - dump data and exit
+            Data.Inst().Dump()
+            doQuit = True
         
         while not doQuit:
             try:

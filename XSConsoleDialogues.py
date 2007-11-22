@@ -752,7 +752,7 @@ class ValidateDialogue(Dialogue):
 
         return handled
 
-class FileUtils:
+class FileUtils: # Belongs in XSConsoleUtils.py
     @classmethod
     def PatchDeviceList(cls):
         retVal = []
@@ -775,40 +775,116 @@ class FileUtils:
                         nameDesc = match.group(1)
                         
                     deviceSize = int(vdi.get('physical_utilisation', 0))
-                    if deviceSize >= 2**30:
-                        nameSize = str(int(deviceSize * 10 / 2**30) / 10)+'GB'
-                    else:
-                        nameSize = str(int(deviceSize / 2**20))+'MB'
-                    
-                    name =  "%-50s%10.10s%10.10s" % (nameDesc, nameLabel, nameSize)
-                    retVal.append(name)
+                    if deviceSize < 0:
+                        deviceSize = int(vdi.get('virtual_size', 0))
 
-        retVal.sort()
+                    # Using these values for MB and GB gives the right value for USB sticks
+                    if deviceSize >= 1000000000:
+                        if deviceSize < 10000000000:
+                            nameSize = ('%.1f' % (int(deviceSize / 100000000) / 10.0)) + 'GB'
+                        else:
+                            nameSize = str(int(deviceSize / 1000000000))+'GB'
+                    else:
+                        nameSize = str(int(deviceSize / 1000000))+'MB'
+                    
+                    name =  "%-50s%10.10s%10.10s" % (nameDesc[:50], nameLabel[:10], nameSize[:10])
+                    retVal.append(Struct(name = name, vdi = vdi))
+
+        retVal.sort(lambda x, y : cmp(x.vdi['name_label'], y.vdi['name_label']))
 
         return retVal
+
+    @classmethod
+    def AssertSafePath(cls, inPath):
+        if not re.match(r'[-A-Za-z0-9/._]*$', inPath):
+            raise Exception("Invalid characters in path '"+inPath+"'")
+
+class MountVDI:
+    def __init__(self, inVDI):
+        self.mountDev = inVDI['location']
+        FileUtils.AssertSafePath(self.mountDev)
+        self.mountPoint = "/mnt/xsconsole"
+        if not os.path.isdir(self.mountPoint):
+            os.mkdir(self.mountPoint, 0700)
+        
+        status, output = 1, ""
+        i=0
+        while status != 0:
+            status, output = commands.getstatusoutput("/bin/mount -t auto -o ro " +self.mountDev+" "+self.mountPoint + " 2>&1")
+            if status != 0:
+                if i == 0: # First failure - try umounting our mount point
+                    os.system("/bin/umount " + self.mountPoint + " 2>&1 > /dev/null")
+                elif i == 1: # Second failure - try umounting the device
+                    os.system("/bin/umount " + self.mountDev + " 2>&1 > /dev/null")
+                else:
+                    raise Exception(output)
+                    
+            i += 1
+        
+    def Scan(self, inRegExp = None, inNumToReturn = None):
+        retVal = []
+        numToReturn = FirstValue(inNumToReturn, 10)
+        regExp = re.compile(FirstValue(inRegExp, r'.*'))
+        for root, dirs, files in os.walk(self.mountPoint):
+            if len(retVal) >= numToReturn:
+                break
+            for filename in files:
+                if regExp.match(filename):
+                    retVal.append(os.path.join(root, filename)[len(self.mountPoint)+1:])
+                    if len(retVal) >= numToReturn:
+                        break
+                        
+        return retVal
+        
+    def Unmount(self):
+        status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint)
+        if status != 0:
+            raise Exception(output)
 
 class PatchDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
         
-        deviceList = FileUtils.PatchDeviceList()
-        
-        paneHeight = 7+len(deviceList)
-        paneHeight = min(paneHeight,  22)
+        self.state = 'INITIAL'
+        self.BuildPaneINITIAL()
+    
+    def BuildPane(self, inHeight):
+        paneHeight = min(inHeight,  22)
         pane = self.NewPane('patch', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.Win().TitleSet(Lang("Apply Software Upgrade or Patch"))
         pane.AddBox()
-
+    
+    def BuildPaneINITIAL(self):
+        self.deviceList = FileUtils.PatchDeviceList()
+        
+        self.BuildPane(7+len(self.deviceList))
+        
         choiceDefs = []
-        for device in deviceList:
-            choiceDefs.append(ChoiceDef(device, lambda: self.HandleTestChoice(device) ) )
+        for device in self.deviceList:
+            choiceDefs.append(ChoiceDef(device.name, lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
 
-        self.patchMenu = Menu(self, None, Lang("Select Patch"), choiceDefs)
+        self.deviceMenu = Menu(self, None, Lang("Select Patch"), choiceDefs)
+        self.UpdateFields()
     
-        self.state = 'INITIAL'
-    
+    def BuildPaneFILES(self):
+        self.BuildPane(8+len(self.fileList))
+        
+        choiceDefs = []
+        for filename in self.fileList:
+            choiceDefs.append(ChoiceDef(filename, lambda: self.HandleFileChoice(self.fileMenu.ChoiceIndex()) ) )
+
+        choiceDefs.append(ChoiceDef(Lang('Enter Custom Filename'), lambda: self.HandleFileChoice(None)))
+        self.fileMenu = Menu(self, None, Lang("Select File"), choiceDefs)
+        self.UpdateFields()
+        
+    def BuildPaneCONFIRM(self):
+        self.BuildPane(12)
         self.UpdateFields()
 
+    def BuildPaneCUSTOM(self):
+        self.BuildPane(10)
+        self.UpdateFields()
+        
     def UpdateFields(self):
         self.Pane('patch').ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
@@ -819,33 +895,69 @@ class PatchDialogue(Dialogue):
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select the Device Containing the Patch"))
-        pane.AddMenuField(self.patchMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddMenuField(self.deviceMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
+            "<F5>" : Lang("Rescan") } )
+
+    def UpdateFieldsFILES(self):
+        pane = self.Pane('patch')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
         
+        pane.AddTitleField(Lang("Select the Patch File"))
+        pane.AddMenuField(self.fileMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
     def UpdateFieldsCUSTOM(self):
         pane = self.Pane('patch')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Enter hostname or IP address to ping"))
-        pane.AddInputField(Lang("Address",  16), self.customIP, 'address')
+        pane.AddTitleField(Lang("Enter Filename"))
+        pane.AddInputField(Lang("Filename",  16), '', 'filename')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
-            
+
+    def UpdateFieldsCONFIRM(self):
+        pane = self.Pane('patch')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Press <F8> to Begin the Update/Patch Process"))
+        pane.AddWrappedBoldTextField(Lang("Device"))
+        pane.AddWrappedTextField(self.deviceName)
+        pane.NewLine()
+        pane.AddWrappedBoldTextField(Lang("File"))
+        pane.AddWrappedTextField(self.filename)
+        
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+
     def HandleKey(self, inKey):
         handled = False
         if hasattr(self, 'HandleKey'+self.state):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
-        if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-            handled = True
+        if not handled:
+            if inKey == 'KEY_ESCAPE':
+                self.layout.PopDialogue()
+                handled = True
 
         return handled
         
     def HandleKeyINITIAL(self, inKey):
-        return self.patchMenu.HandleKey(inKey)
+        handled = self.deviceMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_F(5)':
+            Data.Inst().Update()
+            self.BuildPaneINITIAL()
+            self.layout.Refresh()
+            handled = True
+            
+        return handled
+        
+    def HandleKeyFILES(self, inKey):
+        return self.fileMenu.HandleKey(inKey)
         
     def HandleKeyCUSTOM(self, inKey):
         handled = True
@@ -854,19 +966,63 @@ class PatchDialogue(Dialogue):
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
-            self.customIP = inputValues['address']
-            self.DoPing(self.customIP)
-            
+            self.filename = inputValues['filename']
+            self.state = 'CONFIRM'
+            self.BuildPaneCONFIRM()
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
             handled = False
         return handled
+    
+    def HandleKeyCONFIRM(self, inKey):
+        handled = False
         
-    def HandleTestChoice(self,  inChoice):
-            self.DoPatch(inChoice)
+        if inKey == 'KEY_F(8)':
+            self.DoPatch()
+            handled = True
+            
+        return handled
+    
+    def HandleDeviceChoice(self, inChoice):
+        self.vdiMount = None
+        try:
+            self.vdi = self.deviceList[inChoice].vdi
+            self.deviceName = self.deviceList[inChoice].name
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Mounting device...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            
+            self.vdiMount = MountVDI(self.vdi)
+            self.layout.PopDialogue()
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Scanning device...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            
+            self.fileList = self.vdiMount.Scan(r'.*\.xen$')
+            
+            self.layout.PopDialogue()
+            
+            self.state = 'FILES'
+            self.BuildPaneFILES()
+        
+        except Exception, e:
+            if self.vdiMount is not None:
+                self.vdiMount.Unmount()
+            self.layout.PopDialogue()
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
+            
 
-    def DoPatch(self, inChoice):
+    def HandleFileChoice(self, inChoice):
+        if inChoice is None:
+            self.state = 'CUSTOM'
+            self.BuildPaneCUSTOM()
+        else:
+            self.filename = self.fileList[inChoice]
+            self.state = 'CONFIRM'
+            self.BuildPaneCONFIRM()
+
+    def DoPatch(self):
         self.layout.PopDialogue()
         success = False
             
