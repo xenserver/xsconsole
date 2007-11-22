@@ -33,6 +33,7 @@ class App:
                     self.cursesScreen = CursesScreen()
                     self.renderer = Renderer()
                     self.layout = Layout(self.cursesScreen)
+                    self.layout.WriteParentOffset(self.cursesScreen)
                     self.layout.Create()
 
                     # Request password change on first boot
@@ -160,6 +161,9 @@ class Layout:
     WIN_MAIN = 0
     WIN_TOPLINE = 1
     
+    APP_XSIZE = 80
+    APP_YSIZE = 24
+    
     def __init__(self, inParent = None):
         self.parent = inParent
         self.windows = []
@@ -206,9 +210,21 @@ class Layout:
         if len(self.dialogues) > 0:
             self.dialogues[0].UpdateFields()
     
+    def WriteParentOffset(self, inParent):
+        consoleXSize = inParent.XSize()
+        consoleYSize = inParent.YSize()
+        if consoleXSize < self.APP_XSIZE or consoleYSize < self.APP_YSIZE:
+            raise Exception('Console size ('+str(consoleXSize)+', '+str(consoleYSize) +
+                ') too small for application size ('+str(self.APP_XSIZE)+', '+str(self.APP_YSIZE) +')')
+        
+        # Centralise subsequent windows
+        self.parent.OffsetSet(
+            (inParent.XSize() - self.APP_XSIZE) / 2,
+            (inParent.YSize() - self.APP_YSIZE) / 2)
+            
     def Create(self):
-        self.windows.append(CursesWindow(0,1,80,23, self.parent)) # MainWindow
-        self.windows.append(CursesWindow(0,0,80,1, self.parent)) # Top line window
+        self.windows.append(CursesWindow(0,1,self.APP_XSIZE, self.APP_YSIZE-1, self.parent)) # MainWindow
+        self.windows.append(CursesWindow(0,0,self.APP_XSIZE,1, self.parent)) # Top line window
         self.windows[self.WIN_MAIN].DefaultColourSet('MAIN_BASE')
         self.windows[self.WIN_TOPLINE].DefaultColourSet('TOPLINE_BASE')
             

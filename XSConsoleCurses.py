@@ -2,6 +2,7 @@
 import curses, sys, commands
 
 from XSConsoleBases import *
+from XSConsoleConfig import *
 from XSConsoleLang import *
 from XSConsoleState import *
 
@@ -23,69 +24,91 @@ class CursesPalette:
     @classmethod
     def DefineColours(cls):
         cls.pairIndex = 1
-        # Set sensible defaults for non-colour-changing terminals
-        white = curses.COLOR_WHITE
-        black = curses.COLOR_BLACK
-        red = curses.COLOR_RED
-        darkred = curses.COLOR_RED
-        lightgrey = curses.COLOR_WHITE
-        darkgrey = curses.COLOR_BLACK
+        config = Config.Inst()
 
 
-        
-        if State.Inst().IsRecoveryMode():
-            darkred = curses.COLOR_BLUE
-            red = curses.COLOR_BLUE
+        if curses.can_change_color():
+            # Define colours on colour-changing terminals - these are terminals with the ccc
+            # flag in their capabilities in terminfo
+            if State.Inst().IsRecoveryMode():
+                prefix = 'recovery_'
+            else:
+                prefix = ''
+                
+            # Some terminals advertise that they can change colours but don't,
+            # so the following keeps things at least legible in that case
+            fgBright = curses.COLOR_WHITE
+            fgNormal = curses.COLOR_YELLOW
+            fgDark = curses.COLOR_GREEN
+            bgBright = curses.COLOR_MAGENTA
+            bgNormal = curses.COLOR_BLUE
+            bgDark = curses.COLOR_BLACK
             
-            if curses.can_change_color():
-                lightgrey = curses.COLOR_GREEN
-                curses.init_color(lightgrey, 666, 666, 500)
-                darkgrey = curses.COLOR_RED
-                curses.init_color(darkgrey, 444, 444, 333)
-                darkred = curses.COLOR_BLUE
-                curses.init_color(darkred, 0, 150, 200) # Reds become blue
-                red = curses.COLOR_MAGENTA
-                curses.init_color(red, 0, 200, 266)
-                curses.init_color(curses.COLOR_WHITE, 999, 999, 750)
+            curses.init_color(fgBright, *config.Colour(prefix+'fg_bright'))
+            curses.init_color(fgNormal, *config.Colour(prefix+'fg_normal'))
+            curses.init_color(fgDark, *config.Colour(prefix+'fg_dark'))
+            curses.init_color(bgBright, *config.Colour(prefix+'bg_bright'))
+            curses.init_color(bgNormal, *config.Colour(prefix+'bg_normal'))
+            curses.init_color(bgDark, *config.Colour(prefix+'bg_dark'))
+            
         else:
-            if curses.can_change_color():
-                lightgrey = curses.COLOR_BLUE
-                curses.init_color(lightgrey, 666, 666, 500)
-                darkgrey = curses.COLOR_GREEN
-                curses.init_color(darkgrey, 444, 444, 333)
-                darkred = curses.COLOR_RED
-                curses.init_color(darkred, 333, 0, 0)
-                red = curses.COLOR_MAGENTA
-                curses.init_color(red, 500, 0, 0)
-                curses.init_color(curses.COLOR_WHITE, 999, 999, 750)
+            # Set sensible defaults for non-colour-changing terminals
+            fgBright = curses.COLOR_WHITE
+            fgNormal = curses.COLOR_WHITE
+            fgDark = curses.COLOR_WHITE
+            bgDark = curses.COLOR_BLACK # Ensure bgDark != bgBright for MODAL_HIGHLIGHT colour
             
-        cls.colours['MAIN_BASE'] = cls.ColourCreate(lightgrey, darkred)
-        cls.colours['MENU_BASE'] = cls.ColourCreate(lightgrey, darkred)
-        cls.colours['MENU_BRIGHT'] = cls.ColourCreate(white, darkred)
-        cls.colours['MENU_HIGHLIGHT'] = cls.ColourCreate(black, white)
-        cls.colours['MODAL_BASE'] = cls.ColourCreate(lightgrey, red)
-        cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(white, red)
-        cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(black, red) | curses.A_DIM
-        cls.colours['MODAL_MENU_HIGHLIGHT'] = cls.ColourCreate(black, white)
-        cls.colours['HELP_BASE'] = cls.ColourCreate(lightgrey, black)
-        cls.colours['HELP_BRIGHT'] = cls.ColourCreate(white, black)
-        cls.colours['TOPLINE_BASE'] = cls.ColourCreate(darkgrey, black)
-        cls.colours['TEST'] = cls.ColourCreate(curses.COLOR_RED, white)
+            if State.Inst().IsRecoveryMode():
+                bgNormal = curses.COLOR_BLUE
+                bgBright = curses.COLOR_BLUE
+            else:
+                bgNormal = curses.COLOR_RED
+                bgBright = curses.COLOR_RED
+
+        cls.colours['MAIN_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
+        cls.colours['MENU_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
+        cls.colours['MENU_BRIGHT'] = cls.ColourCreate(fgBright, bgNormal)
+        cls.colours['MENU_HIGHLIGHT'] = cls.ColourCreate(bgDark, fgBright)
+        cls.colours['MODAL_BASE'] = cls.ColourCreate(fgNormal, bgBright)
+        cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(fgBright, bgBright)
+        cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(bgDark, bgBright) # Text entry
+        cls.colours['MODAL_MENU_HIGHLIGHT'] = cls.ColourCreate(bgDark, fgBright)
+        cls.colours['HELP_BASE'] = cls.ColourCreate(fgNormal, bgDark)
+        cls.colours['HELP_BRIGHT'] = cls.ColourCreate(fgBright, bgDark)
+        cls.colours['TOPLINE_BASE'] = cls.ColourCreate(fgDark, bgDark)
         
 class CursesPane:
     debugBackground = 0
     
-    def __init__(self, inXPos, inYPos, inXSize, inYSize):
+    def __init__(self, inXPos, inYPos, inXSize, inYSize, inXOffset, inYOffset):
         self.xPos = inXPos
         self.yPos = inYPos
         self.xSize = inXSize
         self.ySize = inYSize
+        self.xOffset = inXOffset
+        self.yOffset = inYOffset
 
     def HasBox(self):
         return self.hasBox
 
     def Win(self):
         return self.win
+
+    def XSize(self):
+        return self.xSize
+        
+    def YSize(self):
+        return self.ySize
+        
+    def XOffset(self):
+        return self.xOffset
+        
+    def YOffset(self):
+        return self.yOffset
+        
+    def OffsetSet(self,  inXOffset, inYOffset):
+        self.xOffset = inXOffset
+        self.yOffset = inYOffset
 
     def TitleSet(self, inTitle):
         self.title = inTitle
@@ -192,13 +215,14 @@ class CursesPane:
         self.win.cursyncup()
 
 class CursesWindow(CursesPane):
-    def __init__(self, inXPos, inYPos, inXSize, inYSize, inParent = None):
-        CursesPane.__init__(self, inXPos, inYPos, inXSize, inYSize)
+    def __init__(self, inXPos, inYPos, inXSize, inYSize, inParent):
+        CursesPane.__init__(self, inXPos, inYPos, inXSize, inYSize, inParent.xOffset, inParent.yOffset)
 
         if inParent:
-            self.win = inParent.Win().subwin(self.ySize, self.xSize, self.yPos, self.xPos)
+            self.win = inParent.Win().subwin(self.ySize, self.xSize, self.yPos+inParent.YOffset(), self.xPos+inParent.XOffset())
         else:
-            self.win = curses.newwin(self.ySize, self.xSize, self.yPos, self.xPos)
+            raise Exception("Orphan windows not supported - supply parent")
+            self.win = curses.newwin(self.ySize, self.xSize, self.yPos, self.xPos) # Old behaviour
         self.win.keypad(1)
         self.title = ""
         self.hasBox = False
@@ -214,7 +238,7 @@ class CursesScreen(CursesPane):
         self.win = curses.initscr()
 
         (ySize, xSize) = self.win.getmaxyx()
-        CursesPane.__init__(self, 0, 0, xSize, ySize)
+        CursesPane.__init__(self, 0, 0, xSize, ySize, 0, 0)
         curses.noecho()
         curses.cbreak()
         if curses.has_colors():

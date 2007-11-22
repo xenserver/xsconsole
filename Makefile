@@ -18,6 +18,7 @@ SCRIPTS :=
 SCRIPTS += XSConsole.py
 SCRIPTS += XSConsoleAuth.py
 SCRIPTS += XSConsoleBases.py
+SCRIPTS += XSConsoleConfig.py
 SCRIPTS += XSConsoleCurses.py
 SCRIPTS += XSConsoleData.py
 SCRIPTS += XSConsoleDialoguePane.py
