@@ -203,7 +203,7 @@ class BannerDialogue(Dialogue):
             # Centre text if short
             pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(30, 1)
+            pane.ResetPosition(2, 1)
         
         pane.AddWrappedBoldTextField(self.text)
 
@@ -778,14 +778,7 @@ class FileUtils: # Belongs in XSConsoleUtils.py
                     if deviceSize < 0:
                         deviceSize = int(vdi.get('virtual_size', 0))
 
-                    # Using these values for MB and GB gives the right value for USB sticks
-                    if deviceSize >= 1000000000:
-                        if deviceSize < 10000000000:
-                            nameSize = ('%.1f' % (int(deviceSize / 100000000) / 10.0)) + 'GB'
-                        else:
-                            nameSize = str(int(deviceSize / 1000000000))+'GB'
-                    else:
-                        nameSize = str(int(deviceSize / 1000000))+'MB'
+                    nameSize = cls.SizeString(deviceSize)
                     
                     name =  "%-50s%10.10s%10.10s" % (nameDesc[:50], nameLabel[:10], nameSize[:10])
                     retVal.append(Struct(name = name, vdi = vdi))
@@ -796,8 +789,35 @@ class FileUtils: # Belongs in XSConsoleUtils.py
 
     @classmethod
     def AssertSafePath(cls, inPath):
-        if not re.match(r'[-A-Za-z0-9/._]*$', inPath):
+        if not re.match(r'[-A-Za-z0-9/._~]*$', inPath):
             raise Exception("Invalid characters in path '"+inPath+"'")
+
+    @classmethod
+    def SizeString(cls, inSizeOrFilename, inDefault = None):
+        try:
+            if isinstance(inSizeOrFilename, str):
+                fileSize = os.path.getsize(inSizeOrFilename)
+            else:
+                fileSize = inSizeOrFilename
+            
+            # Using these values gives the expected values for USB sticks
+            if fileSize >= 1000000000: # 1GB
+                if fileSize < 10000000000: # 10GB
+                    retVal = ('%.1f' % (int(fileSize / 100000000) / 10.0)) + 'GB' # e.g. 2.3GB
+                else:
+                    retVal = str(int(fileSize / 1000000000))+'GB'
+            elif fileSize >= 2000000:
+                retVal = str(int(fileSize / 1000000))+'MB'
+            elif fileSize >= 2000:
+                retVal = str(int(fileSize / 1000))+'KB'
+            else:
+                retVal = str(int(fileSize))
+            
+        except Exception, e:
+            retVal = FirstValue(inDefault, '')
+        
+        return retVal
+        
 
 class MountVDI:
     def __init__(self, inVDI):
@@ -840,12 +860,19 @@ class MountVDI:
         status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint)
         if status != 0:
             raise Exception(output)
+    
+    def MountedPath(self, inLeafname):
+        return self.mountPoint + '/' + inLeafname
+    
+    def SizeString(self, inFilename, inDefault = None):
+        return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)
 
 class PatchDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
         
         self.state = 'INITIAL'
+        self.vdiMount = None
         self.BuildPaneINITIAL()
     
     def BuildPane(self, inHeight):
@@ -871,7 +898,8 @@ class PatchDialogue(Dialogue):
         
         choiceDefs = []
         for filename in self.fileList:
-            choiceDefs.append(ChoiceDef(filename, lambda: self.HandleFileChoice(self.fileMenu.ChoiceIndex()) ) )
+            displayName = "%-60.60s%10.10s" % (filename, self.vdiMount.SizeString(filename))
+            choiceDefs.append(ChoiceDef(displayName, lambda: self.HandleFileChoice(self.fileMenu.ChoiceIndex()) ) )
 
         choiceDefs.append(ChoiceDef(Lang('Enter Custom Filename'), lambda: self.HandleFileChoice(None)))
         self.fileMenu = Menu(self, None, Lang("Select File"), choiceDefs)
@@ -928,8 +956,11 @@ class PatchDialogue(Dialogue):
         pane.AddWrappedBoldTextField(Lang("Device"))
         pane.AddWrappedTextField(self.deviceName)
         pane.NewLine()
+        
+        fileSize = self.vdiMount.SizeString(self.filename, Lang('File not found'))
+        
         pane.AddWrappedBoldTextField(Lang("File"))
-        pane.AddWrappedTextField(self.filename)
+        pane.AddWrappedTextField(self.filename+' ('+fileSize+')')
         
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
 
@@ -938,10 +969,12 @@ class PatchDialogue(Dialogue):
         if hasattr(self, 'HandleKey'+self.state):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
-        if not handled:
-            if inKey == 'KEY_ESCAPE':
-                self.layout.PopDialogue()
-                handled = True
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            if self.vdiMount is not None:
+                self.vdiMount.Unmount()
+                self.vdiMount = None
+            handled = True
 
         return handled
         
@@ -1009,9 +1042,9 @@ class PatchDialogue(Dialogue):
         except Exception, e:
             if self.vdiMount is not None:
                 self.vdiMount.Unmount()
+                self.vdiMount = None
             self.layout.PopDialogue()
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
-            
 
     def HandleFileChoice(self, inChoice):
         if inChoice is None:
@@ -1023,13 +1056,41 @@ class PatchDialogue(Dialogue):
             self.BuildPaneCONFIRM()
 
     def DoPatch(self):
-        self.layout.PopDialogue()
         success = False
+        
+        self.layout.PopDialogue()
+        
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+            Lang("Applying patch... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
-        if success:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Patch successful")))
-        else:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Patch failed: Feature unsupported")))
+        try:
+            try:
+                self.layout.Refresh()
+                self.layout.DoUpdate()
+                
+                hostRef = Data.Inst().host.uuid(None)
+                if hostRef is None:
+                    raise Exception("Internal error 1")
+                    
+                filename = self.vdiMount.MountedPath(self.filename)
+                FileUtils.AssertSafePath(filename)
+                command = "/opt/xensource/bin/xe update-upload file-name='"+filename+"' host-uuid="+hostRef
+                status, output = commands.getstatusoutput(command)
+                
+                if status != 0:
+                    raise Exception(output)
+                
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Lang("Patch Successful"), Lang("Please reboot to use the newly installed software.")))
+
+            except Exception, e:
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                
+        finally:
+            if self.vdiMount is not None:
+                self.vdiMount.Unmount()
+                self.vdiMount = None
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
