@@ -75,26 +75,30 @@ class MountVDI:
         data = Data.Inst()
         deviceNum = data.derived.dom0_vm.allowed_VBD_devices([])[-1]
         self.vbd = data.CreateVBD(data.derived.dom0_vm(), inVDI, deviceNum)
-
-        self.mountDev = '/dev/'+self.vbd['device']
-        FileUtils.AssertSafePath(self.mountDev)
-        self.mountPoint = "/mnt/xsconsole"
-        if not os.path.isdir(self.mountPoint):
-            os.mkdir(self.mountPoint, 0700)
-        
-        status, output = 1, ""
-        i=0
-        while status != 0:
-            status, output = commands.getstatusoutput("/bin/mount -t auto -o ro " +self.mountDev+" "+self.mountPoint + " 2>&1")
-            if status != 0:
-                if i == 0: # First failure - try umounting our mount point
-                    os.system("/bin/umount " + self.mountPoint + " 2>&1 > /dev/null")
-                elif i == 1: # Second failure - try umounting the device
-                    os.system("/bin/umount " + self.mountDev + " 2>&1 > /dev/null")
-                else:
-                    raise Exception(output)
-                    
-            i += 1
+        try:
+            self.mountDev = '/dev/'+self.vbd['device']
+            FileUtils.AssertSafePath(self.mountDev)
+            self.mountPoint = "/mnt/xsconsole"
+            if not os.path.isdir(self.mountPoint):
+                os.mkdir(self.mountPoint, 0700)
+            
+            status, output = 1, ""
+            i=0
+            while status != 0:
+                status, output = commands.getstatusoutput("/bin/mount -t auto -o ro " +self.mountDev+" "+self.mountPoint + " 2>&1")
+                if status != 0:
+                    if i == 0: # First failure - try umounting our mount point
+                        commands.getstatusoutput("/bin/umount " + self.mountPoint + " 2>&1 > /dev/null")
+                    elif i == 1: # Second failure - try umounting the device
+                        commands.getstatusoutput("/bin/umount " + self.mountDev + " 2>&1 > /dev/null")
+                    else:
+                        raise Exception(output)
+                        
+                i += 1
+        except Exception, e:
+            Data.Inst().DestroyVBD(self.vbd)
+            self.vbd = None
+            raise
         
     def Scan(self, inRegExp = None, inNumToReturn = None):
         retVal = []
@@ -113,9 +117,13 @@ class MountVDI:
         
     def Unmount(self):
         status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint)
-        Data.Inst().DestroyVBD(self.vbd)
+        if self.vbd is not None:
+            Data.Inst().DestroyVBD(self.vbd)
+            self.vbd = None
         if status != 0:
             raise Exception(output)
+
+
         
     
     def MountedPath(self, inLeafname):
