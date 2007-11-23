@@ -7,6 +7,7 @@ from XSConsoleDialoguePane import *
 from XSConsoleFields import *
 from XSConsoleLang import *
 from XSConsoleMenus import *
+from XSConsoleUtils import *
 
 class LoginDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
@@ -735,8 +736,6 @@ class ValidateDialogue(Dialogue):
         pane = self.Pane('validate')
         pane.ResetFields()
         
-        
-        
         pane.AddTitleField(Lang("Validation Results (feature not complete)"))
         pane.AddStatusField(Lang("VT enabled on CPU", 40), self.vtResult)
         pane.AddStatusField(Lang("Default storage repository", 40), self.srResult)
@@ -752,125 +751,10 @@ class ValidateDialogue(Dialogue):
 
         return handled
 
-class FileUtils: # Belongs in XSConsoleUtils.py
-    @classmethod
-    def PatchDeviceList(cls):
-        retVal = []
-        
-        for pbd in Data.Inst().host.PBDs([]):
-            sr = pbd.get('SR', {})
-            for vdi in sr.get('VDIs', []):
-                nameLabel = vdi.get('name_label', Lang('Unknown'))
-                if re.match(r'(SCSI|USB)', nameLabel): # Skip if not USB or SCSI
-                    match = True
-                    while match:
-                        match = re.match(r'(.*):0$', nameLabel)
-                        if match:
-                            # Remove multiple trailing :0
-                            nameLabel = match.group(1)
-                    nameDesc = vdi.get('name_description', Lang('Unknown device'))
-                    match = re.match(r'(.*)\srev\b', nameDesc)
-                    if match:
-                        # Remove revision information
-                        nameDesc = match.group(1)
-                        
-                    deviceSize = int(vdi.get('physical_utilisation', 0))
-                    if deviceSize < 0:
-                        deviceSize = int(vdi.get('virtual_size', 0))
-
-                    nameSize = cls.SizeString(deviceSize)
-                    
-                    name =  "%-50s%10.10s%10.10s" % (nameDesc[:50], nameLabel[:10], nameSize[:10])
-                    retVal.append(Struct(name = name, vdi = vdi))
-
-        retVal.sort(lambda x, y : cmp(x.vdi['name_label'], y.vdi['name_label']))
-
-        return retVal
-
-    @classmethod
-    def AssertSafePath(cls, inPath):
-        if not re.match(r'[-A-Za-z0-9/._~]*$', inPath):
-            raise Exception("Invalid characters in path '"+inPath+"'")
-
-    @classmethod
-    def SizeString(cls, inSizeOrFilename, inDefault = None):
-        try:
-            if isinstance(inSizeOrFilename, str):
-                fileSize = os.path.getsize(inSizeOrFilename)
-            else:
-                fileSize = inSizeOrFilename
-            
-            # Using these values gives the expected values for USB sticks
-            if fileSize >= 1000000000: # 1GB
-                if fileSize < 10000000000: # 10GB
-                    retVal = ('%.1f' % (int(fileSize / 100000000) / 10.0)) + 'GB' # e.g. 2.3GB
-                else:
-                    retVal = str(int(fileSize / 1000000000))+'GB'
-            elif fileSize >= 2000000:
-                retVal = str(int(fileSize / 1000000))+'MB'
-            elif fileSize >= 2000:
-                retVal = str(int(fileSize / 1000))+'KB'
-            else:
-                retVal = str(int(fileSize))
-            
-        except Exception, e:
-            retVal = FirstValue(inDefault, '')
-        
-        return retVal
-        
-
-class MountVDI:
-    def __init__(self, inVDI):
-        self.mountDev = inVDI['location']
-        FileUtils.AssertSafePath(self.mountDev)
-        self.mountPoint = "/mnt/xsconsole"
-        if not os.path.isdir(self.mountPoint):
-            os.mkdir(self.mountPoint, 0700)
-        
-        status, output = 1, ""
-        i=0
-        while status != 0:
-            status, output = commands.getstatusoutput("/bin/mount -t auto -o ro " +self.mountDev+" "+self.mountPoint + " 2>&1")
-            if status != 0:
-                if i == 0: # First failure - try umounting our mount point
-                    os.system("/bin/umount " + self.mountPoint + " 2>&1 > /dev/null")
-                elif i == 1: # Second failure - try umounting the device
-                    os.system("/bin/umount " + self.mountDev + " 2>&1 > /dev/null")
-                else:
-                    raise Exception(output)
-                    
-            i += 1
-        
-    def Scan(self, inRegExp = None, inNumToReturn = None):
-        retVal = []
-        numToReturn = FirstValue(inNumToReturn, 10)
-        regExp = re.compile(FirstValue(inRegExp, r'.*'))
-        for root, dirs, files in os.walk(self.mountPoint):
-            if len(retVal) >= numToReturn:
-                break
-            for filename in files:
-                if regExp.match(filename):
-                    retVal.append(os.path.join(root, filename)[len(self.mountPoint)+1:])
-                    if len(retVal) >= numToReturn:
-                        break
-                        
-        return retVal
-        
-    def Unmount(self):
-        status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint)
-        if status != 0:
-            raise Exception(output)
-    
-    def MountedPath(self, inLeafname):
-        return self.mountPoint + '/' + inLeafname
-    
-    def SizeString(self, inFilename, inDefault = None):
-        return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)
-
-class PatchDialogue(Dialogue):
+class FileDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        
+
         self.state = 'INITIAL'
         self.vdiMount = None
         self.BuildPaneINITIAL()
@@ -971,9 +855,7 @@ class PatchDialogue(Dialogue):
         
         if not handled and inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
-            if self.vdiMount is not None:
-                self.vdiMount.Unmount()
-                self.vdiMount = None
+            self.PreExitActions()
             handled = True
 
         return handled
@@ -1012,7 +894,7 @@ class PatchDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
-            self.DoPatch()
+            self.DoAction()
             handled = True
             
         return handled
@@ -1040,9 +922,7 @@ class PatchDialogue(Dialogue):
             self.BuildPaneFILES()
         
         except Exception, e:
-            if self.vdiMount is not None:
-                self.vdiMount.Unmount()
-                self.vdiMount = None
+            self.PreExitActions()
             self.layout.PopDialogue()
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
 
@@ -1054,8 +934,15 @@ class PatchDialogue(Dialogue):
             self.filename = self.fileList[inChoice]
             self.state = 'CONFIRM'
             self.BuildPaneCONFIRM()
+    
+    def PreExitActions(self):
+        if self.vdiMount is not None:
+            self.vdiMount.Unmount()
+            self.vdiMount = None
 
-    def DoPatch(self):
+class PatchDialogue(FileDialogue):
+
+    def DoAction(self):
         success = False
         
         self.layout.PopDialogue()
@@ -1088,9 +975,7 @@ class PatchDialogue(Dialogue):
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
                 
         finally:
-            if self.vdiMount is not None:
-                self.vdiMount.Unmount()
-                self.vdiMount = None
+            self.PreExitActions()
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):

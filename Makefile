@@ -29,6 +29,7 @@ SCRIPTS += XSConsoleMenus.py
 SCRIPTS += XSConsoleRootDialogue.py
 SCRIPTS += XSConsoleState.py
 SCRIPTS += XSConsoleTerm.py
+SCRIPTS += XSConsoleUtils.py
 
 
 ################################################################################

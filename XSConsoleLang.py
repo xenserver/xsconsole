@@ -19,7 +19,10 @@ class Language:
     @classmethod
     def ToString(cls, inLabel):
         if isinstance(inLabel, XenAPI.Failure):
-            retVal = inLabel.details[0]
+            if inLabel.details[0] == 'INTERNAL_ERROR':
+                retVal = str(inLabel) # Print everything for this one
+            else:
+                retVal = inLabel.details[0]
         elif isinstance(inLabel, Exception):
             retVal = str(inLabel)
         else:

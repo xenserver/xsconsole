@@ -80,7 +80,9 @@ class RootMenu:
             rootMenu = Menu(self, None, Lang("Customize System"), [
                 ChoiceDef(Lang("Status Display"), 
                     None,  lambda : inDialogue.ChangeStatus('STATUS')),
-                ChoiceDef(Lang("Server Reboot"), 
+                ChoiceDef(Lang("Technical Support"), 
+                    lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
+                ChoiceDef(Lang("Server Reboot"),
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
                 ChoiceDef(Lang("Server Shutdown"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 

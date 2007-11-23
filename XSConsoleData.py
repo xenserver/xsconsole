@@ -129,7 +129,10 @@ class Data:
                         retVal['SR'] = self.session.xenapi.SR.get_record(retVal['SR'])
                         retVal['SR']['opaqueref'] = srRef
                         
-                        convertVDI = lambda vdi: self.session.xenapi.VDI.get_record(vdi)
+                        def convertVDI(inVDI):
+                            retVal = self.session.xenapi.VDI.get_record(inVDI)
+                            retVal['opaqueref'] = inVDI
+                            return retVal
                         
                         retVal['SR']['VDIs'] = map(convertVDI, retVal['SR']['VDIs'])
                         
@@ -138,6 +141,16 @@ class Data:
                     
                 self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
 
+                # Only load the to DOM-0 VM to save time
+                vmList = self.data['host']['resident_VMs']
+                for i in range(len(vmList)):
+                    vm = vmList[i]
+                    domID = self.session.xenapi.VM.get_domid(vm)
+                    if domID == '0':
+                        vmList[i] = self.session.xenapi.VM.get_record(vm)
+                        vmList[i]['allowed_VBD_devices'] = self.session.xenapi.VM.get_allowed_VBD_devices(vm)
+                        vmList[i]['opaqueref'] = vm
+                    
             except Exception, e:
                 pass # Ignore failure - just leave data empty
 
@@ -176,7 +189,11 @@ class Data:
             for pif in self.data['host']['PIFs']:
                 if pif['management']:
                     self.data['derived']['managementpifs'].append(pif)
-                    
+        
+        # Add a reference to the DOM-0 VM
+        for vm in self.data['host']['resident_VMs']:
+            if 'domid' in vm and vm['domid'] == '0':
+                self.data['derived']['dom0_vm'] = vm
      
     def Dump(self):
         pprint(self.data)
@@ -422,3 +439,30 @@ class Data:
     
         return retVal
 
+    def CreateVBD(self, inVM, inVDI, inDeviceNum, inMode = None,  inType = None):
+        self.RequireSession()
+        
+        vbd = {
+            'VM' : inVM['opaqueref'],
+            'VDI' : inVDI['opaqueref'], 
+            'userdevice' : inDeviceNum, 
+            'mode' : FirstValue(inMode, 'ro'),
+            'bootable' : False, 
+            'type' : FirstValue(inType, 'disk'), 
+            'unpluggable' : True,
+            'empty' : False, 
+            'other_config' : {}, 
+            'qos_algorithm_type' : '', 
+            'qos_algorithm_params' : {}
+        }
+
+        newVBD = self.session.xenapi.VBD.create(vbd)
+        self.session.xenapi.VBD.plug(newVBD)
+        vbdRecord = self.session.xenapi.VBD.get_record(newVBD)
+        vbdRecord['opaqueref'] = newVBD
+
+        return vbdRecord
+
+    def DestroyVBD(self, inVBD):
+        self.session.xenapi.VBD.unplug(inVBD['opaqueref'])
+        self.session.xenapi.VBD.destroy(inVBD['opaqueref'])
