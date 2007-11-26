@@ -191,9 +191,10 @@ class Data:
                     self.data['derived']['managementpifs'].append(pif)
         
         # Add a reference to the DOM-0 VM
-        for vm in self.data['host']['resident_VMs']:
-            if 'domid' in vm and vm['domid'] == '0':
-                self.data['derived']['dom0_vm'] = vm
+        if 'resident_VMs' in self.data['host']:
+            for vm in self.data['host']['resident_VMs']:
+                if 'domid' in vm and vm['domid'] == '0':
+                    self.data['derived']['dom0_vm'] = vm
      
     def Dump(self):
         pprint(self.data)
@@ -224,6 +225,17 @@ class Data:
         self.session.xenapi.host.add_to_logging(self.host.opaqueref(), 'syslog_destination', inDestination)
         self.session.xenapi.host.syslog_reconfigure(self.host.opaqueref())
 
+    def RecoveryModeSet(self, inBool):
+        Auth.Inst().AssertAuthenticated()
+        if inBool:
+            status, output = commands.getstatusoutput("/bin/touch /.flash/boot-to-recover")
+            if status != 0:
+                raise Exception(output)
+        else:
+            status, output = commands.getstatusoutput("rm -f /.flash/boot-to-recover")
+            if status != 0:
+                raise Exception(output)
+        
     def ChangePassword(self,  inOldPassword, inNewPassword):
         session = Auth.Inst().TCPSession(inOldPassword)
         session.xenapi.session.change_password(inOldPassword, inNewPassword)

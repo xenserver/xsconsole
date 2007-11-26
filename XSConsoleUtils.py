@@ -1,4 +1,6 @@
 
+import tempfile
+
 from XSConsoleBases import *
 from XSConsoleData import *
 from XSConsoleLang import *
@@ -72,13 +74,14 @@ class FileUtils:
 
 class MountVDI:
     def __init__(self, inVDI):
+        self.mountPoint = None
         data = Data.Inst()
         deviceNum = data.derived.dom0_vm.allowed_VBD_devices([])[-1]
         self.vbd = data.CreateVBD(data.derived.dom0_vm(), inVDI, deviceNum)
         try:
             self.mountDev = '/dev/'+self.vbd['device']
             FileUtils.AssertSafePath(self.mountDev)
-            self.mountPoint = "/mnt/xsconsole"
+            self.mountPoint = tempfile.mktemp(".xsconsole")
             if not os.path.isdir(self.mountPoint):
                 os.mkdir(self.mountPoint, 0700)
             
@@ -88,9 +91,9 @@ class MountVDI:
                 status, output = commands.getstatusoutput("/bin/mount -t auto -o ro " +self.mountDev+" "+self.mountPoint + " 2>&1")
                 if status != 0:
                     if i == 0: # First failure - try umounting our mount point
-                        commands.getstatusoutput("/bin/umount " + self.mountPoint + " 2>&1 > /dev/null")
+                        commands.getstatusoutput("/bin/umount " + self.mountPoint + " 2>&1")
                     elif i == 1: # Second failure - try umounting the device
-                        commands.getstatusoutput("/bin/umount " + self.mountDev + " 2>&1 > /dev/null")
+                        commands.getstatusoutput("/bin/umount " + self.mountDev + " 2>&1")
                     else:
                         raise Exception(output)
                         
@@ -106,6 +109,7 @@ class MountVDI:
         regExp = re.compile(FirstValue(inRegExp, r'.*'))
         for root, dirs, files in os.walk(self.mountPoint):
             if len(retVal) >= numToReturn:
+                
                 break
             for filename in files:
                 if regExp.match(filename):
@@ -116,15 +120,14 @@ class MountVDI:
         return retVal
         
     def Unmount(self):
-        status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint)
+        status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint +  " 2>&1")
         if self.vbd is not None:
             Data.Inst().DestroyVBD(self.vbd)
             self.vbd = None
         if status != 0:
             raise Exception(output)
-
-
-        
+        if self.mountPoint is not None:
+            os.rmdir(self.mountPoint)
     
     def MountedPath(self, inLeafname):
         return self.mountPoint + '/' + inLeafname

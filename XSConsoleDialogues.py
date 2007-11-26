@@ -213,7 +213,7 @@ class QuestionDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.handler = inHandler
-        pane = self.NewPane('question', DialoguePane(3, 9, 74, 5, self.parent))
+        pane = self.NewPane('question', DialoguePane(3, 9, 74, 6, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
@@ -759,26 +759,29 @@ class FileDialogue(Dialogue):
         self.vdiMount = None
         self.BuildPaneINITIAL()
     
-    def BuildPane(self, inHeight):
+    def Custom(self, inKey):
+        return self.custom.get(inKey, None)
+    
+    def BuildPaneBase(self, inHeight):
         paneHeight = min(inHeight,  22)
-        pane = self.NewPane('patch', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Apply Software Upgrade or Patch"))
+        pane = self.NewPane('file', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(self.Custom('title'))
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
         self.deviceList = FileUtils.PatchDeviceList()
         
-        self.BuildPane(7+len(self.deviceList))
+        self.BuildPaneBase(7+len(self.deviceList))
         
         choiceDefs = []
         for device in self.deviceList:
             choiceDefs.append(ChoiceDef(device.name, lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
 
-        self.deviceMenu = Menu(self, None, Lang("Select Patch"), choiceDefs)
+        self.deviceMenu = Menu(self, None, Lang("Select File"), choiceDefs)
         self.UpdateFields()
     
     def BuildPaneFILES(self):
-        self.BuildPane(8+len(self.fileList))
+        self.BuildPaneBase(8+len(self.fileList))
         
         choiceDefs = []
         for filename in self.fileList:
@@ -790,38 +793,38 @@ class FileDialogue(Dialogue):
         self.UpdateFields()
         
     def BuildPaneCONFIRM(self):
-        self.BuildPane(12)
+        self.BuildPaneBase(12)
         self.UpdateFields()
 
     def BuildPaneCUSTOM(self):
-        self.BuildPane(10)
+        self.BuildPaneBase(10)
         self.UpdateFields()
         
     def UpdateFields(self):
-        self.Pane('patch').ResetPosition()
+        self.Pane('file').ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('patch')
+        pane = self.Pane('file')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select the Device Containing the Patch"))
+        pane.AddTitleField(self.Custom('deviceprompt'))
         pane.AddMenuField(self.deviceMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
             "<F5>" : Lang("Rescan") } )
 
     def UpdateFieldsFILES(self):
-        pane = self.Pane('patch')
+        pane = self.Pane('file')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select the Patch File"))
+        pane.AddTitleField(self.Custom('fileprompt'))
         pane.AddMenuField(self.fileMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsCUSTOM(self):
-        pane = self.Pane('patch')
+        pane = self.Pane('file')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -832,11 +835,11 @@ class FileDialogue(Dialogue):
             pane.InputIndexSet(0)
 
     def UpdateFieldsCONFIRM(self):
-        pane = self.Pane('patch')
+        pane = self.Pane('file')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Press <F8> to Begin the Update/Patch Process"))
+        pane.AddTitleField(self.Custom('confirmprompt'))
         pane.AddWrappedBoldTextField(Lang("Device"))
         pane.AddWrappedTextField(self.deviceName)
         pane.NewLine()
@@ -876,7 +879,7 @@ class FileDialogue(Dialogue):
         
     def HandleKeyCUSTOM(self, inKey):
         handled = True
-        pane = self.Pane('patch')
+        pane = self.Pane('file')
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
@@ -914,7 +917,7 @@ class FileDialogue(Dialogue):
             self.layout.Refresh()
             self.layout.DoUpdate()
             
-            self.fileList = self.vdiMount.Scan(r'.*\.xen$')
+            self.fileList = self.vdiMount.Scan(self.Custom('searchregexp'))
             
             self.layout.PopDialogue()
             
@@ -922,7 +925,10 @@ class FileDialogue(Dialogue):
             self.BuildPaneFILES()
         
         except Exception, e:
-            self.PreExitActions()
+            try:
+                self.PreExitActions()
+            except Exception:
+                pass # Ignore failue
             self.layout.PopDialogue()
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
 
@@ -941,7 +947,17 @@ class FileDialogue(Dialogue):
             self.vdiMount = None
 
 class PatchDialogue(FileDialogue):
+    def __init__(self, inLayout, inParent):
 
+        self.custom = {
+            'title' : Lang("Apply Software Upgrade or Patch"),
+            'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
+            'deviceprompt' : Lang("Select the Device Containing the Patch"), 
+            'fileprompt' : Lang("Select the Patch File"),
+            'confirmprompt' : Lang("Press <F8> to Begin the Update/Patch Process")
+        }
+        FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
     def DoAction(self):
         success = False
         
@@ -975,7 +991,61 @@ class PatchDialogue(FileDialogue):
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
                 
         finally:
-            self.PreExitActions()
+            try:
+                self.PreExitActions()
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+
+class RestoreDialogue(FileDialogue):
+    def __init__(self, inLayout, inParent):
+
+        self.custom = {
+            'title' : Lang("Restore Server State"),
+            'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
+            'deviceprompt' : Lang("Select the Device Containing the Backup File"), 
+            'fileprompt' : Lang("Select the Backup File"),
+            'confirmprompt' : Lang("Press <F8> to Begin the Restore Process")
+        }
+        FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
+    def DoAction(self):
+        success = False
+        
+        self.layout.PopDialogue()
+        
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+            Lang("Restoring from backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
+            
+        try:
+            try:
+                self.layout.Refresh()
+                self.layout.DoUpdate()
+                
+                hostRef = Data.Inst().host.uuid(None)
+                if hostRef is None:
+                    raise Exception("Internal error 1")
+                    
+                filename = self.vdiMount.MountedPath(self.filename)
+                FileUtils.AssertSafePath(filename)
+                command = "/opt/xensource/bin/xe update-upload file-name='"+filename+"' host-uuid="+hostRef
+                status, output = commands.getstatusoutput(command)
+                
+                if status != 0:
+                    raise Exception(output)
+                
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Lang("Patch Successful"), Lang("Please reboot to use the newly installed software.")))
+
+            except Exception, e:
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                
+        finally:
+            try:
+                self.PreExitActions()
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):

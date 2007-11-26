@@ -263,18 +263,43 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to test the configured network interface."))
     
-    def UpdateFieldsREBOOT(self, inPane):
-        inPane.AddTitleField(Lang("Server Reboot"))
+    def UpdateFieldsREBOOTSHUTDOWN(self, inPane):
+        inPane.AddTitleField(Lang("Reboot/Shutdown"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to reboot this server."))
+            "Press <Enter> to access the reboot and shutdown menu, or to enter Recovery Mode."))
     
+    def UpdateFieldsREBOOT(self, inPane):
+        inPane.AddTitleField(Lang("Reboot Server"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to reboot this server into normal operating mode."))
+    
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Reboot Server")
+        } )
+
+    def UpdateFieldsRECOVERY(self, inPane):
+        inPane.AddTitleField(Lang("Reboot Into Recovery Mode"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to reboot this server into recovery mode.  "
+            "This mode can also be used to apply updates or patches."))
+        
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Reboot Into Recovery Mode")
+        } )
+        
     def UpdateFieldsSHUTDOWN(self, inPane):
-        inPane.AddTitleField(Lang("Server Shutdown"))
+        inPane.AddTitleField(Lang("Shutdown Server"))
     
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to shutdown this server."))
-            
+        
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Shutdown Server")
+        } )
+        
     def UpdateFieldsLOCALSHELL(self, inPane):
         inPane.AddTitleField(Lang("Local Command Shell"))
     
@@ -334,7 +359,6 @@ class RootDialogue(Dialogue):
             inPane.AddWrappedTextField(Lang(
                 "Please enter Recovery Mode from the Reboot menu before applying an upgrade or patch."))
  
-    
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("DNS Servers"))
@@ -462,6 +486,9 @@ class RootDialogue(Dialogue):
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
+        elif inName == 'DIALOGUE_RECOVERY':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("Do you want to reboot into Recovery Mode?"), lambda x: self.RecoveryDialogueHandler(x))))
         elif inName == 'DIALOGUE_SHUTDOWN':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
@@ -476,7 +503,14 @@ class RootDialogue(Dialogue):
             
     def RebootDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
+            Data.Inst().RecoveryModeSet(False)
             self.layout.ExitBannerSet(Lang("Rebooting..."))
+            self.layout.ExitCommandSet('/sbin/shutdown -r now')
+
+    def RecoveryDialogueHandler(self,  inYesNo):
+        if inYesNo == 'y':
+            Data.Inst().RecoveryModeSet(True)
+            self.layout.ExitBannerSet(Lang("Rebooting into Recovery Mode..."))
             self.layout.ExitCommandSet('/sbin/shutdown -r now')
 
     def ShutdownDialogueHandler(self,  inYesNo):

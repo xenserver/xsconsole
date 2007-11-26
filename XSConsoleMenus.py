@@ -89,6 +89,7 @@ class RootMenu:
                 ChoiceDef(Lang("Local Command Shell"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ])
+            rebootText = Lang("Reboot Into Normal Mode")
         else:
             rootMenu = Menu(self, None, Lang("Customize System"), [
                 ChoiceDef(Lang("Status Display"), 
@@ -101,13 +102,12 @@ class RootMenu:
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
                 ChoiceDef(Lang("Technical Support"), 
                     lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
-                ChoiceDef(Lang("Server Reboot"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
-                ChoiceDef(Lang("Server Shutdown"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
+                ChoiceDef(Lang("Reboot/Shutdown"), 
+                    lambda : inDialogue.ChangeMenu('MENU_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOTSHUTDOWN')),
                 ChoiceDef(Lang("Local Command Shell"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ])
+            rebootText = Lang("Reboot")
         
         propertiesChoices = [
                 ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSERVER')),
@@ -163,6 +163,15 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('VALIDATE')),
                 ChoiceDef(Lang("Apply Upgrade or Patch"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
                     lambda : inDialogue.ChangeStatus('PATCH'))
+            ]), 
+ 
+        'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [
+                ChoiceDef(rebootText, 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
+                ChoiceDef(Lang("Reboot into Recovery Mode"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_RECOVERY'), lambda : inDialogue.ChangeStatus('RECOVERY')), 
+                ChoiceDef(Lang("Shutdown Server"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
             ])
         }
         
