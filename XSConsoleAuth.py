@@ -106,10 +106,11 @@ class Auth:
         return retVal
     
     def AssertAuthenticated(self):
-        if not self.isAuthenticated:
-            raise Exception("Not logged in")
-        if self.AuthAge() > State.Inst().AuthTimeoutSeconds():
-            raise Exception("Session has timed out")
+        if not State.Inst().IsRecoveryMode():
+            if not self.isAuthenticated:
+                raise Exception("Not logged in")
+            if self.AuthAge() > State.Inst().AuthTimeoutSeconds():
+                raise Exception("Session has timed out")
 
     def LogOut(self):
         self.isAuthenticated = False

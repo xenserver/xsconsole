@@ -71,6 +71,7 @@ class State:
         return self.isFirstBoot
     
     def IsRecoveryMode(self):
+        return True
         return self.isRecoveryMode
     
     def AuthTimeoutSecondsSet(self, inSeconds): # Don't call this directly - use Auth.TimeoutSecondsSet
