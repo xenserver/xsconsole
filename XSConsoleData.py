@@ -5,6 +5,7 @@ from pprint import pprint
 
 from XSConsoleAuth import *
 from XSConsoleLang import *
+from XSConsoleState import *
 
 class DataMethod:
     def __init__(self, inSend, inName):
@@ -225,16 +226,27 @@ class Data:
         self.session.xenapi.host.add_to_logging(self.host.opaqueref(), 'syslog_destination', inDestination)
         self.session.xenapi.host.syslog_reconfigure(self.host.opaqueref())
 
-    def RecoveryModeSet(self, inBool):
+    def RecoveryModeSet(self, inEnable):
         Auth.Inst().AssertAuthenticated()
-        if inBool:
-            status, output = commands.getstatusoutput("/bin/touch /.flash/boot-to-recover")
+        if inEnable and not State.Inst().IsRecoveryMode():
+            status, output = commands.getstatusoutput("/bin/touch /.flash/boot_to_recover")
             if status != 0:
                 raise Exception(output)
-        else:
-            status, output = commands.getstatusoutput("rm -f /.flash/boot-to-recover")
+        elif not inEnable and State.Inst().IsRecoveryMode():
+            # Find the FLASH partition, mount it, delete boot_to_recover, unmount, tidy up
+            status, device = commands.getstatusoutput("/sbin/findfs LABEL=xe-state")
+            if status != 0:
+                raise Exception(device)
+            mountPoint = tempfile.mktemp('.xsconsole')
+            os.mkdir(mountPoint, 0700)
+            status, output = commands.getstatusoutput("/bin/mount "+device+" "+mountPoint)
             if status != 0:
                 raise Exception(output)
+            os.remove(mountPoint+'/boot_to_recover')
+            status, output = commands.getstatusoutput("/bin/umount "+mountPoint)
+            if status != 0:
+                raise Exception(output)
+            os.rmdir(mountPoint)
         
     def ChangePassword(self,  inOldPassword, inNewPassword):
         session = Auth.Inst().TCPSession(inOldPassword)

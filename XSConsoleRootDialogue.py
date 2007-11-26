@@ -354,10 +354,28 @@ class RootDialogue(Dialogue):
         if State.Inst().IsRecoveryMode():
             inPane.AddWrappedTextField(Lang(
                 "Press <Enter> to apply a software upgrade or patch."))
-            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Validate") } )   
+            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upgrade or Patch") } )   
         else:
             inPane.AddWrappedTextField(Lang(
                 "Please enter Recovery Mode from the Reboot menu before applying an upgrade or patch."))
+ 
+    def UpdateFieldsBACKUP(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Backup Server State"))
+
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to backup the server state to a removable device."))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Backup") } )   
+ 
+    def UpdateFieldsRESTORE(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Restore Server State"))
+
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to restore the server state from a removable device."))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } )   
  
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
@@ -483,6 +501,10 @@ class RootDialogue(Dialogue):
             self.layout.PushDialogue(ValidateDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_PATCH':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(PatchDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_BACKUP':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(BackupDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_RESTORE':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RestoreDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))

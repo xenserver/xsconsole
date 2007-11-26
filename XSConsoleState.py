@@ -43,8 +43,16 @@ class State:
             
             # Fill in pseudo-state
             cls.instance.isFirstBoot = isFirstBoot
-            cls.instance.isRecoveryMode = os.path.isfile('/recovery')
-                
+            cls.instance.isRecoveryMode = False
+            try:
+                file = open('/proc/mounts')
+                for line in file:
+                    if re.match(r'\S+\s+\/\.flash\s+ramfs', line):
+                        cls.instance.isRecoveryMode = True
+                        break
+                close(file)
+            except Exception:
+                pass # Ignore failure
             cls.instance.MakeSane()
             
         return cls.instance

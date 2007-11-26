@@ -82,10 +82,8 @@ class RootMenu:
                     None,  lambda : inDialogue.ChangeStatus('STATUS')),
                 ChoiceDef(Lang("Technical Support"), 
                     lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
-                ChoiceDef(Lang("Server Reboot"),
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
-                ChoiceDef(Lang("Server Shutdown"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
+                ChoiceDef(Lang("Reboot or Shutdown"), 
+                    lambda : inDialogue.ChangeMenu('MENU_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOTSHUTDOWN')),
                 ChoiceDef(Lang("Local Command Shell"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ])
@@ -102,7 +100,7 @@ class RootMenu:
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
                 ChoiceDef(Lang("Technical Support"), 
                     lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
-                ChoiceDef(Lang("Reboot/Shutdown"), 
+                ChoiceDef(Lang("Reboot or Shutdown"), 
                     lambda : inDialogue.ChangeMenu('MENU_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOTSHUTDOWN')),
                 ChoiceDef(Lang("Local Command Shell"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
@@ -162,7 +160,11 @@ class RootMenu:
                 ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
                     lambda : inDialogue.ChangeStatus('VALIDATE')),
                 ChoiceDef(Lang("Apply Upgrade or Patch"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
-                    lambda : inDialogue.ChangeStatus('PATCH'))
+                    lambda : inDialogue.ChangeStatus('PATCH')),
+                ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
+                    lambda : inDialogue.ChangeStatus('BACKUP')),
+                ChoiceDef(Lang("Restore Server State From Backup"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESTORE'),
+                    lambda : inDialogue.ChangeStatus('RESTORE'))
             ]), 
  
         'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [

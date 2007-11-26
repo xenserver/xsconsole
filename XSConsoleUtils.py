@@ -73,11 +73,12 @@ class FileUtils:
         return retVal
 
 class MountVDI:
-    def __init__(self, inVDI):
+    def __init__(self, inVDI, inMode = None):
         self.mountPoint = None
+        self.mode = FirstValue(inMode, 'ro')
         data = Data.Inst()
         deviceNum = data.derived.dom0_vm.allowed_VBD_devices([])[-1]
-        self.vbd = data.CreateVBD(data.derived.dom0_vm(), inVDI, deviceNum)
+        self.vbd = data.CreateVBD(data.derived.dom0_vm(), inVDI, deviceNum, self.mode)
         try:
             self.mountDev = '/dev/'+self.vbd['device']
             FileUtils.AssertSafePath(self.mountDev)
@@ -88,7 +89,7 @@ class MountVDI:
             status, output = 1, ""
             i=0
             while status != 0:
-                status, output = commands.getstatusoutput("/bin/mount -t auto -o ro " +self.mountDev+" "+self.mountPoint + " 2>&1")
+                status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
                 if status != 0:
                     if i == 0: # First failure - try umounting our mount point
                         commands.getstatusoutput("/bin/umount " + self.mountPoint + " 2>&1")

@@ -911,7 +911,7 @@ class FileDialogue(Dialogue):
             self.layout.Refresh()
             self.layout.DoUpdate()
             
-            self.vdiMount = MountVDI(self.vdi)
+            self.vdiMount = MountVDI(self.vdi, self.Custom('mode'))
             self.layout.PopDialogue()
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Scanning device...")))
             self.layout.Refresh()
@@ -954,7 +954,8 @@ class PatchDialogue(FileDialogue):
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
             'deviceprompt' : Lang("Select the Device Containing the Patch"), 
             'fileprompt' : Lang("Select the Patch File"),
-            'confirmprompt' : Lang("Press <F8> to Begin the Update/Patch Process")
+            'confirmprompt' : Lang("Press <F8> to Begin the Update/Patch Process"),
+            'mode' : 'ro'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
         
@@ -983,6 +984,7 @@ class PatchDialogue(FileDialogue):
                 if status != 0:
                     raise Exception(output)
                 
+                self.layout.PopDialogue()
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
                     Lang("Patch Successful"), Lang("Please reboot to use the newly installed software.")))
 
@@ -996,15 +998,16 @@ class PatchDialogue(FileDialogue):
             except Exception, e:
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
 
-class RestoreDialogue(FileDialogue):
+class BackupDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
 
         self.custom = {
-            'title' : Lang("Restore Server State"),
+            'title' : Lang("Backup Server State"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select the Device Containing the Backup File"), 
-            'fileprompt' : Lang("Select the Backup File"),
-            'confirmprompt' : Lang("Press <F8> to Begin the Restore Process")
+            'deviceprompt' : Lang("Select the Device to Save To"), 
+            'fileprompt' : Lang("Choose the Backup Filename"),
+            'confirmprompt' : Lang("Press <F8> to Begin the Backup Process"),
+            'mode' : 'rw'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
         
@@ -1014,7 +1017,7 @@ class RestoreDialogue(FileDialogue):
         self.layout.PopDialogue()
         
         self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
-            Lang("Restoring from backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
+            Lang("Saving from backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:
@@ -1027,25 +1030,77 @@ class RestoreDialogue(FileDialogue):
                     
                 filename = self.vdiMount.MountedPath(self.filename)
                 FileUtils.AssertSafePath(filename)
-                command = "/opt/xensource/bin/xe update-upload file-name='"+filename+"' host-uuid="+hostRef
+                command = "/opt/xensource/bin/xe host-backup file-name='"+filename+"'"
                 status, output = commands.getstatusoutput(command)
                 
                 if status != 0:
                     raise Exception(output)
                 
+                self.layout.PopDialogue()
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
-                    Lang("Patch Successful"), Lang("Please reboot to use the newly installed software.")))
+                    Lang("Backup Successful")))
 
             except Exception, e:
                 self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Backup Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Backup Failed"), Lang(e)))
 
+class RestoreDialogue(FileDialogue):
+    def __init__(self, inLayout, inParent):
+
+        self.custom = {
+            'title' : Lang("Restore Server State"),
+            'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
+            'deviceprompt' : Lang("Select the Device Containing the Backup File"), 
+            'fileprompt' : Lang("Select the Backup File"),
+            'confirmprompt' : Lang("Press <F8> to Begin the Restore Process"),
+            'mode' : 'ro'
+        }
+        FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
+    def DoAction(self):
+        success = False
+        
+        self.layout.PopDialogue()
+        
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+            Lang("Restoring from backup... This make take several minutes.")))
+            
+        try:
+            try:
+                self.layout.Refresh()
+                self.layout.DoUpdate()
+                
+                hostRef = Data.Inst().host.uuid(None)
+                if hostRef is None:
+                    raise Exception("Internal error 1")
+                    
+                filename = self.vdiMount.MountedPath(self.filename)
+                FileUtils.AssertSafePath(filename)
+                command = "/opt/xensource/bin/xe host-restore file-name='"+filename+"'"
+                status, output = commands.getstatusoutput(command)
+                
+                if status != 0:
+                    raise Exception(output)
+                
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Lang("Restore Successful"), Lang("Please reboot to use the new backup.")))
+
+            except Exception, e:
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Restore Failed"), Lang(e)))
+                
+        finally:
+            try:
+                self.PreExitActions()
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Restore Failed"), Lang(e)))
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
