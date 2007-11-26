@@ -525,15 +525,21 @@ class RootDialogue(Dialogue):
             
     def RebootDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
-            Data.Inst().RecoveryModeSet(False)
-            self.layout.ExitBannerSet(Lang("Rebooting..."))
-            self.layout.ExitCommandSet('/sbin/shutdown -r now')
+            try:
+                Data.Inst().RecoveryModeSet(False)
+                self.layout.ExitBannerSet(Lang("Rebooting..."))
+                self.layout.ExitCommandSet('/sbin/shutdown -r now')
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Reboot Failed"), Lang(e)))
 
     def RecoveryDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
-            Data.Inst().RecoveryModeSet(True)
-            self.layout.ExitBannerSet(Lang("Rebooting into Recovery Mode..."))
-            self.layout.ExitCommandSet('/sbin/shutdown -r now')
+            try:
+                Data.Inst().RecoveryModeSet(True)
+                self.layout.ExitBannerSet(Lang("Rebooting into Recovery Mode..."))
+                self.layout.ExitCommandSet('/sbin/shutdown -r now')
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Reboot Failed"), Lang(e)))
 
     def ShutdownDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':

@@ -1,6 +1,6 @@
 # import socket, fcntl, struct, os
 import XenAPI
-import commands, re,  sys
+import commands, re, sys, tempfile
 from pprint import pprint
 
 from XSConsoleAuth import *
