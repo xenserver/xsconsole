@@ -126,23 +126,28 @@ class Data:
     
                 # Sort PIFs by device name for consistent order
                 self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))
-    
+
+                def convertVBD(inVBD):
+                    retVBD = self.session.xenapi.VBD.get_record(inVBD)
+                    retVBD['opaqueref'] = inVBD
+                    return retVBD
+                    
+                def convertVDI(inVDI):
+                    retVDI = self.session.xenapi.VDI.get_record(inVDI)
+                    retVDI['VBDs'] = map(convertVBD, retVDI['VBDs'])
+                    retVDI['opaqueref'] = inVDI
+                    return retVDI
+                    
                 def convertPBD(inPBD):
-                    retVal = self.session.xenapi.PBD.get_record(inPBD)
-                    if retVal['SR'] != 'OpaqueRef:NULL':
-                        srRef = retVal['SR']
-                        retVal['SR'] = self.session.xenapi.SR.get_record(retVal['SR'])
-                        retVal['SR']['opaqueref'] = srRef
+                    retPBD = self.session.xenapi.PBD.get_record(inPBD)
+                    if retPBD['SR'] != 'OpaqueRef:NULL':
+                        srRef = retPBD['SR']
+                        retPBD['SR'] = self.session.xenapi.SR.get_record(retPBD['SR'])
+                        retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
+                        retPBD['SR']['opaqueref'] = srRef
                         
-                        def convertVDI(inVDI):
-                            retVal = self.session.xenapi.VDI.get_record(inVDI)
-                            retVal['opaqueref'] = inVDI
-                            return retVal
-                        
-                        retVal['SR']['VDIs'] = map(convertVDI, retVal['SR']['VDIs'])
-                        
-                    retVal['opaqueref'] = inPBD
-                    return retVal
+                    retPBD['opaqueref'] = inPBD
+                    return retPBD
                     
                 self.data['host']['PBDs'] = map(convertPBD, self.data['host']['PBDs'])
 
@@ -232,22 +237,35 @@ class Data:
 
     def RecoveryModeSet(self, inEnable):
         Auth.Inst().AssertAuthenticated()
-        if inEnable and not State.Inst().IsRecoveryMode():
-            status, output = commands.getstatusoutput("/bin/touch /.flash/boot_to_recover")
-            if status != 0:
-                raise Exception(output)
-        elif not inEnable and State.Inst().IsRecoveryMode():
-            # Find the FLASH partition, mount it, delete boot_to_recover, unmount, tidy up
+        recoveryMode = State.Inst().IsRecoveryMode() # Tells us whether .flash needs to be mounted from xe-store
+        mountPoint = None
+        
+        if recoveryMode:
+            # Find the FLASH partition, mount it
             status, device = commands.getstatusoutput("/sbin/findfs LABEL=xe-state")
             if status != 0:
                 raise Exception(device)
             mountPoint = tempfile.mktemp('.xsconsole')
             os.mkdir(mountPoint, 0700)
-            status, output = commands.getstatusoutput("/bin/mount "+device+" "+mountPoint)
+            status, output = commands.getstatusoutput("/bin/mount '"+device+"' '"+mountPoint+"'")
             if status != 0:
                 raise Exception(output)
-            os.remove(mountPoint+'/boot_to_recover')
-            status, output = commands.getstatusoutput("/bin/umount "+mountPoint)
+        else:
+            mountPoint = '/.flash'
+            
+        recoverFile = mountPoint+'/boot_to_recover'
+            
+        if inEnable:
+            # Touch the file
+            file = os.open(recoverFile, os.O_WRONLY | os.O_CREAT, 0666)
+            os.close(file)
+        else:
+            if os.path.isfile(recoverFile):
+                os.remove(recoverFile)
+                
+        if recoveryMode:
+            # Undo the mounting operations
+            status, output = commands.getstatusoutput("/bin/umount '"+mountPoint+"'")
             if status != 0:
                 raise Exception(output)
             os.rmdir(mountPoint)
@@ -474,6 +492,14 @@ class Data:
     
         return retVal
 
+    def VBDGetRecord(self, inVBD):
+        self.RequireSession()
+
+        vbdRecord = self.session.xenapi.VBD.get_record(inVBD)
+        vbdRecord['opaqueref'] = inVBD
+        
+        return vbdRecord
+
     def CreateVBD(self, inVM, inVDI, inDeviceNum, inMode = None,  inType = None):
         self.RequireSession()
         
@@ -492,12 +518,17 @@ class Data:
         }
 
         newVBD = self.session.xenapi.VBD.create(vbd)
-        self.session.xenapi.VBD.plug(newVBD)
-        vbdRecord = self.session.xenapi.VBD.get_record(newVBD)
-        vbdRecord['opaqueref'] = newVBD
 
-        return vbdRecord
+        return self.VBDGetRecord(newVBD)
+    
+    def PlugVBD(self, inVBD):
+        self.session.xenapi.VBD.plug(inVBD['opaqueref'])
+        # Must reread to get filled-in device field
+        return self.VBDGetRecord(inVBD['opaqueref'])
+        
+    def UnplugVBD(self, inVBD):
+        self.session.xenapi.VBD.unplug(inVBD['opaqueref'])
+        return self.VBDGetRecord(inVBD['opaqueref'])
 
     def DestroyVBD(self, inVBD):
-        self.session.xenapi.VBD.unplug(inVBD['opaqueref'])
         self.session.xenapi.VBD.destroy(inVBD['opaqueref'])

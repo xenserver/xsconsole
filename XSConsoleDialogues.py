@@ -773,9 +773,8 @@ class FileDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
-        self.state = 'INITIAL'
         self.vdiMount = None
-        self.BuildPaneINITIAL()
+        self.ChangeState('INITIAL')
     
     def Custom(self, inKey):
         return self.custom.get(inKey, None)
@@ -817,7 +816,11 @@ class FileDialogue(Dialogue):
     def BuildPaneCUSTOM(self):
         self.BuildPaneBase(10)
         self.UpdateFields()
-        
+    
+    def ChangeState(self, inState):
+        self.state = inState
+        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+    
     def UpdateFields(self):
         self.Pane('file').ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
@@ -903,8 +906,7 @@ class FileDialogue(Dialogue):
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
             self.filename = inputValues['filename']
-            self.state = 'CONFIRM'
-            self.BuildPaneCONFIRM()
+            self.ChangeState('CONFIRM')
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
@@ -939,8 +941,7 @@ class FileDialogue(Dialogue):
             
             self.layout.PopDialogue()
             
-            self.state = 'FILES'
-            self.BuildPaneFILES()
+            self.ChangeState('FILES')
         
         except Exception, e:
             try:
@@ -952,12 +953,10 @@ class FileDialogue(Dialogue):
 
     def HandleFileChoice(self, inChoice):
         if inChoice is None:
-            self.state = 'CUSTOM'
-            self.BuildPaneCUSTOM()
+            self.ChangeState('CUSTOM')
         else:
             self.filename = self.fileList[inChoice]
-            self.state = 'CONFIRM'
-            self.BuildPaneCONFIRM()
+            self.ChangeState('CONFIRM')
     
     def PreExitActions(self):
         if self.vdiMount is not None:
@@ -1030,12 +1029,28 @@ class BackupDialogue(FileDialogue):
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
         
     def DoAction(self):
+        filename = self.vdiMount.MountedPath(self.filename)
+        if os.path.isfile(filename):
+            self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("File already exists.  Do you want to overwrite it?"), lambda x: self.DoOverwriteChoice(x)))
+        else:
+            self.DoCommit()
+    
+    def DoOverwriteChoice(self, inChoice):
+        if inChoice == 'y':
+            filename = self.vdiMount.MountedPath(self.filename)
+            os.remove(filename)
+            self.DoCommit()
+        else:
+            self.ChangeState('FILES')
+    
+    def DoCommit(self):
         success = False
         
         self.layout.PopDialogue()
         
         self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
-            Lang("Saving from backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
+            Lang("Saving to backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:

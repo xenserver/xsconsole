@@ -75,34 +75,54 @@ class FileUtils:
 class MountVDI:
     def __init__(self, inVDI, inMode = None):
         self.mountPoint = None
+        self.vbd = None
         self.mode = FirstValue(inMode, 'ro')
+        
+        # Keep records of whether we created and plugged the VBD, for undoing it later
+        self.createdVBD = False
+        self.pluggedVBD = False
+        self.mountedVBD = False
         data = Data.Inst()
-        deviceNum = data.derived.dom0_vm.allowed_VBD_devices([])[-1]
-        self.vbd = data.CreateVBD(data.derived.dom0_vm(), inVDI, deviceNum, self.mode)
+        data.Update() # Get current device list
+        
         try:
+            vbdFound = None
+            allowedVBDs = data.derived.dom0_vm.allowed_VBD_devices([])
+            for vbd in inVDI.get('VBDs', []):
+                if vbd['userdevice'] in allowedVBDs:
+                    # Already mounted in userspace, so reuse
+                    vbdFound = vbd
+                    break
+            
+            if vbdFound is not None:
+                self.vbd = vbdFound
+            else:
+                deviceNum = data.derived.dom0_vm.allowed_VBD_devices([])[-1] # Highest allowed device number
+                self.vbd = data.CreateVBD(data.derived.dom0_vm(), inVDI, deviceNum, self.mode)
+                self.createdVBD = True
+                
+            if not self.vbd['currently_attached']:
+                self.vbd = data.PlugVBD(self.vbd)
+                self.pluggedVBD = True
+        
             self.mountDev = '/dev/'+self.vbd['device']
             FileUtils.AssertSafePath(self.mountDev)
             self.mountPoint = tempfile.mktemp(".xsconsole")
             if not os.path.isdir(self.mountPoint):
                 os.mkdir(self.mountPoint, 0700)
+
+            status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
+            if status != 0:
+                raise Exception(output)
             
-            status, output = 1, ""
-            i=0
-            while status != 0:
-                status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
-                if status != 0:
-                    if i == 0: # First failure - try umounting our mount point
-                        commands.getstatusoutput("/bin/umount " + self.mountPoint + " 2>&1")
-                    elif i == 1: # Second failure - try umounting the device
-                        commands.getstatusoutput("/bin/umount " + self.mountDev + " 2>&1")
-                    else:
-                        raise Exception(output)
-                        
-                i += 1
+            self.mountedVBD = True
+
         except Exception, e:
-            Data.Inst().DestroyVBD(self.vbd)
-            self.vbd = None
-            raise
+            try:
+                self.Unmount()
+            except Exception:
+                pass #  Report the original exception, not this one
+            raise e
         
     def Scan(self, inRegExp = None, inNumToReturn = None):
         retVal = []
@@ -110,7 +130,6 @@ class MountVDI:
         regExp = re.compile(FirstValue(inRegExp, r'.*'))
         for root, dirs, files in os.walk(self.mountPoint):
             if len(retVal) >= numToReturn:
-                
                 break
             for filename in files:
                 if regExp.match(filename):
@@ -121,14 +140,19 @@ class MountVDI:
         return retVal
         
     def Unmount(self):
-        status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint +  " 2>&1")
-        if self.vbd is not None:
+        status = 0
+        if self.mountedVBD:
+            status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint +  " 2>&1")
+            os.rmdir(self.mountPoint)
+            self.mountedVBD = False
+        if self.pluggedVBD:
+            self.vbd = Data.Inst().UnplugVBD(self.vbd)
+            self.pluggedVBD = False
+        if self.createdVBD:
             Data.Inst().DestroyVBD(self.vbd)
-            self.vbd = None
+            self.createdVBD = False
         if status != 0:
             raise Exception(output)
-        if self.mountPoint is not None:
-            os.rmdir(self.mountPoint)
     
     def MountedPath(self, inLeafname):
         return self.mountPoint + '/' + inLeafname
