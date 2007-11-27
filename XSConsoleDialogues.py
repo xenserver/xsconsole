@@ -1063,7 +1063,7 @@ class BackupDialogue(FileDialogue):
                     
                 filename = self.vdiMount.MountedPath(self.filename)
                 FileUtils.AssertSafePath(filename)
-                command = "/opt/xensource/bin/xe host-backup file-name='"+filename+"'"
+                command = "/opt/xensource/bin/xe host-backup file-name='"+filename+"' host="+hostRef
                 status, output = commands.getstatusoutput(command)
                 
                 if status != 0:
@@ -1115,7 +1115,7 @@ class RestoreDialogue(FileDialogue):
                     
                 filename = self.vdiMount.MountedPath(self.filename)
                 FileUtils.AssertSafePath(filename)
-                command = "/opt/xensource/bin/xe host-restore file-name='"+filename+"'"
+                command = "/opt/xensource/bin/xe host-restore file-name='"+filename+"' host="+hostRef
                 status, output = commands.getstatusoutput(command)
                 
                 if status != 0:

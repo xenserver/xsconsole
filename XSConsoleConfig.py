@@ -1,4 +1,6 @@
 
+import os
+
 class Config:
     instance = None
     
@@ -21,6 +23,9 @@ class Config:
             'recovery_bg_bright' : (0, 200, 266)
             
         }
+        
+        self.ftpname = 'XenServer Support'
+        self.ftpserver = 'ftp://support.xensource.com/'
     
     @classmethod
     def Inst(cls):
@@ -28,6 +33,20 @@ class Config:
             cls.instance = Config()
         return cls.instance
     
+    @classmethod
+    def Mutate(cls, inConfig):
+        cls.instance = inConfig
+    
     def Colour(self,  inName):
         return self.colours[inName]
+    
+    def FTPName(self):
+        return self.ftpname
+        
+    def FTPServer(self):
+        return self.ftpserver
+    
+# Import a more specific configuration if available
+if os.path.isfile('XSConsoleConfigOEM.py'):
+    import XSConsoleConfigOEM
     
