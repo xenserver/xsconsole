@@ -719,6 +719,8 @@ class ValidateDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
+        data = Data.Inst()
+
         paneHeight = 10
         pane = self.NewPane('validate', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         
@@ -726,20 +728,36 @@ class ValidateDialogue(Dialogue):
         pane.Win().TitleSet(Lang("Validate Server Configuration"))
         pane.AddBox()
     
-        self.vtResult = "Unknown"
-        self.srResult = "Unknown"
-        self.netResult = "Unknown"
-    
+        if 'vmx' in data.cpuinfo.flags([]) or 'svm' in data.cpuinfo.flags([]):
+            self.vtResult = Lang("OK")
+        else:
+            self.vtResult = Lang("Not OK")
+        
+        # If there is an SR that allows vdi_create, signal SR OK
+        self.srResult = "Not Present"
+        for pbd in data.host.PBDs([]):
+            sr = pbd.get('SR', {})
+            if 'vdi_create' in sr['allowed_operations']:
+                self.srResult = 'OK'
+        
+        self.netResult = "Not OK"
+        if len(data.derived.managementpifs([])) > 0:
+            managementPIF = data.derived.managementpifs()[0]
+            if managementPIF['currently_attached']:
+                self.netResult = "OK"
+            else:
+                self.netResult = "Not connected"
+
         self.UpdateFields()
         
     def UpdateFields(self):
         pane = self.Pane('validate')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Validation Results (feature not complete)"))
-        pane.AddStatusField(Lang("VT enabled on CPU", 40), self.vtResult)
-        pane.AddStatusField(Lang("Default storage repository", 40), self.srResult)
-        pane.AddStatusField(Lang("Management network", 40), self.netResult)
+        pane.AddTitleField(Lang("Validation Results"))
+        pane.AddStatusField(Lang("VT enabled on CPU", 50), self.vtResult)
+        pane.AddStatusField(Lang("Local default storage repository", 50), self.srResult)
+        pane.AddStatusField(Lang("Management network interface", 50), self.netResult)
         
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
 

@@ -89,11 +89,15 @@ class Data:
             if status == 0:
                 self.ScanIpmiMcInfo(output.split("\n"))
         
+        # /proc/cpuinfo has details of the virtual CPUs exposed to DOM-0, not necessarily the real CPUs
+        (status, output) = commands.getstatusoutput("/bin/cat /proc/cpuinfo")
+        if status == 0:
+            self.ScanCPUInfo(output.split("\n"))
+        
         self.Update()
     
     def Update(self):
         self.data['host'] = {}
-        self.data['sr'] = {}
 
         self.RequireSession()
         if self.session is not None:
@@ -405,7 +409,14 @@ class Data:
                 self.data['dns']['nameservers'].append(match.group(1))
             else:
                 self.data['dns']['othercontents'].append(line)
-                
+    
+    def ScanCPUInfo(self, inLines):
+        self.data['cpuinfo'] = {}
+        for line in inLines:
+            match = re.match(r'flags\s*:\s*(.*)', line)
+            if match:
+                self.data['cpuinfo']['flags'] = match.group(1).split()
+
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
@@ -439,7 +450,7 @@ class Data:
         retVal = None
         
         # FIXME: Address should come from API, but not available at present.  For DHCP this is just a guess at the gateway address
-        if self.derived.managementpifs.Size() == 0:
+        if len(self.derived.managementpifs()) == 0:
             # No management i/f configured
             pass
         else:
