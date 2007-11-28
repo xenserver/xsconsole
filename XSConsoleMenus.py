@@ -1,8 +1,10 @@
 
+from pprint import pprint
+
 from XSConsoleBases import *
+from XSConsoleConfig import *
 from XSConsoleData import *
 from XSConsoleLang import *
-from pprint import pprint
 
 class ChoiceDef:
     def __init__(self, name, onAction = None, onEnter = None):
@@ -23,6 +25,7 @@ class Menu:
 
     def CurrentChoiceSet(self,  inChoice):
         self.choiceIndex = inChoice
+        # Also need to can HandleEnter
         
     def CurrentChoiceDef(self):
         return self.choiceDefs[self.choiceIndex]
@@ -166,7 +169,9 @@ class RootMenu:
                 ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
                     lambda : inDialogue.ChangeStatus('BACKUP')),
                 ChoiceDef(Lang("Restore Server State From Backup"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESTORE'),
-                    lambda : inDialogue.ChangeStatus('RESTORE'))
+                    lambda : inDialogue.ChangeStatus('RESTORE')),
+                ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
+                    lambda : inDialogue.ChangeStatus('BUGREPORT'))
             ]), 
  
         'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [

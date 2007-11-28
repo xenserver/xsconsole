@@ -1,6 +1,7 @@
 
 from XSConsoleAuth import *
 from XSConsoleBases import *
+from XSConsoleConfig import *
 from XSConsoleCurses import *
 from XSConsoleData import *
 from XSConsoleDialoguePane import *
@@ -377,6 +378,17 @@ class RootDialogue(Dialogue):
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } )   
  
+    def UpdateFieldsBUGREPORT(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Upload Bug Report"))
+
+        inPane.AddWrappedTextField(Lang(
+            "This option will upload a bug report file, containing information about "
+            "the state of this machine, to the support server at ")+
+            Config.Inst().FTPServer()+Lang(".  This file may contain sensitive data."))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upload Bug Report") } )  
+        
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("DNS Servers"))
@@ -472,6 +484,14 @@ class RootDialogue(Dialogue):
         self.menu.ChangeMenu(inName)
         self.menu.CurrentMenu().HandleEnter()
     
+    def Reset(self):
+        self.ChangeMenu('MENU_ROOT')
+        self.menu.CurrentMenu().CurrentChoiceSet(0)
+        self.menu.CurrentMenu().HandleEnter()
+        self.UpdateFields()
+        self.Pane('menu').Refresh()
+        self.Pane('status').Refresh()
+            
     def AuthenticatedOnly(self, inFunc):
         if not Auth.Inst().IsAuthenticated():
             self.layout.PushDialogue(LoginDialogue(self.layout, self.parent,
@@ -504,7 +524,11 @@ class RootDialogue(Dialogue):
         elif inName == 'DIALOGUE_BACKUP':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(BackupDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_RESTORE':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RestoreDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RestoreDialogue(self.layout,  self.parent))),
+        elif inName == 'DIALOGUE_BUGREPORT':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("This operation may upload sensitive data to the support server ") +
+                    Config.Inst().FTPServer()+Lang(".  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
@@ -543,8 +567,14 @@ class RootDialogue(Dialogue):
 
     def ShutdownDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
+            # Don't shutdown into recovery mode - security risk
+            Data.Inst().RecoveryModeSet(False)
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
+
+    def BugReportDialogueHandler(self, inYesNo):
+        if inYesNo == 'y':
+            self.layout.PushDialogue(BugReportDialogue(self.layout, self.parent))
 
     def HandleLogInOut(self):
         if Auth.Inst().IsAuthenticated():

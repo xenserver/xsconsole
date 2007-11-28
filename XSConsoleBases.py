@@ -58,3 +58,6 @@ class Dialogue:
         for pane in self.panes.values():
             pane.CursorOff()
         
+    def Reset(self):
+        # Reset to known state, e.g. first menu item selected
+        pass

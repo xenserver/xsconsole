@@ -21,7 +21,6 @@ class Config:
             'recovery_bg_dark' : (0, 0, 0), 
             'recovery_bg_normal' : (0, 150, 200), 
             'recovery_bg_bright' : (0, 200, 266)
-            
         }
         
         self.ftpname = 'XenServer Support'

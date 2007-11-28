@@ -96,7 +96,7 @@ class App:
             try:
                 gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
             except Exception, e:
-                gotKey = None
+                gotKey = None # Catch timeout
 
             if gotKey == "\011": gotKey = "KEY_TAB"
             if gotKey == "\012": gotKey = "KEY_ENTER"
@@ -125,6 +125,10 @@ class App:
                 Auth.Inst().KeepAlive()
                 if self.layout.TopDialogue().HandleKey(gotKey):
                     State.Inst().SaveIfRequired()
+                    needsRefresh = True
+                elif gotKey == 'KEY_ESCAPE':
+                    # Set root menu choice to the first, to give a fixed start state after lots of escapes
+                    self.layout.TopDialogue().Reset()
                     needsRefresh = True
                 
             if self.layout.ExitCommand() is not None:

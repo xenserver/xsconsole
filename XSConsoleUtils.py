@@ -5,6 +5,12 @@ from XSConsoleBases import *
 from XSConsoleData import *
 from XSConsoleLang import *
 
+class ShellUtils:
+    @classmethod
+    def AssertSafeParam(cls, inParam):
+        if not re.match(r'[-A-Za-z0-9/._~:]*$', inParam):
+            raise Exception("Invalid characters in parameter '"+inParam+"'")
+        return inParam
 
 class FileUtils:
     @classmethod

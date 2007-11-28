@@ -150,13 +150,12 @@ class InfoDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText,  inInfo = None):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
+        self.info = inInfo
+        
         if inInfo is None:
-            self.info = None
-            paneHeight = 6
-            
+            paneHeight = 5 + len(Language.ReflowText(self.text, 70))
         else:
-            self.info = inInfo
-            paneHeight = 7+ len(Language.ReflowText(self.info, 70))
+            paneHeight = 7 + len(Language.ReflowText(self.info, 70))
                 
         paneHeight = min(paneHeight,  22)
         
@@ -172,7 +171,7 @@ class InfoDialogue(Dialogue):
             # Centre text if short
             pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(3, 1)
+            pane.ResetPosition(1, 1)
         
         pane.AddWrappedBoldTextField(self.text)
         if self.info is not None:
@@ -192,7 +191,9 @@ class BannerDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
-        pane = self.NewPane('banner', DialoguePane(3, 9, 74, 5, self.parent))
+        paneHeight = 4 + len(Language.ReflowText(self.text, 70))
+        paneHeight = min(paneHeight,  22)
+        pane = self.NewPane('banner', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
@@ -204,7 +205,7 @@ class BannerDialogue(Dialogue):
             # Centre text if short
             pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(2, 1)
+            pane.ResetPosition(1, 1)
         
         pane.AddWrappedBoldTextField(self.text)
 
@@ -213,7 +214,9 @@ class QuestionDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.handler = inHandler
-        pane = self.NewPane('question', DialoguePane(3, 9, 74, 6, self.parent))
+        paneHeight = 5 + len(Language.ReflowText(self.text, 70))
+        paneHeight = min(paneHeight,  22)
+        pane = self.NewPane('question', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
@@ -225,7 +228,7 @@ class QuestionDialogue(Dialogue):
             # Centre text if short
             pane.ResetPosition(37 - len(self.text) / 2, 1)
         else:
-            pane.ResetPosition(30, 1)
+            pane.ResetPosition(1, 1)
         
         pane.AddWrappedBoldTextField(self.text)
 
@@ -571,9 +574,11 @@ class InputDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
         if self.Custom('info') is None:
-            paneHeight = 6
+            paneHeight = 5
         else:
-            paneHeight = 7+len(Language.ReflowText(self.Custom('info'), 70))
+            paneHeight = 6+len(Language.ReflowText(self.Custom('info'), 70))
+        paneHeight += len(self.Custom('fields'))
+        paneHeight = min(paneHeight, 22)
         pane = self.NewPane('input', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.Win().TitleSet(self.Custom('title'))
@@ -590,7 +595,10 @@ class InputDialogue(Dialogue):
         if self.Custom('info') is not None:
             pane.AddWrappedTextField(self.Custom('info'))
             pane.NewLine()
-        pane.AddInputField(*self.Custom('fields')[0])
+            
+        for field in self.Custom('fields'):
+            pane.AddInputField(*field)
+        
         pane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("OK"),
             Lang("<Esc>") : Lang("Cancel")
@@ -605,13 +613,20 @@ class InputDialogue(Dialogue):
         if inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
         elif inKey == 'KEY_ENTER':
-            try:
-                self.layout.PopDialogue()
-                self.layout.DoUpdate()
-                title, info = self.HandleCommit(self.Pane('input').GetFieldValues())
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, title, info))
-            except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+Lang(e)))
+            if not pane.IsLastInput():
+                pane.ActivateNextInput()
+            else:
+                try:
+                    self.layout.PopDialogue()
+                    self.layout.DoUpdate()
+                    title, info = self.HandleCommit(self.Pane('input').GetFieldValues())
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, title, info))
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+Lang(e)))
+        elif inKey == 'KEY_TAB':
+            pane.ActivateNextInput()
+        elif inKey == 'KEY_BTAB': # BTAB not available on all platforms
+            pane.ActivatePreviousInput()
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
@@ -644,6 +659,40 @@ class ChangeTimeoutDialogue(InputDialogue):
         Auth.Inst().TimeoutSecondsSet(timeoutMinutes * 60)
         return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+Language.Quantity(" minute",  timeoutMinutes)+'.'
         
+class BugReportDialogue(InputDialogue):
+    def __init__(self, inLayout, inParent):
+        self.custom = {
+            'title' : Lang("Upload Bug Report"),
+            'info' : Lang("Please confirm the ftp destination and enter a proxy name if required (or blank for none)"), 
+            'fields' : [
+                [Lang("Destination", 20), Config.Inst().FTPServer(), 'destination'],
+                [Lang("Proxy", 20), '', 'proxy']
+            ]
+        }
+        InputDialogue.__init__(self, inLayout, inParent)
+
+    def HandleCommit(self, inValues):
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Uploading Bug Report...")))
+        self.layout.Refresh()
+        self.layout.DoUpdate()
+        
+        hostRef = ShellUtils.AssertSafeParam(Data.Inst().host.uuid(''))
+        destURL = ShellUtils.AssertSafeParam(inValues['destination'])
+        proxy = ShellUtils.AssertSafeParam(inValues['proxy'])
+        
+        command = "/opt/xensource/bin/xe host-bugreport-upload host='"+hostRef+"' url='"+destURL+"'"
+        if proxy != '':
+            command += " http_proxy='"+proxy+"'"
+            
+        status, output = commands.getstatusoutput(command)
+        
+        self.layout.PopDialogue()
+                
+        if status != 0:
+            raise Exception(output) 
+
+        return Lang("Bug Report Uploaded Sucessfully")
+        
 class SyslogDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
         self.custom = {
@@ -662,6 +711,7 @@ class SyslogDialogue(InputDialogue):
         else:
             message = Lang("Logging destination set to '")+inValues['destination'] + "'."
         return Lang('Logging Destination Change Successful'), message        
+
 
 class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -888,7 +938,12 @@ class FileDialogue(Dialogue):
         handled = self.deviceMenu.HandleKey(inKey)
         
         if not handled and inKey == 'KEY_F(5)':
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
             Data.Inst().Update()
+            time.sleep(0.5) # Display rescanning box for a reasonable time
+            self.layout.PopDialogue()
             self.BuildPaneINITIAL()
             self.layout.Refresh()
             handled = True
@@ -1151,7 +1206,7 @@ class TestNetworkDialogue(Dialogue):
         self.testMenu = Menu(self, None, Lang("Select Test Type"), [
             ChoiceDef(Lang("Ping local address 127.0.0.1"), lambda: self.HandleTestChoice('local') ), 
             ChoiceDef(Lang("Ping gateway address")+" ("+gatewayName+")", lambda: self.HandleTestChoice('gateway') ), 
-            ChoiceDef(Lang("Ping www.xensource.com"), lambda: self.HandleTestChoice('xensource') ), 
+            ChoiceDef(Lang("Ping citrixxenserver.com"), lambda: self.HandleTestChoice('xenserver') ), 
             ChoiceDef(Lang("Ping custom address"), lambda: self.HandleTestChoice('custom') ), 
             ])
     
@@ -1221,8 +1276,8 @@ class TestNetworkDialogue(Dialogue):
             pingTarget = '127.0.0.1'
         elif inChoice == 'gateway':
             pingTarget = Data.Inst().ManagementGateway()
-        elif inChoice == 'xensource':
-            pingTarget = 'www.xensource.com'
+        elif inChoice == 'xenserver':
+            pingTarget = 'citrixxenserver.com'
         else:
             custom = True
 
