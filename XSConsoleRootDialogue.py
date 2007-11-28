@@ -206,7 +206,7 @@ class RootDialogue(Dialogue):
             inPane.AddStatusField(Lang("MAC Address", 16), pif['MAC'])
             inPane.AddStatusField(Lang("Device", 16), pif['device'])
             inPane.NewLine()
-
+        
     def UpdateFieldsBMC(self, inPane):
         data = Data.Inst()
         
@@ -461,9 +461,15 @@ class RootDialogue(Dialogue):
             keyHash[ Lang("<Enter>") ] = Lang("OK")
 
         menuPane.AddKeyHelpField( keyHash )
+        
+        if statusPane.NeedsScroll() and statusPane.NumStaticFields() == 0:
+            statusPane.AddKeyHelpField( {
+                Lang("<Page Up/Page Down>") : Lang("Scroll")
+            })
     
     def ChangeStatus(self, inName):
         self.Pane('status').ResetFields()
+        self.Pane('status').ResetScroll()
         self.currentStatus = inName
         self.UpdateFields()
     
@@ -472,6 +478,14 @@ class RootDialogue(Dialogue):
 
         handled = currentMenu.HandleKey(inKey)
 
+        if not handled and inKey == 'KEY_PPAGE':
+            self.Pane('status').ScrollPageUp()
+            handled = True
+            
+        if not handled and inKey == 'KEY_NPAGE':
+            self.Pane('status').ScrollPageDown()
+            handled = True
+            
         if handled:
             self.UpdateFields()
             self.Pane('menu').Refresh()
@@ -494,7 +508,7 @@ class RootDialogue(Dialogue):
     def AuthenticatedOnly(self, inFunc):
         if not Auth.Inst().IsAuthenticated():
             self.layout.PushDialogue(LoginDialogue(self.layout, self.parent,
-                                                   Lang('Please log in to perform this function'), inFunc))
+                Lang('Please log in to perform this function'), inFunc))
         else:
             inFunc()
         

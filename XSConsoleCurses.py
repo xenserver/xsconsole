@@ -87,6 +87,7 @@ class CursesPane:
         self.ySize = inYSize
         self.xOffset = inXOffset
         self.yOffset = inYOffset
+        self.yClipMax = self.ySize
 
     def HasBox(self):
         return self.hasBox
@@ -110,6 +111,11 @@ class CursesPane:
         self.xOffset = inXOffset
         self.yOffset = inYOffset
 
+    def YClipMaxSet(self, inYClipMax):
+        if inYClipMax > self.ySize:
+            raise Exception("Bad YClipMax "+str(inYClipMax))
+        self.yClipMax = inYClipMax
+
     def TitleSet(self, inTitle):
         self.title = inTitle
         
@@ -118,7 +124,7 @@ class CursesPane:
         clippedStr = inString
         
         # Is text on the screen at all?
-        if inY >=0 and inY < self.ySize and xPos < self.xSize:
+        if inY >=0 and inY < self.yClipMax and xPos < self.xSize:
 
             # Clip against left hand side
             if xPos < 0:

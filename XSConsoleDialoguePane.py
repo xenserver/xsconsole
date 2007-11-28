@@ -21,11 +21,15 @@ class DialoguePane:
     
     def ResetFields(self):
         self.fields = {}
+        self.staticFields = {}
         self.inputFields = []
         self.inputIndex = None
 
     def Win(self):
         return self.window
+
+    def NumStaticFields(self):
+        return len(self.staticFields)
 
     def AddBox(self):
         if not self.window.HasBox():
@@ -81,6 +85,23 @@ class DialoguePane:
     def Refresh(self):
         self.Win().Refresh()
 
+    def NeedsScroll(self):
+        if self.yPos >= self.ySize:
+            return True
+        else:
+            return False
+
+    def ScrollPageUp(self):
+        if self.yScrollPos > 0:
+            self.yScrollPos -= 1
+        
+    def ScrollPageDown(self):
+        if self.yScrollPos + self.ySize <= self.yPos:
+            self.yScrollPos += 1
+
+    def ResetScroll(self):
+        self.yScrollPos =0
+
     def ColoursSet(self, inBase, inBright, inHighlight = None, inTitle = None):
         self.baseColour = inBase
         self.brightColour = inBright
@@ -104,6 +125,11 @@ class DialoguePane:
 
     def AddField(self, inObj, inTag = None):
         self.fields[inTag or self.MakeLabel()] = Struct(xpos = self.xPos, ypos = self.yPos, fieldObj = inObj)
+        self.xPos += inObj.Width()
+        return inObj
+
+    def AddStaticField(self, inObj, inTag = None):
+        self.staticFields[inTag or self.MakeLabel()] = Struct(xpos = self.xPos, ypos = self.yPos, fieldObj = inObj)
         self.xPos += inObj.Width()
         return inObj
 
@@ -158,19 +184,30 @@ class DialoguePane:
         self.xPos = self.xOffset + 1
         self.yPos = self.yOffset + self.ySize - 1
         for name in sorted(inKeys):
-            self.AddField(TextField(str(name), self.brightColour))
+            self.AddStaticField(TextField(str(name), self.brightColour))
             self.xPos += 1
-            self.AddField(TextField(str(inKeys[name]), self.baseColour))
+            self.AddStaticField(TextField(str(inKeys[name]), self.baseColour))
             self.xPos += 1
 
         (self.xPos, self.yPos) = (oldXPos, oldYPos)
     
     def Render(self):
         self.window.Erase()
+        
+        # Shrink the clip window to allow space for the static fields
+        self.window.YClipMaxSet(self.window.YSize() - 1)
+        
         for field in self.fields.values():
-            # Check whether visible
-            if field.ypos + field.fieldObj.Height() > self.yScrollPos and field.ypos + self.yScrollPos <= self.ySize:
-                field.fieldObj.Render(self.window, field.xpos, field.ypos)
+            # Check whether visible - first whether off the top, then whether off the bottom
+            if field.ypos + field.fieldObj.Height() > self.yScrollPos and field.ypos <= self.yScrollPos + self.ySize:
+                field.fieldObj.Render(self.window, field.xpos, field.ypos - self.yScrollPos)
+        
+        self.window.YClipMaxSet(self.window.YSize())
+        for field in self.staticFields.values():
+            # Static fields aren't affected by the scroll position, and get a larger clip window
+            # so then can fill the bottom line
+            field.fieldObj.Render(self.window, field.xpos, field.ypos)
+        
         self.window.Refresh()
             
     def Delete(self):
