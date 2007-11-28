@@ -1,5 +1,5 @@
 
-import os
+import os, sys
 
 class Config:
     instance = None
@@ -46,6 +46,6 @@ class Config:
         return self.ftpserver
     
 # Import a more specific configuration if available
-if os.path.isfile('XSConsoleConfigOEM.py'):
+if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):
     import XSConsoleConfigOEM
     

@@ -1,4 +1,6 @@
 
+import re
+
 from XSConsoleAuth import *
 from XSConsoleBases import *
 from XSConsoleConfig import *
@@ -36,11 +38,9 @@ class RootDialogue(Dialogue):
         if len(data.derived.managementpifs([])) == 0:
             inPane.AddTextField(Lang("<No network configured>"))
         else:
-            for pif in data.derived.managementpifs():
-                inPane.AddStatusField(Lang('IP address', 16), data.host.address()) # FIXME: should come from pif
-                if pif['ip_configuration_mode'].lower().startswith('static'):
-                    inPane.AddStatusField(Lang('Netmask', 16),  pif['netmask'])
-                    inPane.AddStatusField(Lang('Gateway', 16),  pif['gateway'])
+            inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
+            inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
+            inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
         inPane.NewLine()
     
     def UpdateFieldsPROPERTIES(self, inPane):
@@ -240,12 +240,11 @@ class RootDialogue(Dialogue):
             for pif in data.derived.managementpifs([]):
                 inPane.AddStatusField(Lang('Device', 16), pif['device'])
                 inPane.AddStatusField(Lang('MAC Address', 16),  pif['MAC'])
-                inPane.AddStatusField(Lang('Assigned IP', 16),  data.host.address()) # FIXME: should come from pif
                 inPane.AddStatusField(Lang('DHCP/Static IP', 16),  pif['ip_configuration_mode'])
-                if pif['ip_configuration_mode'].lower().startswith('static'):
-                    # inPane.AddStatusField(Lang('IP Address', 16),  pif['IP'])
-                    inPane.AddStatusField(Lang('Netmask', 16),  pif['netmask'])
-                    inPane.AddStatusField(Lang('Gateway', 16),  pif['gateway'])
+
+                inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
+                inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
+                inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
                 
                 inPane.NewLine()
                 inPane.AddTitleField(Lang("NIC Vendor"))

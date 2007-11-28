@@ -1,5 +1,5 @@
 
-import copy,  os, pickle
+import re, os, pickle
 
 from XSConsoleBases import *
 from XSConsoleLang import *
@@ -8,7 +8,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 1
+    thisVersion = 2
     
     def __init__(self):
         self.version = self.thisVersion

@@ -1,5 +1,5 @@
 
-import os, time
+import os, re, time
 
 from XSConsoleBases import *
 from XSConsoleLang import *

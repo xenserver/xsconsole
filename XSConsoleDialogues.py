@@ -3,6 +3,7 @@ from XSConsoleAuth import *
 from XSConsoleBases import *
 from XSConsoleCurses import *
 from XSConsoleData import *
+from XSConsoleDataUtils import *
 from XSConsoleDialoguePane import *
 from XSConsoleFields import *
 from XSConsoleLang import *
@@ -676,9 +677,9 @@ class BugReportDialogue(InputDialogue):
         self.layout.Refresh()
         self.layout.DoUpdate()
         
-        hostRef = ShellUtils.AssertSafeParam(Data.Inst().host.uuid(''))
-        destURL = ShellUtils.AssertSafeParam(inValues['destination'])
-        proxy = ShellUtils.AssertSafeParam(inValues['proxy'])
+        hostRef = ShellUtils.MakeSafeParam(Data.Inst().host.uuid(''))
+        destURL = ShellUtils.MakeSafeParam(inValues['destination'])
+        proxy = ShellUtils.MakeSafeParam(inValues['proxy'])
         
         command = "/opt/xensource/bin/xe host-bugreport-upload host='"+hostRef+"' url='"+destURL+"'"
         if proxy != '':

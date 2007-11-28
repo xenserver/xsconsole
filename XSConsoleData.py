@@ -1,11 +1,13 @@
-# import socket, fcntl, struct, os
+
 import XenAPI
+
 import commands, re, sys, tempfile
 from pprint import pprint
 
 from XSConsoleAuth import *
 from XSConsoleLang import *
 from XSConsoleState import *
+from XSConsoleUtils import *
 
 class DataMethod:
     def __init__(self, inSend, inName):
@@ -464,31 +466,66 @@ class Data:
         (status,  output) = commands.getstatusoutput(command)
         return (status == 0,  output)
     
-    def ManagementGateway(self):
-        retVal = None
+    def ManagementIP(self, inDefault = None):
+        retVal = inDefault
+        
+        retVal = self.host.address(retVal)
+        
+        return retVal
+
+    def ManagementNetmask(self, inDefault = None):
+        retVal = inDefault
         
         # FIXME: Address should come from API, but not available at present.  For DHCP this is just a guess at the gateway address
-        if len(self.derived.managementpifs()) == 0:
-            # No management i/f configured
-            pass
-        else:
-            for pif in self.derived.managementpifs():
-                if pif['ip_configuration_mode'].lower().startswith('static'):
-                    # For static IP the API address is correct
-                    retVal = pif['gateway']
-                elif pif['ip_configuration_mode'].lower().startswith('dhcp'):
-                    # For DHCP,  find the gateway address by parsing the output from the 'route' command
-                    if 'bridge' in pif['network']:
-                        device = pif['network']['bridge']
-                    else:
-                        device = pif['device']
-                    routeRE = r'([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+UG\s+\d+\s+\d+\s+\d+\s+'+device
+        for pif in self.derived.managementpifs([]):
+            if pif['ip_configuration_mode'].lower().startswith('static'):
+                # For static IP the API address is correct
+                retVal = pif['netmask']
+            elif pif['ip_configuration_mode'].lower().startswith('dhcp'):
+                # For DHCP,  find the gateway address by parsing the output from the 'route' command
+                if 'bridge' in pif['network']:
+                    device = pif['network']['bridge']
+                else:
+                    device = pif['device']
+
+                device = ShellUtils.MakeSafeParam(device)
+
+                ipre = r'[0-9a-f.:]+'
+                ifRE = re.compile(r'\s*inet\s+addr\s*:'+ipre+'\s+bcast\s*:\s*'+ipre+r'\s+mask\s*:\s*('+ipre+r')\s*$',
+                    re.IGNORECASE)
+
+                ifconfig = commands.getoutput("/sbin/ifconfig '"+device+"'").split("\n")
+                for line in ifconfig:
+                    match = ifRE.match(line)
+                    if match:
+                        retVal = match.group(1)
+                        break
+    
+        return retVal
+    
+    def ManagementGateway(self, inDefault = None):
+        retVal = inDefault
         
-                    routes = commands.getoutput("/sbin/route -n").split("\n")
-                    for line in routes:
-                        m = re.match(routeRE, line)
-                        if m:
-                            retVal = m.group(2)
+        # FIXME: Address should come from API, but not available at present.  For DHCP this is just a guess at the gateway address
+        for pif in self.derived.managementpifs([]):
+            if pif['ip_configuration_mode'].lower().startswith('static'):
+                # For static IP the API address is correct
+                retVal = pif['gateway']
+            elif pif['ip_configuration_mode'].lower().startswith('dhcp'):
+                # For DHCP,  find the gateway address by parsing the output from the 'route' command
+                if 'bridge' in pif['network']:
+                    device = pif['network']['bridge']
+                else:
+                    device = pif['device']
+                routeRE = re.compile(r'([0-9.]+)\s+([0-9.]+)\s+([0-9.]+)\s+UG\s+\d+\s+\d+\s+\d+\s+'+device,
+                    re.IGNORECASE)
+    
+                routes = commands.getoutput("/sbin/route -n").split("\n")
+                for line in routes:
+                    match = routeRE.match(line)
+                    if match:
+                        retVal = match.group(2)
+                        break
     
         return retVal
 
