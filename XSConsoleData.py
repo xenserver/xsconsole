@@ -437,12 +437,12 @@ class Data:
             if match:
                 self.data['cpuinfo']['flags'] = match.group(1).split()
 
-    def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway):
+    def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway, inDNS = None):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
         try:
             self.RequireSession()
-            self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway)
+            self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway, FirstValue(inDNS, ''))
             self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'])
         finally:
             # Network reconfigured so this link is potentially no longer valid

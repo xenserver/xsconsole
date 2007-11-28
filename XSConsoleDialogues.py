@@ -349,7 +349,7 @@ class InterfaceDialogue(Dialogue):
             pane.AddStatusField(Lang("IP Mode",  16),  self.mode)
             if self.mode == 'Static':
                 pane.AddStatusField(Lang("IP Address",  16),  self.IP)
-                pane.AddStatusField(Lang("netmask Mask",  16),  self.netmask)
+                pane.AddStatusField(Lang("Netmask",  16),  self.netmask)
                 pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
                 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
@@ -443,7 +443,12 @@ class InterfaceDialogue(Dialogue):
         else:
             data = Data.Inst()
             pif = data.host.PIFs()[self.nic]
-            data.ReconfigureManagement(pif, self.mode, self.IP,  self.netmask, self.gateway)
+            if self.mode.lower().startswith('static'):
+                # Comma-separated list of nameserver IPs
+                dns = ','.join(data.dns.nameservers([]))
+            else:
+                dns = ''
+            data.ReconfigureManagement(pif, self.mode, self.IP,  self.netmask, self.gateway, dns)
             Data.Inst().Update()
             
 class DNSDialogue(Dialogue):

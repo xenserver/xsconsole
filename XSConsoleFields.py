@@ -31,6 +31,9 @@ class InputField:
 
     def Width(self):
         return len(self.text)
+    
+    def Height(self):
+        return 1
         
     def HandleKey(self, inKey):
         handled = True
@@ -61,6 +64,9 @@ class TextField:
     def Width(self):
         return len(self.text)
 
+    def Height(self):
+        return 1
+        
 class WrappedTextField:
     def __init__(self, text, width, colour):
         ParamsToAttr()

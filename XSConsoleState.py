@@ -10,6 +10,9 @@ class State:
     saveLeafname = 'state.txt'
     thisVersion = 2
     
+    #***
+    #*** Increment thisVersion (above) when adding attributes to this object
+    #***
     def __init__(self):
         self.version = self.thisVersion
         self.authTimeoutSeconds = 5*60

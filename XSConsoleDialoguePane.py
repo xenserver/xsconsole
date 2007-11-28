@@ -15,6 +15,7 @@ class DialoguePane:
         self.ySize = inYSize
         self.xOffset = 0
         self.yOffset = 0
+        self.yScrollPos = 0
         self.ResetFields()
         self.ResetPosition()
     
@@ -167,7 +168,9 @@ class DialoguePane:
     def Render(self):
         self.window.Erase()
         for field in self.fields.values():
-            field.fieldObj.Render(self.window, field.xpos, field.ypos)
+            # Check whether visible
+            if field.ypos + field.fieldObj.Height() > self.yScrollPos and field.ypos + self.yScrollPos <= self.ySize:
+                field.fieldObj.Render(self.window, field.xpos, field.ypos)
         self.window.Refresh()
             
     def Delete(self):
