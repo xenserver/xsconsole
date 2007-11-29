@@ -1028,11 +1028,11 @@ class PatchDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
 
         self.custom = {
-            'title' : Lang("Apply Software Upgrade or Patch"),
+            'title' : Lang("Apply Software Upgrade Or Patch"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select the Device Containing the Patch"), 
-            'fileprompt' : Lang("Select the Patch File"),
-            'confirmprompt' : Lang("Press <F8> to Begin the Update/Patch Process"),
+            'deviceprompt' : Lang("Select The Device Containing The Patch"), 
+            'fileprompt' : Lang("Select The Patch File"),
+            'confirmprompt' : Lang("Press <F8> To Begin The Update/Patch Process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
@@ -1082,9 +1082,9 @@ class BackupDialogue(FileDialogue):
         self.custom = {
             'title' : Lang("Backup Server State"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select the Device to Save To"), 
-            'fileprompt' : Lang("Choose the Backup Filename"),
-            'confirmprompt' : Lang("Press <F8> to Begin the Backup Process"),
+            'deviceprompt' : Lang("Select The Device To Save To"), 
+            'fileprompt' : Lang("Choose The Backup Filename"),
+            'confirmprompt' : Lang("Press <F8> To Begin The Backup Process"),
             'mode' : 'rw'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
@@ -1150,9 +1150,9 @@ class RestoreDialogue(FileDialogue):
         self.custom = {
             'title' : Lang("Restore Server State"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select the Device Containing the Backup File"), 
-            'fileprompt' : Lang("Select the Backup File"),
-            'confirmprompt' : Lang("Press <F8> to Begin the Restore Process"),
+            'deviceprompt' : Lang("Select The Device Containing The Backup File"), 
+            'fileprompt' : Lang("Select The Backup File"),
+            'confirmprompt' : Lang("Press <F8> To Begin The Restore Process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
@@ -1195,6 +1195,110 @@ class RestoreDialogue(FileDialogue):
                 self.PreExitActions()
             except Exception, e:
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Restore Failed"), Lang(e)))
+
+class LicenceDialogue(FileDialogue):
+    def __init__(self, inLayout, inParent):
+
+        self.custom = {
+            'title' : Lang("Install License"),
+            'searchregexp' : r'.*licen[cs]e',  # Licence files always contain the string licence or license
+            'deviceprompt' : Lang("Select The Device Containing The License File"), 
+            'fileprompt' : Lang("Select The License File"),
+            'confirmprompt' : Lang("Press <F8> To Install The License"),
+            'mode' : 'ro'
+        }
+        FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
+    def DoAction(self):
+        success = False
+        
+        self.layout.PopDialogue()
+        
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+            Lang("Installing License...")))
+            
+        try:
+            try:
+                self.layout.Refresh()
+                self.layout.DoUpdate()
+                
+                hostRef = Data.Inst().host.uuid(None)
+                if hostRef is None:
+                    raise Exception("Internal error 1")
+                    
+                filename = self.vdiMount.MountedPath(self.filename)
+                FileUtils.AssertSafePath(filename)
+                command = "/opt/xensource/bin/xe host-license-add license-file='"+filename+"' host-uuid="+hostRef
+                status, output = commands.getstatusoutput(command)
+                
+                if status != 0:
+                    raise Exception(output)
+                
+                Data.Inst().Update()
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Lang("License Installed Successfully")))
+
+            except Exception, e:
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("License Installation Failed"), Lang(e)))
+                
+        finally:
+            try:
+                self.PreExitActions()
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("License Installation Failed"), Lang(e)))
+
+class SaveBugReportDialogue(FileDialogue):
+    def __init__(self, inLayout, inParent):
+
+        self.custom = {
+            'title' : Lang("Save Bug Report"),
+            'searchregexp' : r'.*\.tar$',  # Type of bugtool file is .tar
+            'deviceprompt' : Lang("Select The Destination Device"), 
+            'fileprompt' : Lang("Choose A Destination Filename"),
+            'confirmprompt' : Lang("Press <F8> To Save The Bug Report"),
+            'mode' : 'rw'
+        }
+        FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
+    def DoAction(self):
+        success = False
+        
+        self.layout.PopDialogue()
+        
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+            Lang("Saving Bug Report...")))
+            
+        try:
+            try:
+                self.layout.Refresh()
+                self.layout.DoUpdate()
+
+                filename = self.vdiMount.MountedPath(self.filename)
+                FileUtils.AssertSafePath(filename)
+
+                file = open(filename, "w")
+                command = "/usr/sbin/xen-bugtool --yestoall --silent --output=tar --outfd="+str(file.fileno())
+                status, output = commands.getstatusoutput(command)
+                file.close()
+
+                if status != 0:
+                    raise Exception(output)
+
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Lang("Saved Bug Report")))
+
+            except Exception, e:
+                self.layout.PopDialogue()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Save Failed"), Lang(e)))
+                
+        finally:
+            try:
+                self.PreExitActions()
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Save Failed"), Lang(e)))
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):

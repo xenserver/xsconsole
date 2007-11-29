@@ -126,7 +126,7 @@ class MountVDI:
     def Scan(self, inRegExp = None, inNumToReturn = None):
         retVal = []
         numToReturn = FirstValue(inNumToReturn, 10)
-        regExp = re.compile(FirstValue(inRegExp, r'.*'))
+        regExp = re.compile(FirstValue(inRegExp, r'.*'), re.IGNORECASE)
         for root, dirs, files in os.walk(self.mountPoint):
             if len(retVal) >= numToReturn:
                 break

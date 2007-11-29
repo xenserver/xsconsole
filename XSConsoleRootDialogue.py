@@ -327,7 +327,18 @@ class RootDialogue(Dialogue):
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Technical Support Menu")
         } )
-        
+    
+    def UpdateFieldsINSTALLLICENCE(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Install License File"))
+
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to install a license file from removable media."))
+ 
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Install License")
+        } )
+    
     def UpdateFieldsREMOTESHELL(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Remote Shell (ssh)"))
@@ -398,6 +409,16 @@ class RootDialogue(Dialogue):
             Config.Inst().FTPServer()+Lang(".  This file may contain sensitive data."))
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upload Bug Report") } )  
+        
+    def UpdateFieldsSAVEBUGREPORT(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Save Bug Report"))
+
+        inPane.AddWrappedTextField(Lang(
+            "This option will save a bug report file, containing information about "
+            "the state of this machine, to removable media.  This file may contain sensitive data."))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Save Bug Report") } )  
         
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
@@ -539,6 +560,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SYSLOG':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_INSTALLLICENCE':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(LicenceDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_VALIDATE':
@@ -553,6 +576,9 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("This operation may upload sensitive data to the support server ") +
                     Config.Inst().FTPServer()+Lang(".  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))
+        elif inName == 'DIALOGUE_SAVEBUGREPORT':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("This operation may save sensitive data to removable media.  Do you want to continue?"), lambda x: self.SaveBugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
@@ -599,6 +625,10 @@ class RootDialogue(Dialogue):
     def BugReportDialogueHandler(self, inYesNo):
         if inYesNo == 'y':
             self.layout.PushDialogue(BugReportDialogue(self.layout, self.parent))
+
+    def SaveBugReportDialogueHandler(self, inYesNo):
+        if inYesNo == 'y':
+            self.layout.PushDialogue(SaveBugReportDialogue(self.layout, self.parent))
 
     def HandleLogInOut(self):
         if Auth.Inst().IsAuthenticated():
