@@ -7,8 +7,12 @@ from XSConsoleLang import *
 
 class FileUtils:
     @classmethod
-    def PatchDeviceList(cls):
+    def DeviceList(cls):
         retVal = []
+        
+        # Device lists can change as, e.g. USB keys are plugged.  Out-of-date device lists are
+        # problematic so always update here
+        Data.Inst().Update()
         
         for pbd in Data.Inst().host.PBDs([]):
             sr = pbd.get('SR', {})

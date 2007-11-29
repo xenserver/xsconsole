@@ -167,7 +167,8 @@ class Data:
                 pass # Ignore failure - just leave data empty
 
         self.UpdateFromResolveConf()
-
+        self.UpdateFromSysconfig()
+        
         if os.path.isfile("/sbin/chkconfig"):
             (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
             if status == 0:
@@ -224,6 +225,14 @@ class Data:
         self.RequireSession()
         
         self.session.xenapi.host.set_name_label(self.host.opaqueref(), inHostname)
+        
+        self.data['sysconfig']['network']['hostname'] = inHostname
+        self.SaveToSysconfig()
+
+        status, output = commands.getstatusoutput("/bin/hostname '"+inHostname+"'")
+        if status != 0:
+            raise Exception(output)
+
 
     def NameserversSet(self, inServers):
         self.data['dns']['nameservers'] = inServers
@@ -282,6 +291,11 @@ class Data:
         if status == 0:
             self.ScanResolvConf(output.split("\n"))
     
+    def UpdateFromSysconfig(self):
+        (status, output) = commands.getstatusoutput("/bin/cat /etc/sysconfig/network")
+        if status == 0:
+            self.ScanSysconfigNetwork(output.split("\n"))
+            
     def SaveToResolvConf(self):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
@@ -296,6 +310,20 @@ class Data:
         finally:
             if file is not None: file.close()
             self.UpdateFromResolveConf()
+
+    def SaveToSysconfig(self):
+        # Double-check authentication
+        Auth.Inst().AssertAuthenticated()
+        
+        file = None
+        try:
+            file = open("/etc/sysconfig/network", "w")
+            for other in self.sysconfig.network.othercontents([]):
+                file.write(other+"\n")
+            file.write("HOSTNAME="+self.sysconfig.network.hostname('')+"\n")
+        finally:
+            if file is not None: file.close()
+            self.UpdateFromSysconfig()
     
     def ScanDmiDecode(self, inLines):
         STATE_NEXT_ELEMENT = 2
@@ -429,6 +457,19 @@ class Data:
                 self.data['dns']['nameservers'].append(match.group(1))
             else:
                 self.data['dns']['othercontents'].append(line)
+    
+    def ScanSysconfigNetwork(self, inLines):
+        if not 'sysconfig' in self.data:
+            self.data['sysconfig'] = {}
+            
+        self.data['sysconfig']['network'] = {'othercontents' : [] }
+        
+        for line in inLines:
+            match = re.match(r'HOSTNAME\s*=\s*(.*)', line)
+            if match:
+                self.data['sysconfig']['network']['hostname'] = match.group(1)
+            else:
+                self.data['sysconfig']['network']['othercontents'].append(line)
     
     def ScanCPUInfo(self, inLines):
         self.data['cpuinfo'] = {}

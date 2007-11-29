@@ -114,7 +114,7 @@ class RootMenu:
                 ChoiceDef(Lang("Local Command Shell"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
             ])
-            rebootText = Lang("Reboot")
+            rebootText = Lang("Reboot Server")
         
         propertiesChoices = [
                 ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSERVER')),

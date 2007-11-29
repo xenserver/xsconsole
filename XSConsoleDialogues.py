@@ -709,8 +709,14 @@ class SyslogDialogue(InputDialogue):
         InputDialogue.__init__(self, inLayout, inParent)
 
     def HandleCommit(self, inValues):
+        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Setting Logging Destination...")))
+        self.layout.Refresh()
+        self.layout.DoUpdate()
+        
         Data.Inst().LoggingDestinationSet(inValues['destination'])
         Data.Inst().Update()
+        
+        self.layout.PopDialogue()
         
         if inValues['destination'] == '':
             message = Lang("Remote logging disabled.")
@@ -842,7 +848,7 @@ class FileDialogue(Dialogue):
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
-        self.deviceList = FileUtils.PatchDeviceList()
+        self.deviceList = FileUtils.DeviceList()
         
         self.BuildPaneBase(7+len(self.deviceList))
         
@@ -947,10 +953,9 @@ class FileDialogue(Dialogue):
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
             self.layout.Refresh()
             self.layout.DoUpdate()
-            Data.Inst().Update()
-            time.sleep(0.5) # Display rescanning box for a reasonable time
             self.layout.PopDialogue()
-            self.BuildPaneINITIAL()
+            self.BuildPaneINITIAL() # Updates self.deviceList
+            time.sleep(0.5) # Display rescanning box for a reasonable time
             self.layout.Refresh()
             handled = True
             

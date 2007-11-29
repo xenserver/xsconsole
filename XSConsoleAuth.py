@@ -1,5 +1,5 @@
 
-import os, re, time
+import os, re, sys, time
 
 from XSConsoleBases import *
 from XSConsoleLang import *
@@ -18,8 +18,8 @@ class Auth:
         self.testingHost = None
         self.authTimestampSeconds = None
         # The testing.txt file is used for testing only
-        if os.path.isfile("testing.txt"):
-            testingFile = open("testing.txt")
+        if os.path.isfile(sys.path[0]+"/testing.txt"):
+            testingFile = open(sys.path[0]+"/testing.txt")
             for line in testingFile:
                 match = re.match(r'host=(\w+)', line)
                 if match:
