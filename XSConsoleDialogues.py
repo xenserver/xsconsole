@@ -854,7 +854,7 @@ class FileDialogue(Dialogue):
         self.UpdateFields()
     
     def BuildPaneFILES(self):
-        self.BuildPaneBase(8+len(self.fileList))
+        self.BuildPaneBase(7+min(len(self.fileList)+1, 10)) # Menu field limited to 10 lines, +1 is for custom filename field
         
         choiceDefs = []
         for filename in self.fileList:
@@ -998,7 +998,7 @@ class FileDialogue(Dialogue):
             self.layout.Refresh()
             self.layout.DoUpdate()
             
-            self.fileList = self.vdiMount.Scan(self.Custom('searchregexp'))
+            self.fileList = self.vdiMount.Scan(self.Custom('searchregexp'), 500) # Limit number of files to avoid colossal menu
             
             self.layout.PopDialogue()
             

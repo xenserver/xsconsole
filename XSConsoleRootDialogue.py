@@ -306,6 +306,17 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to start a local command shell on this server."))
  
+    def UpdateFieldsBURP(self, inPane):
+        inPane.AddTitleField(Lang("Backup, Restore and Update"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "From this menu you can backup and restore the system database, and apply "
+            "software updates or patches to the system."))
+ 
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Show Menu")
+        } ) 
+        
     def UpdateFieldsTECHNICAL(self, inPane):
         inPane.AddTitleField(Lang("Technical Support"))
     
@@ -452,7 +463,7 @@ class RootDialogue(Dialogue):
         except Exception, e:
             statusPane.ResetFields()
             statusPane.ResetPosition()
-            self.UpdateFieldsEXCEPTION(statusPane,  e)
+            self.UpdateFieldsEXCEPTION(statusPane, e)
         
         keyHash = { Lang("<Up/Down>") : Lang("Select") }
         if self.menu.CurrentMenu().Parent() != None:

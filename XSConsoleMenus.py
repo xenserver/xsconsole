@@ -85,6 +85,8 @@ class RootMenu:
                     None,  lambda : inDialogue.ChangeStatus('STATUS')),
                 ChoiceDef(Lang("Server Management"), 
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+                ChoiceDef(Lang("Backup, Restore and Update"), 
+                    lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
                 ChoiceDef(Lang("Technical Support"), 
                     lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
                 ChoiceDef(Lang("Reboot or Shutdown"), 
@@ -103,6 +105,8 @@ class RootMenu:
                     lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
                 ChoiceDef(Lang("Server Management"), 
                     lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+                ChoiceDef(Lang("Backup, Restore and Update"), 
+                    lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
                 ChoiceDef(Lang("Technical Support"), 
                     lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
                 ChoiceDef(Lang("Reboot or Shutdown"), 
@@ -159,17 +163,20 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('CHANGETIMEOUT'))
             ]), 
  
+         'MENU_BURP' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Patch"), [
+                ChoiceDef(Lang("Apply Patch or Update"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
+                    lambda : inDialogue.ChangeStatus('PATCH')),
+                ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
+                    lambda : inDialogue.ChangeStatus('BACKUP')),
+                ChoiceDef(Lang("Restore Server State From Backup"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESTORE'),
+                    lambda : inDialogue.ChangeStatus('RESTORE'))
+            ]),
+            
         'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
                 ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
                     lambda : inDialogue.ChangeStatus('REMOTESHELL')),
                 ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
                     lambda : inDialogue.ChangeStatus('VALIDATE')),
-                ChoiceDef(Lang("Apply Upgrade or Patch"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
-                    lambda : inDialogue.ChangeStatus('PATCH')),
-                ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
-                    lambda : inDialogue.ChangeStatus('BACKUP')),
-                ChoiceDef(Lang("Restore Server State From Backup"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESTORE'),
-                    lambda : inDialogue.ChangeStatus('RESTORE')),
                 ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
                     lambda : inDialogue.ChangeStatus('BUGREPORT'))
             ]), 

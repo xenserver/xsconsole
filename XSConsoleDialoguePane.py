@@ -135,7 +135,7 @@ class DialoguePane:
 
     def NewLine(self, inNumLines = None):
         self.xPos = self.xStart
-        self.yPos += inNumLines or 1
+        self.yPos += FirstValue(inNumLines, 1)
 
     def AddTitleField(self, inTitle):
         self.AddField(TextField(inTitle, self.titleColour))
@@ -176,7 +176,8 @@ class DialoguePane:
         self.NewLine()
     
     def AddMenuField(self, inMenu):
-        field = self.AddField(MenuField(inMenu, self.baseColour, self.highlightColour))
+        # Arbitrarily limit menu size to 10 lines
+        field = self.AddField(MenuField(inMenu, self.baseColour, self.highlightColour, 10))
         self.NewLine(field.Height() + 1)
     
     def AddKeyHelpField(self, inKeys):

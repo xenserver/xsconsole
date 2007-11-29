@@ -85,8 +85,10 @@ class WrappedTextField:
         return len(self.wrappedText)
 
 class MenuField:
-    def __init__(self, menu, colour, highlight):
+    def __init__(self, menu, colour, highlight, height):
         ParamsToAttr()
+        self.scrollPoint = 0
+        self.height = min(self.height, len(self.menu.ChoiceDefs()))
     
     def Width(self):
         if len(self.menu.ChoiceDefs()) == 0:
@@ -94,15 +96,27 @@ class MenuField:
         return max(len(choice.name) for choice in self.menu.ChoiceDefs() )
 
     def Height(self):
-        return len(self.menu.ChoiceDefs())
+        return self.height
         
     def Render(self, inPane, inXPos, inYPos):
-        index = 0
-        for choice in self.menu.ChoiceDefs():
-            if index == self.menu.ChoiceIndex():
+        # This rendering doesn't necessarily deal with scrolling menus where the choice names
+        # are of different lengths.  More erase/overwrite operations may be required to do that.
+        
+        # Move the scroll point if the selected option would otherwise be off the screen
+        choiceIndex = self.menu.ChoiceIndex()
+        if self.scrollPoint > choiceIndex:
+            # Move so the choiceIndex is at the top
+            self.scrollPoint = choiceIndex
+        elif self.scrollPoint + self.height <= choiceIndex:
+            # Move so the choiceIndex is at the bottom
+            self.scrollPoint = choiceIndex - self.height + 1
+
+        choiceDefs = self.menu.ChoiceDefs()
+        for i in range(min(self.height, len(choiceDefs) - self.scrollPoint)):
+            choiceNum = self.scrollPoint + i
+            if choiceNum == choiceIndex:
                 colour = self.highlight
             else:
                 colour = self.colour
                 
-            inPane.AddText(choice.name, inXPos, inYPos + index, colour)
-            index += 1
+            inPane.AddText(choiceDefs[choiceNum].name, inXPos, inYPos + i, colour)
