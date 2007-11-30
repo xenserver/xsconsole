@@ -155,6 +155,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_HOSTNAME'), lambda : inDialogue.ChangeStatus('HOSTNAME')),
                 ChoiceDef(Lang("Remote Logging (syslog)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
+                ChoiceDef(Lang("Disks and Storage Repositories"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
             ]),

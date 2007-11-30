@@ -454,6 +454,17 @@ class RootDialogue(Dialogue):
             Lang("<Enter>") : Lang("Configure hostname")
         })
 
+    def UpdateFieldsSR(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Disks and Storage Repositories"))
+    
+        inPane.AddWrappedTextField(Lang("Local disks can be configured as storage repositories "
+            "for use by virtual machines.  Press <Enter> to list the disks available."))
+
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Configure SRs")
+        })
+
     def UpdateFieldsSYSLOG(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Remote Logging (syslog)"))
@@ -565,6 +576,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SYSLOG':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_SR':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_INSTALLLICENCE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(LicenceDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':

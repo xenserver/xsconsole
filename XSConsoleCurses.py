@@ -79,6 +79,7 @@ class CursesPalette:
         cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(fgBright, bgBright)
         cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(bgDark, bgBright) # Text entry
         cls.colours['MODAL_MENU_HIGHLIGHT'] = cls.ColourCreate(bgDark, fgBright)
+        cls.colours['MODAL_FLASH'] = cls.ColourCreate(fgBright, bgBright) | curses.A_BLINK
         cls.colours['HELP_BASE'] = cls.ColourCreate(fgNormal, bgDark)
         cls.colours['HELP_BRIGHT'] = cls.ColourCreate(fgBright, bgDark)
         cls.colours['TOPLINE_BASE'] = cls.ColourCreate(fgDark, bgDark)

@@ -54,6 +54,12 @@ class FileUtils:
         return retVal
 
     @classmethod
+    def SRDeviceList(self):
+        retVal = []
+        
+        return retVal
+
+    @classmethod
     def AssertSafePath(cls, inPath):
         if not re.match(r'[-A-Za-z0-9/._~]*$', inPath):
             raise Exception("Invalid characters in path '"+inPath+"'")

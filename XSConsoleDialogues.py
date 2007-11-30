@@ -737,6 +737,177 @@ class SyslogDialogue(InputDialogue):
             message = Lang("Logging destination set to '")+inValues['destination'] + "'."
         return Lang('Logging Destination Change Successful'), message        
 
+class SRDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        self.deviceToErase = None
+        self.ChangeState('INITIAL')
+
+    def DeviceString(self, inDevice):
+        retVal = "%-6.6s%-44.44s%-10.10s%10.10s" % (
+            FirstValue(inDevice.bus[:6], ''),
+            FirstValue(inDevice.name[:50], ''),
+            FirstValue(inDevice.device[:10], ''),
+            FirstValue(FileUtils.SizeString(inDevice.size), '')
+        )
+        return retVal
+        
+    def BuildPaneBase(self, inHeight):
+        paneHeight = min(inHeight,  22)
+        pane = self.NewPane('sr', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(Lang("Claim Disk As Storage Repository"))
+        pane.AddBox()
+    
+    def BuildPaneINITIAL(self):
+        self.BuildPaneBase(10)
+        self.UpdateFields()
+        
+    def BuildPaneDEVICE(self):
+        self.deviceList = FileUtils.SRDeviceList()
+        
+        self.BuildPaneBase(8+len(self.deviceList))
+        
+        choiceDefs = []
+        for device in self.deviceList:
+            choiceDefs.append(ChoiceDef(self.DeviceString(device), lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
+        
+        choiceDefs.append(ChoiceDef(Lang("Specify a device manually", 70), lambda: self.HandleDeviceChoice(None) ) )
+
+        self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
+        self.UpdateFields()
+
+    def BuildPaneCUSTOM(self):
+        self.BuildPaneBase(11)
+        self.UpdateFields()
+        
+    def BuildPaneCONFIRM(self):
+        self.BuildPaneBase(9)
+        self.UpdateFields()
+    
+    def ChangeState(self, inState):
+        self.state = inState
+        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+    
+    def UpdateFields(self):
+        self.Pane('sr').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('sr')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_FLASH', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("WARNING"))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddWrappedTextField(Lang("This function will erase all information on the disk selected as a storage repository.  The server will then reboot immediately.  Do you want to continue?"))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def UpdateFieldsDEVICE(self):
+        pane = self.Pane('sr')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField("Claim Disk As Storage Repository")
+        pane.AddMenuField(self.deviceMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
+            "<F5>" : Lang("Rescan") } )
+
+    def UpdateFieldsCUSTOM(self):
+        pane = self.Pane('sr')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Enter the device name, e.g. /dev/sdb"))
+        pane.AddInputField(Lang("Device Name",  16), '', 'device')
+        pane.NewLine()
+        pane.AddWrappedTextField(Lang("CAUTION: No checks will be performed on this device before it is erased."))
+        
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
+    def UpdateFieldsCONFIRM(self):
+        pane = self.Pane('sr')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField("Confirm Disk Erase and Reboot?")
+        pane.AddWrappedBoldTextField(Lang("Device"))
+        if isinstance(self.deviceToErase, Struct):
+            pane.AddWrappedTextField(self.DeviceString(self.deviceToErase))
+        else:
+            pane.AddWrappedTextField(str(self.deviceToErase))
+            
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            self.ChangeState('DEVICE')
+            handled = True
+            
+        return handled
+
+    def HandleKeyDEVICE(self, inKey):
+        handled = self.deviceMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_F(5)':
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            self.layout.PopDialogue()
+            self.BuildPaneDEVICE() # Updates self.deviceList
+            time.sleep(0.5) # Display rescanning box for a reasonable time
+            self.layout.Refresh()
+            handled = True
+            
+        return handled
+    
+    def HandleKeyCUSTOM(self, inKey):
+        handled = True
+        pane = self.Pane('sr')
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            inputValues = pane.GetFieldValues()
+            self.deviceToErase = inputValues['device']
+            self.ChangeState('CONFIRM')
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+        
+    def HandleKeyCONFIRM(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            self.DoAction()
+            handled = True
+            
+        return handled
+    
+    def HandleDeviceChoice(self, inChoice):
+        if inChoice is None:
+            self.ChangeState('CUSTOM')
+        else:
+            self.deviceToErase = self.deviceList[inChoice]
+    
+            self.ChangeState('CONFIRM')
+
 
 class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -869,7 +1040,7 @@ class FileDialogue(Dialogue):
         for device in self.deviceList:
             choiceDefs.append(ChoiceDef(device.name, lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
 
-        self.deviceMenu = Menu(self, None, Lang("Select File"), choiceDefs)
+        self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
         self.UpdateFields()
     
     def BuildPaneFILES(self):
