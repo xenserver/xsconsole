@@ -1,3 +1,9 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import re, os, pickle
 
@@ -8,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 2
+    thisVersion = 3
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -16,7 +22,7 @@ class State:
     def __init__(self):
         self.version = self.thisVersion
         self.authTimeoutSeconds = 5*60
-        self.passwordChangeRequired = True
+        self.passwordChangeRequired = False # IsPasswordSet now takes care of this
         self.modified = True
     
     @classmethod

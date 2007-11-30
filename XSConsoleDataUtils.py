@@ -1,9 +1,18 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import os, re, tempfile
 
 from XSConsoleBases import *
 from XSConsoleData import *
 from XSConsoleLang import *
+
+# Utils that do not need to access XSConsoleData should go in XSConsoleUtils,
+# so that XSConsoleData can use them without creating circular import problems
 
 class FileUtils:
     @classmethod
@@ -93,7 +102,7 @@ class MountVDI:
             allowedVBDs = data.derived.dom0_vm.allowed_VBD_devices([])
             for vbd in inVDI.get('VBDs', []):
                 if vbd['userdevice'] in allowedVBDs:
-                    # Already mounted in userspace, so reuse
+                    # Already mounted in userspace, so reuse.  This case is probably never triggered
                     vbdFound = vbd
                     break
             

@@ -1,3 +1,9 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import XenAPI
 
@@ -48,8 +54,12 @@ class Language:
             
             thisLine = text[0:lineLength]
             thisLine = thisLine.replace("\t", " ") # Tab is used as a non-breaking space
-            thisLine = thisLine.replace("\r", "RET")
+            thisLine = thisLine.replace("\r", "RET") # Debugging
             retArray.append(thisLine)
-            text = text[lineLength+1:]
+            
+            if spacePos == -1:
+                text = text[lineLength:] # Split at non-space/return, so keep
+            else:
+                text = text[lineLength+1:] # Split at space or return so discard
         
         return retArray

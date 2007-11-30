@@ -1,3 +1,9 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import os, re, sys, time
 
@@ -68,6 +74,7 @@ class Auth:
 
         # Create a local login if we can
         session = XenAPI.Session("http://"+FirstValue(self.testingHost, "127.0.0.1"))
+        isSlave = False
         
         try:
             session.login_with_password(username, password)
@@ -77,10 +84,11 @@ class Auth:
                 masterIP = e.details[1] # Master IP is returned in details[1]
                 session = XenAPI.Session("http://"+masterIP)
                 session.login_with_password(username, password)
+                isSlave = True
             else:
                 raise # If the exception is not HOST_IS_SLAVE, raise it again
 
-        return session
+        return session, isSlave
     
     def ProcessLogin(self, inUsername, inPassword):
         self.isAuthenticated = False
@@ -146,6 +154,42 @@ class Auth:
         # inSession.logout()
         return None
 
+    def IsPasswordSet(self):
+        # Security critical - mustn't wrongly return False
+        retVal = True
+        
+        file = open("/etc/passwd")
+        for line in file:
+            if re.match(r'root:', line):
+                if re.match(r'root:!!:', line):
+                    retVal = False
+                break # break on any root: line
+        file.close()
+        return retVal
+    
+    def ChangePassword(self, inOldPassword, inNewPassword):
+
+        if not self.IsPasswordSet():
+            # Write password directly
+            pipe = os.popen("/usr/sbin/chpasswd", "w")
+            pipe.write("root:"+inNewPassword+"\n")
+            pipe.close()
+            
+            # xlock won't have started if there's no password, so start it now
+            if os.path.isfile("/usr/bin/xautolock"):
+                commands.getstatusoutput("/usr/bin/xautolock -time 10 -locker '/usr/bin/xlock -mode blank' &")
+                # Ignore failures
+        else:
+            session, isSlave = Auth.Inst().TCPSession(inOldPassword)
+            session.xenapi.session.change_password(inOldPassword, inNewPassword)
+            if isSlave:
+                # Write local password as well
+                pipe = os.popen("/usr/sbin/chpasswd", "w")
+                pipe.write("root:"+inNewPassword+"\n")
+                pipe.close()
+            
+        # Caller handles exceptions
+        
     def TimeoutSecondsSet(self, inSeconds):
         Auth.Inst().AssertAuthenticated()
         State.Inst().AuthTimeoutSecondsSet(inSeconds)

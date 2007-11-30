@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import sys, os, time, string
 import curses
@@ -40,10 +45,14 @@ class App:
                     self.layout.WriteParentOffset(self.cursesScreen)
                     self.layout.Create()
 
-                    # Request password change on first boot
-                    if State.Inst().PasswordChangeRequired() and not State.Inst().IsRecoveryMode():
-                        self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
-                            self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
+                    # Request password change on first boot, or if it isn't set
+                    if not State.Inst().IsRecoveryMode(): # No password activity in recovery mode
+                        if not Auth.Inst().IsPasswordSet() :
+                            self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
+                                self.layout.Window(Layout.WIN_MAIN), Lang("Please specify a password for user 'root' before continuing")))
+                        elif State.Inst().PasswordChangeRequired():
+                            self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
+                                self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
                     
                     self.layout.Clear()
                     self.MainLoop()

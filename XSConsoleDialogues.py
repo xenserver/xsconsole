@@ -1,3 +1,9 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 from XSConsoleAuth import *
 from XSConsoleBases import *
@@ -79,10 +85,16 @@ class ChangePasswordDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.successFunc = inSuccessFunc
+        self.isPasswordSet = Auth.Inst().IsPasswordSet()
+            
         if self.text is None:
-            paneHeight = 8
+            paneHeight = 7
         else:
-            paneHeight = 10
+            paneHeight = 9
+            
+        if self.isPasswordSet:
+            paneHeight += 1 # For old password field
+            
         pane = self.NewPane('changepassword', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.Win().TitleSet("Change Password")
@@ -95,7 +107,8 @@ class ChangePasswordDialogue(Dialogue):
         pane.ResetFields()
         if self.text is not None:
             pane.AddTitleField(self.text)
-        pane.AddPasswordField(Lang("Old Password", 21), Auth.Inst().DefaultPassword(), 'oldpassword')
+        if self.isPasswordSet:
+            pane.AddPasswordField(Lang("Old Password", 21), Auth.Inst().DefaultPassword(), 'oldpassword')
         pane.AddPasswordField(Lang("New Password", 21), Auth.Inst().DefaultPassword(), 'newpassword1')
         pane.AddPasswordField(Lang("Repeat New Password", 21), Auth.Inst().DefaultPassword(), 'newpassword2')
         pane.AddKeyHelpField( {
@@ -117,15 +130,15 @@ class ChangePasswordDialogue(Dialogue):
                 self.layout.PopDialogue()
                 successMessage = Lang('Password Change Successful')
                 try:
-                    if not Auth.Inst().IsAuthenticated():
-                        # Log in if we're not, to support the 'Change password on first boot' dialogue
-                        Auth.Inst().ProcessLogin('root', inputValues['oldpassword'])
+                    if not Auth.Inst().IsAuthenticated() and self.isPasswordSet:
+                        # Log in automatically if we're not
+                        Auth.Inst().ProcessLogin('root', inputValues.get('oldpassword', ''))
                         successMessage += Lang(".  User 'root' logged in.")
                         
                     if inputValues['newpassword1'] != inputValues['newpassword2']:
                         raise Exception(Lang('New passwords do not match'))
                 
-                    Data.Inst().ChangePassword(inputValues['oldpassword'], inputValues['newpassword1'])
+                    Auth.Inst().ChangePassword(inputValues.get('oldpassword', ''), inputValues['newpassword1'])
                     
                 except Exception, e:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
@@ -1259,7 +1272,7 @@ class SaveBugReportDialogue(FileDialogue):
 
         self.custom = {
             'title' : Lang("Save Bug Report"),
-            'searchregexp' : r'.*\.tar$',  # Type of bugtool file is .tar
+            'searchregexp' : r'.*',  # Type of bugtool file is .tar
             'deviceprompt' : Lang("Select The Destination Device"), 
             'fileprompt' : Lang("Choose A Destination Filename"),
             'confirmprompt' : Lang("Press <F8> To Save The Bug Report"),

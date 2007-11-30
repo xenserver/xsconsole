@@ -1,3 +1,9 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import re
 
@@ -31,13 +37,14 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(data.dmi.system_product_name())
         inPane.NewLine()
         inPane.AddWrappedTextField(data.host.software_version.product_brand() + ' ' +
-            data.host.software_version.product_version())
+            data.derived.fullversion())
         inPane.NewLine()
         inPane.AddTitleField(Lang("Management Network Parameters"))
         
         if len(data.derived.managementpifs([])) == 0:
             inPane.AddTextField(Lang("<No network configured>"))
         else:
+            inPane.AddStatusField(Lang('Device', 16), data.derived.managementpifs()[0]['device'])
             inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
             inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
             inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
@@ -96,22 +103,20 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(message)
 
     def UpdateFieldsINTERFACE(self, inPane):
-        inPane.AddTitleField(Lang("Management Interface"))
+        inPane.AddTitleField(Lang("Server Management"))
     
         inPane.AddWrappedTextField(Lang(
-            "The management interface is a network interface used to control this host remotely.  "
+            "This menu configures the network interface used to control this host remotely. the hostname and system logging.  "
             "Press <Enter> to configure."))
         
     def UpdateFieldsXENSERVER(self, inPane):
         data = Data.Inst()
 
-        inPane.AddTitleField(Lang("XenServer"))
+        inPane.AddTitleField(Lang("XenServer Product Information"))
         inPane.AddStatusField(Lang("Name", 16), str(data.host.software_version.product_brand()))
-        inPane.AddStatusField(Lang("Version", 16), str(data.host.software_version.product_version()))
-        inPane.AddStatusField(Lang("Build Number", 16), str(data.host.software_version.build_number()))
-        inPane.AddStatusField(Lang("Kernel Version", 16), str(data.host.software_version.linux()))
+        inPane.AddStatusField(Lang("Version", 16), str(data.derived.fullversion()))
         inPane.AddStatusField(Lang("Xen Version", 16), str(data.host.software_version.xen()))
-        inPane.NewLine()
+        inPane.AddStatusField(Lang("Kernel Version",16), str(data.host.software_version.linux()))
     
     def UpdateFieldsLICENCE(self, inPane):
         data = Data.Inst()

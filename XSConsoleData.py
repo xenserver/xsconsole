@@ -1,3 +1,9 @@
+# Copyright (c) Citrix Systems 2007. All rights reserved.
+# xsconsole is proprietary software.
+#
+# Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
+# trademarks of Citrix Systems, Inc., in the United States and other
+# countries.
 
 import XenAPI
 
@@ -209,12 +215,17 @@ class Data:
                 if 'domid' in vm and vm['domid'] == '0':
                     self.data['derived']['dom0_vm'] = vm
      
+        # Calculate the full version string
+        self.data['derived']['fullversion'] = (
+            self.host.software_version.product_version('') + '-' +
+            self.host.software_version.build_number('') + '-' +
+            self.host.software_version.oem_build_number('')
+        )
+        if self.data['derived']['fullversion'] == '--':
+            self.data['derived']['fullversion'] = Lang("<Unknown>")
+
     def Dump(self):
         pprint(self.data)
-        #pprint("\n\nMethod list:\n\n")
-        #self.RequireSession()
-        #if self.session is not None:
-        #    pprint(self.session.xenapi.host.list_methods())
 
     def HostnameSet(self, inHostname):
         Auth.Inst().AssertAuthenticated()
@@ -280,12 +291,7 @@ class Data:
             if status != 0:
                 raise Exception(output)
             os.rmdir(mountPoint)
-        
-    def ChangePassword(self,  inOldPassword, inNewPassword):
-        session = Auth.Inst().TCPSession(inOldPassword)
-        session.xenapi.session.change_password(inOldPassword, inNewPassword)
-        # Caller handles exceptions
-
+    
     def UpdateFromResolveConf(self):
         (status, output) = commands.getstatusoutput("/bin/cat /etc/resolv.conf")
         if status == 0:
