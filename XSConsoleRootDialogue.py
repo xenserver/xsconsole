@@ -613,7 +613,7 @@ class RootDialogue(Dialogue):
         user = os.environ.get('USER', 'root')
         self.layout.ExitBannerSet(Lang("\rShell for local user '")+user+"'.\r\r"+
                 Lang("Type 'exit' to return to the management console.\r"))
-        self.layout.SubshellCommandSet("/bin/bash --login")
+        self.layout.SubshellCommandSet("( export TMOUT="+str(State.Inst().AuthTimeoutSeconds())+" && /bin/bash --login )")
             
     def RebootDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':

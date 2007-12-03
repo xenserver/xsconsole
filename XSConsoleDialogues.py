@@ -1032,15 +1032,21 @@ class FileDialogue(Dialogue):
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
-        self.deviceList = FileUtils.DeviceList()
-        
-        self.BuildPaneBase(7+len(self.deviceList))
+        if self.Custom('mode') == 'rw':
+            self.deviceList = FileUtils.DeviceList(True) # Writable devices only
+        else:
+            self.deviceList = FileUtils.DeviceList(False) # Writable and read-only devices
         
         choiceDefs = []
         for device in self.deviceList:
             choiceDefs.append(ChoiceDef(device.name, lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
 
+        if len(choiceDefs) == 0:
+            choiceDefs.append(ChoiceDef('<No devices available>', lambda: None)) # Avoid empty menu
+
         self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
+
+        self.BuildPaneBase(7+len(choiceDefs))
         self.UpdateFields()
     
     def BuildPaneFILES(self):

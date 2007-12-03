@@ -16,7 +16,7 @@ from XSConsoleLang import *
 
 class FileUtils:
     @classmethod
-    def DeviceList(cls):
+    def DeviceList(cls, inWritableOnly):
         retVal = []
         
         # Device lists can change as, e.g. USB keys are plugged.  Out-of-date device lists are
@@ -27,7 +27,12 @@ class FileUtils:
             sr = pbd.get('SR', {})
             for vdi in sr.get('VDIs', []):
                 nameLabel = vdi.get('name_label', Lang('Unknown'))
-                if re.match(r'(SCSI|USB)', nameLabel): # Skip if not USB or SCSI
+                readOnly = vdi.get('read_only', False)
+                if not re.match(r'(SCSI|USB)', nameLabel): # Skip if not USB or SCSI
+                    skip = True
+                elif inWritableOnly and readOnly:
+                    skip = True
+                else:
                     match = True
                     while match:
                         match = re.match(r'(.*):0$', nameLabel)
