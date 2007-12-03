@@ -60,8 +60,21 @@ class FileUtils:
 
     @classmethod
     def SRDeviceList(self):
-        retVal = []
-        
+        retVal= []
+        status, output = commands.getstatusoutput("/opt/xensource/libexec/list_local_disks")
+        if status == 0:
+            regExp = re.compile(r'([^,]*),([^,]*),([^,]*),([^,]*),"([^"]*)"')
+            for line in output.split("\n"):
+                match = regExp.match(line)
+                if match:
+                    retVal.append(Struct(
+                        device = match.group(1),
+                        bus = match.group(2),
+                        empty = match.group(3),
+                        size = int(match.group(4)),
+                        name = match.group(5)
+                        ))
+
         return retVal
 
     @classmethod

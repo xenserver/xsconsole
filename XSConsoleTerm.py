@@ -53,7 +53,15 @@ class App:
                         elif State.Inst().PasswordChangeRequired():
                             self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
                                 self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
-                    
+                        elif State.Inst().RebootMessage() is not None:
+                            self.layout.PushDialogue(QuestionDialogue(
+                                self.layout,
+                                self.layout.Window(Layout.WIN_MAIN),
+                                State.Inst().RebootMessage(), lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
+                                )
+                            )
+                            State.Inst().RebootMessageSet(None)
+                            
                     self.layout.Clear()
                     self.MainLoop()
                     
@@ -139,7 +147,11 @@ class App:
                     # Set root menu choice to the first, to give a fixed start state after lots of escapes
                     self.layout.TopDialogue().Reset()
                     needsRefresh = True
-                
+                elif gotKey == 'KEY_F(5)':
+                    Data.Inst().Update()
+                    self.layout.UpdateRootFields()
+                    needsRefresh = True
+                    
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             

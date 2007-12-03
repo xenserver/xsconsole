@@ -760,7 +760,7 @@ class SRDialogue(Dialogue):
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
-        self.BuildPaneBase(10)
+        self.BuildPaneBase(9)
         self.UpdateFields()
         
     def BuildPaneDEVICE(self):
@@ -782,7 +782,7 @@ class SRDialogue(Dialogue):
         self.UpdateFields()
         
     def BuildPaneCONFIRM(self):
-        self.BuildPaneBase(9)
+        self.BuildPaneBase(11)
         self.UpdateFields()
     
     def ChangeState(self, inState):
@@ -800,15 +800,15 @@ class SRDialogue(Dialogue):
         
         pane.AddTitleField(Lang("WARNING"))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.AddWrappedTextField(Lang("This function will erase all information on the disk selected as a storage repository.  The server will then reboot immediately.  Do you want to continue?"))
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddWrappedTextField(Lang("Once a disk is selected, this function will erase all information on that disk.  Do you want to continue?"))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsDEVICE(self):
         pane = self.Pane('sr')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField("Claim Disk As Storage Repository")
+        pane.AddTitleField(Lang("Select a disk to erase and claim as a storage repository."))
         pane.AddMenuField(self.deviceMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
             "<F5>" : Lang("Rescan") } )
@@ -821,7 +821,7 @@ class SRDialogue(Dialogue):
         pane.AddTitleField(Lang("Enter the device name, e.g. /dev/sdb"))
         pane.AddInputField(Lang("Device Name",  16), '', 'device')
         pane.NewLine()
-        pane.AddWrappedTextField(Lang("CAUTION: No checks will be performed on this device before it is erased."))
+        pane.AddWrappedTextField(Lang("WARNING: No checks will be performed on this device before it is erased."))
         
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
         if pane.CurrentInput() is None:
@@ -832,14 +832,15 @@ class SRDialogue(Dialogue):
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField("Confirm Disk Erase and Reboot?")
+        pane.AddWrappedBoldTextField(Lang("Press <F8> to confirm that you want to erase all information on this disk and use it as a storage repository.  Data currently on this disk cannot be recovered after this step."))
+        pane.NewLine()
         pane.AddWrappedBoldTextField(Lang("Device"))
         if isinstance(self.deviceToErase, Struct):
             pane.AddWrappedTextField(self.DeviceString(self.deviceToErase))
         else:
             pane.AddWrappedTextField(str(self.deviceToErase))
-            
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Erase and Claim"), Lang("<Esc>") : Lang("Cancel") } )
 
     def HandleKey(self, inKey):
         handled = False
@@ -856,6 +857,10 @@ class SRDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Scanning...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            self.layout.PopDialogue()
             self.ChangeState('DEVICE')
             handled = True
             
@@ -908,6 +913,15 @@ class SRDialogue(Dialogue):
     
             self.ChangeState('CONFIRM')
 
+    def DoAction(self):
+        if isinstance(self.deviceToErase, Struct):
+            deviceName = self.DeviceString(self.deviceToErase)
+        else:
+            deviceName = str(self.deviceToErase)
+        
+        self.layout.ExitBannerSet(Lang("Configuring Storage Repository"))
+        self.layout.SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
+        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
 
 class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -1556,7 +1570,11 @@ class TestNetworkDialogue(Dialogue):
         return handled
         
     def HandleKeyINITIAL(self, inKey):
-        return self.testMenu.HandleKey(inKey)
+        handled = self.testMenu.HandleKey(inKey)
+        if not handled and inKey == 'KEY_LEFT':
+            self.layout.PopDialogue()
+            handled = True
+        return handled
         
     def HandleKeyCUSTOM(self, inKey):
         handled = True
@@ -1567,6 +1585,7 @@ class TestNetworkDialogue(Dialogue):
             inputValues = pane.GetFieldValues()
             self.customIP = inputValues['address']
             self.DoPing(self.customIP)
+            self.state = 'INITIAL'
             
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True

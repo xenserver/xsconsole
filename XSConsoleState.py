@@ -14,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 3
+    thisVersion = 4
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -24,6 +24,7 @@ class State:
         self.authTimeoutSeconds = 5*60
         self.passwordChangeRequired = False # IsPasswordSet now takes care of this
         self.modified = True
+        self.rebootMessage = None
     
     @classmethod
     def SaveFilename(self):
@@ -74,6 +75,13 @@ class State:
         
     def PasswordChangeRequiredSet(self, inValue):
         self.passwordChangeRequired = inValue
+        self.modified = True
+    
+    def RebootMessage(self):
+        return self.rebootMessage
+        
+    def RebootMessageSet(self, inValue):
+        self.rebootMessage = inValue
         self.modified = True
     
     def IsFirstBoot(self):

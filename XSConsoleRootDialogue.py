@@ -510,10 +510,15 @@ class RootDialogue(Dialogue):
 
         menuPane.AddKeyHelpField( keyHash )
         
-        if statusPane.NeedsScroll() and statusPane.NumStaticFields() == 0:
-            statusPane.AddKeyHelpField( {
-                Lang("<Page Up/Page Down>") : Lang("Scroll")
-            })
+        if statusPane.NumStaticFields() == 0: # No key help yet
+            if statusPane.NeedsScroll():
+                statusPane.AddKeyHelpField( {
+                    Lang("<Page Up/Page Down>") : Lang("Scroll")
+                })
+            else:
+                statusPane.AddKeyHelpField( {
+                    Lang("<F5>") : Lang("Refresh")
+                })
     
     def ChangeStatus(self, inName):
         self.Pane('status').ResetFields()
