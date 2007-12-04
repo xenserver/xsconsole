@@ -14,6 +14,13 @@ from XSConsoleLang import *
 # Utils that do not need to access XSConsoleData should go in XSConsoleUtils,
 # so that XSConsoleData can use them without creating circular import problems
 
+#Exception classes
+class USBNotFormatted(Exception):
+    pass
+    
+class USBNotMountable(Exception):
+    pass
+
 class FileUtils:
     @classmethod
     def DeviceList(cls, inWritableOnly):
@@ -108,8 +115,42 @@ class FileUtils:
         
         return retVal
 
+    @classmethod
+    def DeviceFromVDI(self, inVDI):
+        retVal = inVDI['location']
+        if os.path.islink(retVal):
+            link = os.readlink(retVal)
+            if os.path.isabs(link):
+                retVal = link
+            else:
+                retVal = os.path.join(os.path.dirname(retVal), link)
+            
+        return retVal
+
+    @classmethod
+    def USBFormat(self, inVDI):
+        realDevice = self.DeviceFromVDI(inVDI)
+        partitionName = realDevice+'1'
+        
+        # Write the partition table with one FAT32 partition filling the disk
+        pipe = os.popen("/sbin/sfdisk --DOS --quiet '"+realDevice+"' 2>&1 > /dev/null", "w")
+        pipe.write(",,0C\n")
+        pipe.write(";\n")
+        pipe.write(";\n")
+        pipe.write(";\n")
+        pipe.close()
+        
+        # Format the new partition with VFAT
+        status, output = commands.getstatusoutput("/sbin/mkfs.vfat -n 'XenServer Backup' -F 32 '" +partitionName + "' 2>&1")
+        
+        if status != 0:
+            raise Exception(output)
+            
+        os.system('/bin/sync')
+
 class MountVDI:
     def __init__(self, inVDI, inMode = None):
+        self.vdi = inVDI
         self.mountPoint = None
         self.vbd = None
         self.mode = FirstValue(inMode, 'ro')
@@ -142,6 +183,12 @@ class MountVDI:
                 self.pluggedVBD = True
         
             self.mountDev = '/dev/'+self.vbd['device']
+            
+            time.sleep(1) # Wait a moment for xapi to create the nodes in /dev
+            
+            if os.path.exists(self.mountDev+'1'): # First partition
+                self.mountDev += '1'
+                
             FileUtils.AssertSafePath(self.mountDev)
             self.mountPoint = tempfile.mktemp(".xsconsole")
             if not os.path.isdir(self.mountPoint):
@@ -149,7 +196,12 @@ class MountVDI:
 
             status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
             if status != 0:
-                raise Exception(output)
+                try:
+                    self.Unmount()
+                except Exception:
+                    pass # Ignore unmount failure
+                output += '\n'+self.mountDev
+                self.HandleMountFailure(output.split("\n"))
             
             self.mountedVBD = True
 
@@ -160,6 +212,45 @@ class MountVDI:
                 pass #  Report the original exception, not this one
             raise e
         
+    def HandleMountFailure(self, inOutput):
+        # Entered after self.Unmount has run
+        if not self.vdi['name_label'].lower().startswith('usb'):
+            # Take special action for USB devices only, i.e. don't reformat SCSI disks, etc.
+            raise Exception(inOutput)
+        
+        if self.mode != 'rw':
+            # Don't reformat media unless we're planning to write to it
+            raise Exception(inOutput)
+        
+        needsType = False
+        for line in inOutput:
+            if re.search(r'you must specify the filesystem type', line, re.IGNORECASE):
+                needsType = True
+    
+        if not needsType:
+            # Unrecognised failure
+            raise Exception(inOutput)
+        
+        realDevice = FileUtils.DeviceFromVDI(self.vdi)
+        status, output = commands.getstatusoutput("/sbin/fdisk -l '" +realDevice+"'")
+        if status != 0:
+            raise Exception(output)
+            
+        unformatted = False
+        for line in output.split("\n"):
+            if re.search(r"doesn't contain a valid partition table", line, re.IGNORECASE):
+                unformatted = True
+            if re.match(r'/dev/\w+\s+\*', line, re.IGNORECASE):
+                # Bootable partition - leave this media alone
+                raise Exception("This USB media is not mountable but has a bootable partition.  Please reformat it before use.")
+        
+        if unformatted:
+            # Not formatted
+            raise USBNotFormatted("USB media not formatted")
+        else:
+            # Formatted but doesn't mount
+            raise USBNotMountable("USB media not mountable")
+    
     def Scan(self, inRegExp = None, inNumToReturn = None):
         retVal = []
         numToReturn = FirstValue(inNumToReturn, 10)
@@ -178,7 +269,7 @@ class MountVDI:
     def Unmount(self):
         status = 0
         if self.mountedVBD:
-            status, output = commands.getstatusoutput("/bin/umount "+self.mountPoint +  " 2>&1")
+            status, output = commands.getstatusoutput("/bin/umount '"+self.mountPoint +  "' 2>&1")
             os.rmdir(self.mountPoint)
             self.mountedVBD = False
         if self.pluggedVBD:
@@ -196,4 +287,3 @@ class MountVDI:
     def SizeString(self, inFilename, inDefault = None):
         return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)
         
-    

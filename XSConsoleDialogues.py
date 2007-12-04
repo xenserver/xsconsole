@@ -1063,6 +1063,14 @@ class FileDialogue(Dialogue):
         self.BuildPaneBase(7+len(choiceDefs))
         self.UpdateFields()
     
+    def BuildPaneUSBNOTFORMATTED(self):
+        self.BuildPaneBase(6)
+        self.UpdateFields()
+        
+    def BuildPaneUSBNOTMOUNTABLE(self):
+        self.BuildPaneBase(8)
+        self.UpdateFields()
+    
     def BuildPaneFILES(self):
         self.BuildPaneBase(7+min(len(self.fileList)+1, 10)) # Menu field limited to 10 lines, +1 is for custom filename field
         
@@ -1101,6 +1109,22 @@ class FileDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
             "<F5>" : Lang("Rescan") } )
 
+    def UpdateFieldsUSBNOTFORMATTED(self):
+        pane = self.Pane('file')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddWrappedBoldTextField(Lang("This USB media is not formatted.  Would you like to format it now?"))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format media"), Lang("<Esc>") : Lang("Exit") } )
+
+    def UpdateFieldsUSBNOTMOUNTABLE(self):
+        pane = self.Pane('file')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddWrappedBoldTextField(Lang("This USB media contains data but this application cannot mount it.  Would you like to format the media?  This will erase the data currently on it."))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format media"), Lang("<Esc>") : Lang("Exit") } )
+
     def UpdateFieldsFILES(self):
         pane = self.Pane('file')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
@@ -1116,7 +1140,7 @@ class FileDialogue(Dialogue):
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Enter Filename"))
-        pane.AddInputField(Lang("Filename",  16), '', 'filename')
+        pane.AddInputField(Lang("Filename",  16), FirstValue(self.Custom('filename'), ''), 'filename')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
@@ -1164,7 +1188,29 @@ class FileDialogue(Dialogue):
             handled = True
             
         return handled
-        
+    
+    def HandleKeyUSBNOTFORMATTED(self, inKey):
+        handled = False
+        if inKey == 'KEY_F(8)':
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Formatting...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            self.layout.PopDialogue()
+            self.ChangeState('INITIAL')
+
+            try:
+                FileUtils.USBFormat(self.vdi)
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Formatting Successful")))
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Formatting Failed"), Lang(e)))
+
+            handled = True
+
+        return handled
+    
+    def HandleKeyUSBNOTMOUNTABLE(self, inKey):
+        return self.HandleKeyUSBNOTFORMATTED(inKey)
+    
     def HandleKeyFILES(self, inKey):
         return self.fileMenu.HandleKey(inKey)
         
@@ -1200,8 +1246,10 @@ class FileDialogue(Dialogue):
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Mounting device...")))
             self.layout.Refresh()
             self.layout.DoUpdate()
-            
+
             self.vdiMount = MountVDI(self.vdi, self.Custom('mode'))
+
+            
             self.layout.PopDialogue()
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Scanning device...")))
             self.layout.Refresh()
@@ -1213,6 +1261,12 @@ class FileDialogue(Dialogue):
             
             self.ChangeState('FILES')
         
+        except USBNotFormatted:
+            self.layout.PopDialogue()
+            self.ChangeState('USBNOTFORMATTED')
+        except USBNotMountable:
+            self.layout.PopDialogue()
+            self.ChangeState('USBNOTMOUNTABLE')
         except Exception, e:
             try:
                 self.PreExitActions()
@@ -1293,6 +1347,7 @@ class BackupDialogue(FileDialogue):
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
             'deviceprompt' : Lang("Select The Device To Save To"), 
             'fileprompt' : Lang("Choose The Backup Filename"),
+            'filename' : 'backup.xbk',
             'confirmprompt' : Lang("Press <F8> To Begin The Backup Process"),
             'mode' : 'rw'
         }
@@ -1466,6 +1521,7 @@ class SaveBugReportDialogue(FileDialogue):
             'searchregexp' : r'.*',  # Type of bugtool file is .tar
             'deviceprompt' : Lang("Select The Destination Device"), 
             'fileprompt' : Lang("Choose A Destination Filename"),
+            'filename' : 'bugreport.tar',
             'confirmprompt' : Lang("Press <F8> To Save The Bug Report"),
             'mode' : 'rw'
         }
@@ -1488,7 +1544,8 @@ class SaveBugReportDialogue(FileDialogue):
                 FileUtils.AssertSafePath(filename)
 
                 file = open(filename, "w")
-                command = "/usr/sbin/xen-bugtool --yestoall --silent --output=tar --outfd="+str(file.fileno())
+                # xen-bugtool requires a value for $USER
+                command = "( export USER=root && /usr/sbin/xen-bugtool --yestoall --silent --output=tar --outfd="+str(file.fileno()) + ' )'
                 status, output = commands.getstatusoutput(command)
                 file.close()
 
