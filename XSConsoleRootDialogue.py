@@ -50,6 +50,8 @@ class RootDialogue(Dialogue):
             inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
         inPane.NewLine()
     
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+        
     def UpdateFieldsPROPERTIES(self, inPane):
 
         inPane.AddTitleField(Lang("System Properties"))
@@ -67,28 +69,38 @@ class RootDialogue(Dialogue):
             username = "<none>"
 
         inPane.AddStatusField(Lang("User", 14), username)
+        
         inPane.NewLine()
         
         if Auth.Inst().IsAuthenticated():
-            inPane.AddWrappedTextField(Lang("You are logged in.  Press <Enter> to log out, change the password or alter login characteristics."))
+            inPane.AddWrappedTextField(Lang("You are logged in."))
         else:
-            inPane.AddWrappedTextField(Lang("You are currently not logged in.  Press <Enter> to access the login menu."))
-                
+            inPane.AddWrappedTextField(Lang("You are currently not logged in."))
 
+        inPane.NewLine()
+        inPane.AddWrappedTextField(Lang("Only logged in users can reconfigure and control this server."))
+        inPane.NewLine()
+        
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
     def UpdateFieldsLOGINOUT(self, inPane):
         if Auth.Inst().IsAuthenticated():
             inPane.AddTitleField(Lang("Log Out"))
             inPane.AddWrappedTextField(Lang("Press <Enter> to log out."))
+            inPane.AddKeyHelpField( {Lang("<Enter>") : Lang("Log out") })
         else:
             inPane.AddTitleField(Lang("Log In"))
             inPane.AddWrappedTextField(Lang("Press <Enter> to log in."))
+            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Log in") })
 
     def UpdateFieldsCHANGEPASSWORD(self, inPane):
         inPane.AddTitleField(Lang("Change Password"))
     
         inPane.AddWrappedTextField(Lang("Press <Enter> to change the password for user 'root'.  "
-        "If this host is in a pool, this will change the password of the pool master."))
+        "This will also change the password for local and remote login shells.  "
+        "If this host is in a pool, it will also change the password of the pool master."))
+        
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Password") })
 
     def UpdateFieldsCHANGETIMEOUT(self, inPane):
         inPane.AddTitleField(Lang("Change Auto-Logout Time"))
@@ -97,17 +109,20 @@ class RootDialogue(Dialogue):
         message = Lang("The current auto-logout time is ") + str(timeout) + " "
 
         message += Language.Quantity("minute", timeout) + ".  "
-        message += Lang("Users will be automatically logged out after there has been no activity for this time.  "+
-                "Press <Enter> to change this timeout.")
+        message += Lang("Users will be automatically logged out after there has been no keyboard "
+            "activity for this time.  This timeout applies to this console and to "
+            "local shells started from this console.")
     
         inPane.AddWrappedTextField(message)
+        
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Timeout") })
 
     def UpdateFieldsINTERFACE(self, inPane):
         inPane.AddTitleField(Lang("Server Management"))
     
         inPane.AddWrappedTextField(Lang(
-            "This menu configures the network interface used to control this host remotely. the hostname and system logging.  "
-            "Press <Enter> to configure."))
+            "This menu configures general server operation, including the management network, "
+            "hostname, remote logging (syslog), licensing, and local storage repositories."))
         
     def UpdateFieldsXENSERVER(self, inPane):
         data = Data.Inst()
@@ -118,6 +133,8 @@ class RootDialogue(Dialogue):
         inPane.AddStatusField(Lang("Xen Version", 16), str(data.host.software_version.xen()))
         inPane.AddStatusField(Lang("Kernel Version",16), str(data.host.software_version.linux()))
     
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsLICENCE(self, inPane):
         data = Data.Inst()
 
@@ -137,12 +154,16 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Serial Number"))
         inPane.AddWrappedTextField(str(data.host.license_params.serialnumber()))
 
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsHOST(self, inPane):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("Hostname"))
         inPane.AddWrappedTextField(data.host.name_label())
         inPane.NewLine()
+        
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
     def UpdateFieldsSYSTEM(self, inPane):
         data = Data.Inst()
@@ -163,6 +184,8 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(data.dmi.asset_tag(Lang("None"))) # FIXME: Get from XenAPI
         inPane.NewLine()
 
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsPROCESSOR(self, inPane):
         data = Data.Inst()
 
@@ -178,6 +201,8 @@ class RootDialogue(Dialogue):
         for name, value in data.derived.cpu_name_summary().iteritems():
             inPane.AddWrappedTextField(str(value)+" x "+name)
     
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+    
     def UpdateFieldsMEMORY(self, inPane):
         data = Data.Inst()
         
@@ -187,6 +212,8 @@ class RootDialogue(Dialogue):
         inPane.AddStatusField(Lang("Populated memory sockets", 27), str(data.dmi.memory_modules()))
         inPane.AddStatusField(Lang("Total memory sockets", 27), str(data.dmi.memory_sockets()))
 
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsSTORAGE(self, inPane):
         data = Data.Inst()
         
@@ -195,7 +222,9 @@ class RootDialogue(Dialogue):
         for name in data.lspci.storage_controllers([]):
             inPane.AddWrappedTextField(name)
             inPane.NewLine()
-            
+    
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsPIF(self, inPane):
         data = Data.Inst()
         
@@ -211,7 +240,7 @@ class RootDialogue(Dialogue):
             inPane.AddStatusField(Lang("MAC Address", 16), pif['MAC'])
             inPane.AddStatusField(Lang("Device", 16), pif['device'])
             inPane.NewLine()
-        
+
     def UpdateFieldsBMC(self, inPane):
         data = Data.Inst()
         
@@ -219,6 +248,8 @@ class RootDialogue(Dialogue):
         
         inPane.AddStatusField(Lang("BMC Firmware Version",  22), data.bmc.version())
         
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsCPLD(self, inPane):
         data = Data.Inst()
         
@@ -233,6 +264,8 @@ class RootDialogue(Dialogue):
         
         inPane.AddStatusField(Lang("Vendor", 12), data.dmi.bios_vendor())
         inPane.AddStatusField(Lang("Version", 12), data.dmi.bios_version())
+
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
     def UpdateFieldsSELECTNIC(self, inPane):
         data = Data.Inst()
@@ -259,20 +292,24 @@ class RootDialogue(Dialogue):
                 inPane.AddWrappedTextField(pif['metrics']['device_name'])
                 
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure this interface")
+            Lang("<Enter>") : Lang("Reconfigure"),
+            Lang("<F5>") : Lang("Refresh")
         })
         
     def UpdateFieldsTESTNETWORK(self, inPane):
         inPane.AddTitleField(Lang("Test Network"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to test the configured network interface."))
-    
+            "This option will test the configured network using ping."))
+        
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Test Network") })
+        
     def UpdateFieldsREBOOTSHUTDOWN(self, inPane):
         inPane.AddTitleField(Lang("Reboot/Shutdown"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to access the reboot and shutdown menu, or to enter Recovery Mode."))
+            "This option can reboot or shutdown this server, or reboot into Recovery Mode "
+            "to perform maintenance or restore from backups."))
     
     def UpdateFieldsREBOOT(self, inPane):
         inPane.AddTitleField(Lang("Reboot Server"))
@@ -288,8 +325,8 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Reboot Into Recovery Mode"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to reboot this server into recovery mode.  "
-            "This mode can also be used to apply updates or patches."))
+            "Press <Enter> to reboot this server into Recovery Mode.  "
+            "This mode is used to apply updates or patches and to restore from backups."))
         
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Reboot Into Recovery Mode")
@@ -309,7 +346,8 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Local Command Shell"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to start a local command shell on this server."))
+            "Press <Enter> to start a local command shell on this server.  "
+            "This shell will have root privileges."))
  
     def UpdateFieldsBURP(self, inPane):
         inPane.AddTitleField(Lang("Backup, Restore and Update"))
@@ -317,21 +355,13 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(Lang(
             "From this menu you can backup and restore the system database, and apply "
             "software updates or patches to the system."))
- 
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Show Menu")
-        } ) 
         
     def UpdateFieldsTECHNICAL(self, inPane):
         inPane.AddTitleField(Lang("Technical Support"))
     
         inPane.AddWrappedTextField(Lang(
-            "From the Technical Support menu you can enable local and remote shells, "
-            "validate the configuration of this server and upload bug reports."))
- 
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Technical Support Menu")
-        } )
+            "From this menu you can enable remote shells (ssh), "
+            "validate the configuration of this server and upload or save bug reports."))
     
     def UpdateFieldsINSTALLLICENCE(self, inPane):
         data = Data.Inst()
@@ -391,18 +421,21 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Backup Server State"))
 
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to backup the server state to a removable device."))
+            "Press <Enter> to backup the server state to removable media."))
             
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Backup") } )   
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Backup") } ) 
  
     def UpdateFieldsRESTORE(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Restore Server State"))
 
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to restore the server state from a removable device."))
-            
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } )   
+        if State.Inst().IsRecoveryMode():
+            inPane.AddWrappedTextField(Lang(
+                "Press <Enter> to restore the server state from removable media."))
+            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } ) 
+        else:
+            inPane.AddWrappedTextField(Lang(
+                "Please enter Recovery Mode from the Reboot menu before restoring the state of this server."))
  
     def UpdateFieldsBUGREPORT(self, inPane):
         data = Data.Inst()
@@ -438,7 +471,8 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(Lang("Changes to this configuration may be overwritten if any "
                                         "interfaces are configured to used DHCP."))
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure DNS")
+            Lang("<Enter>") : Lang("Reconfigure DNS"),
+            Lang("<F5>") : Lang("Refresh")
         })
 
     def UpdateFieldsHOSTNAME(self, inPane):
@@ -451,7 +485,8 @@ class RootDialogue(Dialogue):
         inPane.NewLine()
         inPane.AddWrappedTextField(Lang("Press <Enter> to change the name of this host."))
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Configure hostname")
+            Lang("<Enter>") : Lang("Set Hostname"),
+            Lang("<F5>") : Lang("Refresh")
         })
 
     def UpdateFieldsSR(self, inPane):
@@ -470,14 +505,15 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Remote Logging (syslog)"))
     
         if data.host.logging.syslog_destination('') == '':
-            inPane.AddWrappedTextField(Lang("Remote logging is not configured on this host."))
+            inPane.AddWrappedTextField(Lang("Remote logging is not configured on this host.  Press <Enter> to activate and set a destination address."))
         else:
             inPane.AddWrappedTextField(Lang("The remote logging destination for this host is"))
             inPane.NewLine()
             inPane.AddWrappedTextField(data.host.logging.syslog_destination())
-    
+        
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Configure logging")
+            Lang("<Enter>") : Lang("Reconfigure"),
+            Lang("<F5>") : Lang("Refresh")
         })
 
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
@@ -514,10 +550,6 @@ class RootDialogue(Dialogue):
             if statusPane.NeedsScroll():
                 statusPane.AddKeyHelpField( {
                     Lang("<Page Up/Page Down>") : Lang("Scroll")
-                })
-            else:
-                statusPane.AddKeyHelpField( {
-                    Lang("<F5>") : Lang("Refresh")
                 })
     
     def ChangeStatus(self, inName):

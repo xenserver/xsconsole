@@ -1513,7 +1513,7 @@ class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
-        paneHeight = 12
+        paneHeight = 11
         paneHeight = min(paneHeight,  22)
         pane = self.NewPane('testnetwork', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
         pane.Win().TitleSet(Lang("Test Network Configuration"))

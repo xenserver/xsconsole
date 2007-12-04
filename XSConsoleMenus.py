@@ -157,6 +157,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
                 ChoiceDef(Lang("Disks and Storage Repositories"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
+                ChoiceDef(Lang("Install License File"), lambda: inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'),
+                    lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
             ]),
@@ -181,8 +183,6 @@ class RootMenu:
             ]),
             
         'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
-                ChoiceDef(Lang("Install License File"), lambda: inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'),
-                    lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
                 ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
                     lambda : inDialogue.ChangeStatus('REMOTESHELL')),
                 ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
