@@ -772,7 +772,11 @@ class SRDialogue(Dialogue):
         for device in self.deviceList:
             choiceDefs.append(ChoiceDef(self.DeviceString(device), lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
         
-        choiceDefs.append(ChoiceDef(Lang("Specify a device manually", 70), lambda: self.HandleDeviceChoice(None) ) )
+        if len(choiceDefs) == 0:
+            choiceDefs.append(ChoiceDef(Lang("<No devices available>", 70), None))
+    
+        # Manual choice disabled    
+        # choiceDefs.append(ChoiceDef(Lang("Specify a device manually", 70), lambda: self.HandleDeviceChoice(None) ) )
 
         self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
         self.UpdateFields()
@@ -1122,8 +1126,8 @@ class FileDialogue(Dialogue):
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddWrappedBoldTextField(Lang("This USB media contains data but this application cannot mount it.  Would you like to format the media?  This will erase the data currently on it."))
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format media"), Lang("<Esc>") : Lang("Exit") } )
+        pane.AddWrappedBoldTextField(Lang("This USB media contains data but this application cannot mount it.  Would you like to format the media?  This will erase all data on the media."))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format Media"), Lang("<Esc>") : Lang("Exit") } )
 
     def UpdateFieldsFILES(self):
         pane = self.Pane('file')
@@ -1155,10 +1159,13 @@ class FileDialogue(Dialogue):
         pane.AddWrappedTextField(self.deviceName)
         pane.NewLine()
         
-        fileSize = self.vdiMount.SizeString(self.filename, Lang('File not found'))
+        if self.Custom('mode') == 'rw':
+            fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('New file'))+')'
+        else:
+            fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('File not found'))+')'
         
         pane.AddWrappedBoldTextField(Lang("File"))
-        pane.AddWrappedTextField(self.filename+' ('+fileSize+')')
+        pane.AddWrappedTextField(self.filename+fileSize)
         
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
 
@@ -1196,11 +1203,10 @@ class FileDialogue(Dialogue):
             self.layout.Refresh()
             self.layout.DoUpdate()
             self.layout.PopDialogue()
-            self.ChangeState('INITIAL')
 
             try:
                 FileUtils.USBFormat(self.vdi)
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Formatting Successful")))
+                self.HandleDevice()
             except Exception, e:
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Formatting Failed"), Lang(e)))
 
@@ -1239,10 +1245,15 @@ class FileDialogue(Dialogue):
         return handled
     
     def HandleDeviceChoice(self, inChoice):
-        self.vdiMount = None
+        self.deviceName = self.deviceList[inChoice].name
+        self.vdi = self.deviceList[inChoice].vdi
+        self.HandleDevice()
+        
+    def HandleDevice(self):
         try:
-            self.vdi = self.deviceList[inChoice].vdi
-            self.deviceName = self.deviceList[inChoice].name
+
+            self.vdiMount = None
+
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Mounting device...")))
             self.layout.Refresh()
             self.layout.DoUpdate()

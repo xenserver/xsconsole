@@ -596,7 +596,7 @@ class Data:
             'type' : FirstValue(inType, 'disk'), 
             'unpluggable' : True,
             'empty' : False, 
-            'other_config' : {}, 
+            'other_config' : { 'xsconsole_tmp' : 'Created: '+time.asctime(time.gmtime()) }, 
             'qos_algorithm_type' : '', 
             'qos_algorithm_params' : {}
         }
@@ -616,3 +616,26 @@ class Data:
 
     def DestroyVBD(self, inVBD):
         self.session.xenapi.VBD.destroy(inVBD['opaqueref'])
+
+    def PurgeVBDs(self):
+        # Destroy any VBDs that xsconsole created but isn't using
+        
+        vbdRefs = {} # Use a dict to remove duplicates
+        
+        # Iterate through all VBDs we know about
+        for pbd in Data.Inst().host.PBDs([]):
+            sr = pbd.get('SR', {})
+            for vdi in sr.get('VDIs', []):
+                for vbd in vdi.get('VBDs', []):
+                    if 'xsconsole_tmp' in vbd.get('other_config', {}):
+                        vbdRefs[ vbd['opaqueref'] ] = vbd
+        
+        for vbd in vbdRefs.values():
+            try:
+                # Currently this won't destroy mounted VBDs
+                if vbd['currently_attached']:
+                    self.UnplugVBD(vbd)
+                self.DestroyVBD(vbd)
+            except Exception:
+                pass # Fail silently
+    

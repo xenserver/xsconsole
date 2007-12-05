@@ -5,7 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import os, re, tempfile
+import os, popen2, re, tempfile
 
 from XSConsoleBases import *
 from XSConsoleData import *
@@ -123,7 +123,7 @@ class FileUtils:
             if os.path.isabs(link):
                 retVal = link
             else:
-                retVal = os.path.join(os.path.dirname(retVal), link)
+                retVal = os.path.abspath(os.path.join(os.path.dirname(retVal), link))
             
         return retVal
 
@@ -133,12 +133,15 @@ class FileUtils:
         partitionName = realDevice+'1'
         
         # Write the partition table with one FAT32 partition filling the disk
-        pipe = os.popen("/sbin/sfdisk --DOS --quiet '"+realDevice+"' 2>&1 > /dev/null", "w")
-        pipe.write(",,0C\n")
-        pipe.write(";\n")
-        pipe.write(";\n")
-        pipe.write(";\n")
-        pipe.close()
+        popenObj = popen2.Popen4("/sbin/sfdisk --DOS --quiet '"+realDevice+"'")
+        popenObj.tochild.write(",,0C\n") # First partition, 0x0C => Windows LBA partition type
+        popenObj.tochild.write(";\n")
+        popenObj.tochild.write(";\n")
+        popenObj.tochild.write(";\n")
+        popenObj.tochild.close() # Send EOF
+        popenObj.wait() # Must wait for completon before mkfs
+        
+        os.system('/bin/sync')
         
         # Format the new partition with VFAT
         status, output = commands.getstatusoutput("/sbin/mkfs.vfat -n 'XenServer Backup' -F 32 '" +partitionName + "' 2>&1")
@@ -165,6 +168,10 @@ class MountVDI:
         try:
             vbdFound = None
             allowedVBDs = data.derived.dom0_vm.allowed_VBD_devices([])
+            if len(allowedVBDs) == 0:
+                data.PurgeVBDs()
+                raise Exception("VBDs exhausted - please retry")
+                
             for vbd in inVDI.get('VBDs', []):
                 if vbd['userdevice'] in allowedVBDs:
                     # Already mounted in userspace, so reuse.  This case is probably never triggered
@@ -273,7 +280,15 @@ class MountVDI:
             os.rmdir(self.mountPoint)
             self.mountedVBD = False
         if self.pluggedVBD:
-            self.vbd = Data.Inst().UnplugVBD(self.vbd)
+            try:
+                self.vbd = Data.Inst().UnplugVBD(self.vbd)
+            except Exception:
+                # Assume umount needs more time to complete so wait and try again
+                time.sleep(5)
+                try:
+                    self.vbd = Data.Inst().UnplugVBD(self.vbd)
+                except Exception:
+                    pass # Ignore second failure
             self.pluggedVBD = False
         if self.createdVBD:
             Data.Inst().DestroyVBD(self.vbd)

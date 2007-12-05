@@ -30,6 +30,9 @@ class App:
             Data.Inst().Dump()
             doQuit = True
         
+        # Purge leftover VBDs at startup
+        Data.Inst().PurgeVBDs()
+        
         while not doQuit:
             try:
                 try:
