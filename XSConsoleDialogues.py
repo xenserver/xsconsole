@@ -78,7 +78,7 @@ class LoginDialogue(Dialogue):
             pass # Leave handled as True
         else:
             handled = False
-        return True
+        return handled
 
 class ChangePasswordDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
@@ -927,6 +927,258 @@ class SRDialogue(Dialogue):
         self.layout.SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
         State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
 
+class RemoteDBDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        self.deviceToErase = None
+        self.ChangeState('INITIAL')
+
+    def BuildPaneBase(self, inHeight):
+        paneHeight = min(inHeight, 22)
+        pane = self.NewPane('remotedb', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(Lang("Remote Database Configuration"))
+        pane.AddBox()
+    
+    def BuildPaneINITIAL(self):
+        self.BuildPaneBase(14)
+        self.UpdateFields()
+    
+    def IQNString(self, inIQN):
+        return "TGPT %-4.4s %-60.60s" % (inIQN.tgpt, inIQN.name)
+    
+    def BuildPaneCHOOSEIQN(self):
+        self.BuildPaneBase(7+len(self.probedIQNs))
+
+        choiceDefs = []
+        
+        for iqn in self.probedIQNs:
+            choiceDefs.append(ChoiceDef(self.IQNString(iqn), lambda: self.HandleIQNChoice(self.iqnMenu.ChoiceIndex())))
+
+        if len(choiceDefs) == 0:
+            choiceDefs.append(ChoiceDef("<No IQNs discovered>", lambda: None))
+            
+        self.iqnMenu = Menu(self, None, Lang("Select IQN"), choiceDefs)
+
+        self.UpdateFields()
+
+    def BuildPaneCHOOSELUN(self):
+        self.BuildPaneBase(7+len(self.probedLUNs))
+
+        choiceDefs = []
+        
+        for lun in self.probedLUNs:
+            choiceDefs.append(ChoiceDef("LUN "+str(lun), lambda: self.HandleLUNChoice(self.lunMenu.ChoiceIndex())))
+
+        if len(choiceDefs) == 0:
+            choiceDefs.append(ChoiceDef("<No LUNs discovered>", lambda: None))
+            
+        self.lunMenu = Menu(self, None, Lang("Select LUN"), choiceDefs)
+
+        self.UpdateFields()
+
+    def BuildPaneCUSTOM(self):
+        self.BuildPaneBase(11)
+        self.UpdateFields()
+        
+    def BuildPaneCONFIRM(self):
+        self.BuildPaneBase(11)
+        self.UpdateFields()
+    
+    def ChangeState(self, inState):
+        self.state = inState
+        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+    
+    def UpdateFields(self):
+        self.Pane('remotedb').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('remotedb')
+        data = Data.Inst()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddWrappedTextField(Lang("Please enter the configuration details"))
+        pane.NewLine()
+        
+        pane.AddInputField(Lang("Initiator IQN",  26), data.remotedb.defaultlocaliqn(''), 'localiqn')
+        pane.AddInputField(Lang("Port number",  26), '3260', 'port')
+        pane.AddInputField(Lang("Hostname of iSCSI target",  26), '', 'remotehost')
+        pane.AddInputField(Lang("Username",  26), data.remotedb.username(''), 'username')
+        pane.AddPasswordField(Lang("Password",  26), data.remotedb.password(''), 'password')
+                
+        pane.AddKeyHelpField( {
+            Lang("<Esc>") : Lang("Cancel"),
+            Lang("<Enter>") : Lang("Next/OK"),
+            Lang("<Tab>") : Lang("Next")
+        } )
+
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
+    def UpdateFieldsCHOOSEIQN(self):
+        pane = self.Pane('remotedb')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please select from the list of discovered IQNs"))
+        pane.AddMenuField(self.iqnMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def UpdateFieldsCHOOSELUN(self):
+        pane = self.Pane('remotedb')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please select a LUN from the chosen IQN"))
+        pane.AddMenuField(self.lunMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def UpdateFieldsCUSTOM(self):
+        pane = self.Pane('remotedb')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Enter the device name, e.g. /dev/sdb"))
+        pane.AddInputField(Lang("Device Name",  16), '', 'device')
+        pane.NewLine()
+        pane.AddWrappedTextField(Lang("WARNING: No checks will be performed on this device before it is erased."))
+        
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
+    def UpdateFieldsCONFIRM(self):
+        pane = self.Pane('remotedb')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddWrappedBoldTextField(Lang("Press <F8> to confirm that you want to erase all information on this disk and use it as a storage repository.  Data currently on this disk cannot be recovered after this step."))
+        pane.NewLine()
+        pane.AddWrappedBoldTextField(Lang("Device"))
+        if isinstance(self.deviceToErase, Struct):
+            pane.AddWrappedTextField(self.DeviceString(self.deviceToErase))
+        else:
+            pane.AddWrappedTextField(str(self.deviceToErase))
+
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Erase and Claim"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        handled = True
+        pane = self.Pane('remotedb')
+
+        if inKey == 'KEY_ENTER':
+            if not pane.IsLastInput():
+                pane.ActivateNextInput()
+            else:
+                self.newConf = pane.GetFieldValues()
+                try:
+                    self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Probing for IQNs...")))
+                    self.layout.Refresh()
+                    self.layout.DoUpdate()
+                    self.layout.PopDialogue()
+                    self.probedIQNs = RemoteDB.Inst().ProbeIQNs(self.newConf)
+                    self.ChangeState('CHOOSEIQN')
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+                    
+        elif inKey == 'KEY_TAB':
+            pane.ActivateNextInput()
+        elif inKey == 'KEY_BTAB':
+            pane.ActivatePreviousInput()
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+
+    def HandleKeyCHOOSEIQN(self, inKey):
+        return self.iqnMenu.HandleKey(inKey)
+
+    def HandleKeyCHOOSELUN(self, inKey):
+        return self.lunMenu.HandleKey(inKey)
+
+    def HandleKeyDEVICE(self, inKey):
+        handled = self.deviceMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_F(5)':
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            self.layout.PopDialogue()
+            self.BuildPaneDEVICE() # Updates self.deviceList
+            time.sleep(0.5) # Display rescanning box for a reasonable time
+            self.layout.Refresh()
+            handled = True
+            
+        return handled
+    
+    def HandleKeyCUSTOM(self, inKey):
+        handled = True
+        pane = self.Pane('sr')
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            inputValues = pane.GetFieldValues()
+            self.deviceToErase = inputValues['device']
+            self.ChangeState('CONFIRM')
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+        
+    def HandleKeyCONFIRM(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            self.DoAction()
+            handled = True
+            
+        return handled
+    
+    def HandleIQNChoice(self, inChoice):
+        if inChoice is None:
+            self.ChangeState('CUSTOMIQN')
+        else:
+            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Probing for LUNs...")))
+            self.layout.Refresh()
+            self.layout.DoUpdate()
+            self.layout.PopDialogue()
+            self.chosenIQN = self.probedIQNs[inChoice]
+            self.probedLUNs = RemoteDB.Inst().ProbeLUNs(self.newConf, self.chosenIQN)
+            
+            self.ChangeState('CHOOSELUN')
+
+    def HandleLUNChoice(self, inChoice):
+        if inChoice is None:
+            self.ChangeState('CUSTOMIQN')
+        else:
+            self.chosenIQN = self.probedIQNs[inChoice]
+            self.ChangeState('CHOOSELUN')
+
+    def DoAction(self):
+        if isinstance(self.deviceToErase, Struct):
+            deviceName = self.DeviceString(self.deviceToErase)
+        else:
+            deviceName = str(self.deviceToErase)
+        
+        self.layout.ExitBannerSet(Lang("Configuring Storage Repository"))
+        self.layout.SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
+        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
+
 class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
@@ -1438,7 +1690,7 @@ class RestoreDialogue(FileDialogue):
         self.layout.PopDialogue()
         
         self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
-            Lang("Restoring from backup... This make take several minutes.")))
+            Lang("Restoring from backup... This may take several minutes.")))
             
         try:
             try:

@@ -500,6 +500,30 @@ class RootDialogue(Dialogue):
             Lang("<Enter>") : Lang("Configure SRs")
         })
 
+    def UpdateFieldsREMOTEDB(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Setup Remote Database"))
+    
+        if not data.remotedb.is_on_remote_storage(False):
+            inPane.AddWrappedTextField(Lang("A remote database is not configured on this server."))
+        else:
+            inPane.AddWrappedTextField(Lang("A remote database is configured for this server on an iSCSI LUN."))
+            inPane.NewLine()
+            inPane.AddStatusField(Lang('Server', 10), data.remotedb.target()+":"+data.remotedb.port())
+            inPane.AddStatusField(Lang('LUN',10), data.remotedb.lun())
+            if data.remotedb.username('') != '':
+                inPane.AddStatusField(Lang('Username', 10), data.remotedb.username())
+            inPane.NewLine()
+            inPane.AddTitleField(Lang("Initiator IQN:"))
+            inPane.AddWrappedTextField(data.remotedb.localiqn())
+            inPane.NewLine()
+            inPane.AddTitleField(Lang("Target IQN:"))
+            inPane.AddWrappedTextField(data.remotedb.remoteiqn())
+
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Configure Remote DB")
+        })
+
     def UpdateFieldsSYSLOG(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Remote Logging (syslog)"))
@@ -615,6 +639,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SR':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_REMOTEDB':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_INSTALLLICENCE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(LicenceDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':

@@ -11,9 +11,11 @@ import commands, re, sys, tempfile
 from pprint import pprint
 
 from XSConsoleAuth import *
+from XSConsoleRemoteDB import *
 from XSConsoleLang import *
 from XSConsoleState import *
 from XSConsoleUtils import *
+
 
 class DataMethod:
     def __init__(self, inSend, inName):
@@ -174,6 +176,7 @@ class Data:
 
         self.UpdateFromResolveConf()
         self.UpdateFromSysconfig()
+        self.UpdateFromRemoteDBConf()
         
         if os.path.isfile("/sbin/chkconfig"):
             (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
@@ -301,6 +304,28 @@ class Data:
         (status, output) = commands.getstatusoutput("/bin/cat /etc/sysconfig/network")
         if status == 0:
             self.ScanSysconfigNetwork(output.split("\n"))
+    
+    def StringToBool(self, inString):
+        return inString.lower().startswith('true')
+
+    def UpdateFromRemoteDBConf(self):
+        self.data['remotedb'] = {}
+
+        try:
+            self.data['remotedb'] = RemoteDB.Inst().ReadConf()
+            remoteDB = self.data['remotedb']
+            
+            # Translate string booleans to python booleans
+            remoteDB['available_this_boot'] = self.StringToBool(remoteDB['available_this_boot'])
+            remoteDB['is_on_remote_storage'] = self.StringToBool(remoteDB['is_on_remote_storage'])
+            
+        except Exception, e:
+            remoteDB = { 'is_on_remote_storage' : False }
+            
+        try:
+            self.data['remotedb']['defaultlocaliqn'] = RemoteDB.Inst().LocalIQN()
+        except Exception, e:
+            pass
             
     def SaveToResolvConf(self):
         # Double-check authentication

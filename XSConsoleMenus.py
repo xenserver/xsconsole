@@ -157,6 +157,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
                 ChoiceDef(Lang("Disks and Storage Repositories"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
+                ChoiceDef(Lang("Setup Remote Database"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTEDB'), lambda : inDialogue.ChangeStatus('REMOTEDB')),
                 ChoiceDef(Lang("Install License File"), lambda: inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'),
                     lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
                 ChoiceDef(Lang("Test Network"),
