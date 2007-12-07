@@ -640,7 +640,11 @@ class RootDialogue(Dialogue):
         elif inName == 'DIALOGUE_SR':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
+            # Limit RemoteDB to one-shot only until reconfiguration is working
+            if Data.Inst().remotedb.is_on_remote_storage(False):
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Remote database is already configured - cannot reconfigure in this version")))
+            else:
+                self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_INSTALLLICENCE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(LicenceDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':

@@ -1046,7 +1046,7 @@ class RemoteDBDialogue(Dialogue):
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        if self.dbPresent:
+        if self.dbPresent or self.dbPresent is None: # Database is present but the user has chosen not to use it
             pane.AddWrappedBoldTextField(Lang("Please confirm that you would like to format the following disk.  Data currently on this disk cannot be recovered after this step."))
         else:
             pane.AddWrappedBoldTextField(Lang("No database can be found on the remote disk.  Would you like to format it and prepare a new database?  Data currently on this disk cannot be recovered after this step."))
@@ -1061,7 +1061,10 @@ class RemoteDBDialogue(Dialogue):
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddWrappedBoldTextField(Lang("A database is already present on the remote disk.  Please select an option."))
+        if self.dbPresent is None: # i.e. we don't know
+            pane.AddWrappedBoldTextField(Lang("Would you like to use a database already on the disk, or format it and create a new database?"))
+        else:
+            pane.AddWrappedBoldTextField(Lang("A database is already present on the remote disk.  Please select an option."))
         pane.NewLine()
         pane.AddWrappedBoldTextField(Lang("Remote iSCSI disk"))
         pane.AddWrappedTextField(self.IQNString(self.chosenIQN, self.chosenLUN))
@@ -1158,9 +1161,10 @@ class RemoteDBDialogue(Dialogue):
             self.layout.TransientBanner(Lang("Scanning target LUN..."))
             
             self.chosenLUN = self.probedLUNs[inChoice]
-            self.dbPresent = RemoteDB.Inst().TestLUN(self.newConf, self.chosenIQN, self.chosenLUN)
 
-            if self.dbPresent:
+            self.dbPresent = RemoteDB.Inst().TestLUN(self.newConf, self.chosenIQN, self.chosenLUN)
+            
+            if self.dbPresent or self.dbPresent is None:
                 self.ChangeState('USEDB')
             else:
                 self.ChangeState('CREATEDB')
