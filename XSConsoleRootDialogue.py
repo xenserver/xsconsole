@@ -429,13 +429,9 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Restore Server State"))
 
-        if State.Inst().IsRecoveryMode():
-            inPane.AddWrappedTextField(Lang(
-                "Press <Enter> to restore the server state from removable media."))
-            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } ) 
-        else:
-            inPane.AddWrappedTextField(Lang(
-                "Please enter Recovery Mode from the Reboot menu before restoring the state of this server."))
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to restore the server state from removable media."))
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } ) 
  
     def UpdateFieldsBUGREPORT(self, inPane):
         data = Data.Inst()
