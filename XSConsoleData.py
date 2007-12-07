@@ -664,3 +664,24 @@ class Data:
             except Exception:
                 pass # Fail silently
     
+    def IsXAPIRunning(self):
+        status, output = commands.getstatusoutput("/etc/init.d/xapi status")
+        return status == 0
+        
+    def StopXAPI(self):
+        if self.IsXAPIRunning():
+            State.Inst().WeStoppedXAPISet(True)
+            State.Inst().SaveIfRequired()
+        
+            status, output = commands.getstatusoutput("/etc/init.d/xapi stop")
+            if status != 0:
+                raise Exception(output)
+                
+    def StartXAPI(self):
+        if not self.IsXAPIRunning():
+            status, output = commands.getstatusoutput("/etc/init.d/xapi start")
+            if status != 0:
+                raise Exception(output)
+                
+            State.Inst().WeStoppedXAPISet(False)
+            State.Inst().SaveIfRequired()

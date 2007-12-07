@@ -931,8 +931,21 @@ class RemoteDBDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
-        self.deviceToErase = None
+        self.useMenu = Menu(self, None, Lang("Choose Option"), [
+            ChoiceDef(Lang("Use existing database"), lambda: self.HandleUseChoice('USE')),
+            ChoiceDef(Lang("Format disk and create new database"), lambda: self.HandleUseChoice('FORMAT')),
+            ChoiceDef(Lang("Cancel"), lambda: self.HandleUseChoice('CANCEL'))
+        ] )            
+            
         self.ChangeState('INITIAL')
+
+    def IQNString(self, inIQN, inLUN = None):
+        if inLUN is None or int(inLUN) > 999: # LUN not present or more than 3 characters
+            retVal = "TGPT %-4.4s %-60.60s" % (inIQN.tgpt[:4], inIQN.name[:60])
+        else:
+            retVal = "TGPT %-4.4s %-52.52s LUN %-3.3s" % (inIQN.tgpt[:4], inIQN.name[:52], str(inLUN)[:3])
+        
+        return retVal
 
     def BuildPaneBase(self, inHeight):
         paneHeight = min(inHeight, 22)
@@ -943,9 +956,6 @@ class RemoteDBDialogue(Dialogue):
     def BuildPaneINITIAL(self):
         self.BuildPaneBase(14)
         self.UpdateFields()
-    
-    def IQNString(self, inIQN):
-        return "TGPT %-4.4s %-60.60s" % (inIQN.tgpt, inIQN.name)
     
     def BuildPaneCHOOSEIQN(self):
         self.BuildPaneBase(7+len(self.probedIQNs))
@@ -977,21 +987,17 @@ class RemoteDBDialogue(Dialogue):
 
         self.UpdateFields()
 
-    def BuildPaneCUSTOM(self):
+    def BuildPaneCREATEDB(self):
         self.BuildPaneBase(11)
         self.UpdateFields()
         
-    def BuildPaneCONFIRM(self):
-        self.BuildPaneBase(11)
+    def BuildPaneUSEDB(self):
+        self.BuildPaneBase(14)
         self.UpdateFields()
     
     def ChangeState(self, inState):
         self.state = inState
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
-    
-    def UpdateFields(self):
-        self.Pane('remotedb').ResetPosition()
-        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane('remotedb')
@@ -1034,46 +1040,39 @@ class RemoteDBDialogue(Dialogue):
         pane.AddTitleField(Lang("Please select a LUN from the chosen IQN"))
         pane.AddMenuField(self.lunMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
-
-    def UpdateFieldsCUSTOM(self):
-        pane = self.Pane('remotedb')
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.ResetFields()
-        
-        pane.AddTitleField(Lang("Enter the device name, e.g. /dev/sdb"))
-        pane.AddInputField(Lang("Device Name",  16), '', 'device')
-        pane.NewLine()
-        pane.AddWrappedTextField(Lang("WARNING: No checks will be performed on this device before it is erased."))
-        
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
-        if pane.CurrentInput() is None:
-            pane.InputIndexSet(0)
             
-    def UpdateFieldsCONFIRM(self):
+    def UpdateFieldsCREATEDB(self):
         pane = self.Pane('remotedb')
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddWrappedBoldTextField(Lang("Press <F8> to confirm that you want to erase all information on this disk and use it as a storage repository.  Data currently on this disk cannot be recovered after this step."))
-        pane.NewLine()
-        pane.AddWrappedBoldTextField(Lang("Device"))
-        if isinstance(self.deviceToErase, Struct):
-            pane.AddWrappedTextField(self.DeviceString(self.deviceToErase))
+        if self.dbPresent:
+            pane.AddWrappedBoldTextField(Lang("Please confirm that you would like to format the following disk.  Data currently on this disk cannot be recovered after this step."))
         else:
-            pane.AddWrappedTextField(str(self.deviceToErase))
+            pane.AddWrappedBoldTextField(Lang("No database can be found on the remote disk.  Would you like to format it and prepare a new database?  Data currently on this disk cannot be recovered after this step."))
+        pane.NewLine()
+        pane.AddWrappedBoldTextField(Lang("Remote iSCSI disk"))
+        pane.AddWrappedTextField(self.IQNString(self.chosenIQN, self.chosenLUN))
 
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Erase and Claim"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format and Create"), Lang("<Esc>") : Lang("Cancel") } )
 
-    def HandleKey(self, inKey):
-        handled = False
-        if hasattr(self, 'HandleKey'+self.state):
-            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+    def UpdateFieldsUSEDB(self):
+        pane = self.Pane('remotedb')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
         
-        if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-            handled = True
+        pane.AddWrappedBoldTextField(Lang("A database is already present on the remote disk.  Please select an option."))
+        pane.NewLine()
+        pane.AddWrappedBoldTextField(Lang("Remote iSCSI disk"))
+        pane.AddWrappedTextField(self.IQNString(self.chosenIQN, self.chosenLUN))
+        pane.NewLine()
+        pane.AddMenuField(self.useMenu)
+        
+        pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK") } )
 
-        return handled
+    def UpdateFields(self):
+        self.Pane('remotedb').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def HandleKeyINITIAL(self, inKey):
         handled = True
@@ -1085,10 +1084,7 @@ class RemoteDBDialogue(Dialogue):
             else:
                 self.newConf = pane.GetFieldValues()
                 try:
-                    self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Probing for IQNs...")))
-                    self.layout.Refresh()
-                    self.layout.DoUpdate()
-                    self.layout.PopDialogue()
+                    self.layout.TransientBanner(Lang("Probing for IQNs..."))
                     self.probedIQNs = RemoteDB.Inst().ProbeIQNs(self.newConf)
                     self.ChangeState('CHOOSEIQN')
                 except Exception, e:
@@ -1109,54 +1105,47 @@ class RemoteDBDialogue(Dialogue):
 
     def HandleKeyCHOOSELUN(self, inKey):
         return self.lunMenu.HandleKey(inKey)
-
-    def HandleKeyDEVICE(self, inKey):
-        handled = self.deviceMenu.HandleKey(inKey)
-        
-        if not handled and inKey == 'KEY_F(5)':
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            self.layout.PopDialogue()
-            self.BuildPaneDEVICE() # Updates self.deviceList
-            time.sleep(0.5) # Display rescanning box for a reasonable time
-            self.layout.Refresh()
-            handled = True
-            
-        return handled
     
-    def HandleKeyCUSTOM(self, inKey):
-        handled = True
-        pane = self.Pane('sr')
-        if pane.CurrentInput() is None:
-            pane.InputIndexSet(0)
-        if inKey == 'KEY_ENTER':
-            inputValues = pane.GetFieldValues()
-            self.deviceToErase = inputValues['device']
-            self.ChangeState('CONFIRM')
-        elif pane.CurrentInput().HandleKey(inKey):
-            pass # Leave handled as True
-        else:
-            handled = False
-        return handled
+    def HandleKeyUSEDB(self, inKey):
+        return self.useMenu.HandleKey(inKey)
         
-    def HandleKeyCONFIRM(self, inKey):
+    def HandleKeyCREATEDB(self, inKey):
         handled = False
         
         if inKey == 'KEY_F(8)':
-            self.DoAction()
+            self.layout.TransientBanner(Lang("Formatting..."))
+            Data.Inst().StopXAPI()
+            try:
+                try:
+                    self.dbPresent = RemoteDB.Inst().FormatLUN(self.newConf, self.chosenIQN, self.chosenLUN)
+                    self.layout.PopDialogue()
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                        Lang("Format, Creation, and Configuration Successful")))
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+            finally:
+                Data.Inst().StartXAPI()
+                Data.Inst().Update()
             handled = True
             
         return handled
     
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
     def HandleIQNChoice(self, inChoice):
         if inChoice is None:
             self.ChangeState('CUSTOMIQN')
         else:
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Probing for LUNs...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            self.layout.PopDialogue()
+            self.layout.TransientBanner(Lang("Probing for LUNs..."))
             self.chosenIQN = self.probedIQNs[inChoice]
             self.probedLUNs = RemoteDB.Inst().ProbeLUNs(self.newConf, self.chosenIQN)
             
@@ -1164,20 +1153,37 @@ class RemoteDBDialogue(Dialogue):
 
     def HandleLUNChoice(self, inChoice):
         if inChoice is None:
-            self.ChangeState('CUSTOMIQN')
+            self.ChangeState('CUSTOMLUN')
         else:
-            self.chosenIQN = self.probedIQNs[inChoice]
-            self.ChangeState('CHOOSELUN')
+            self.layout.TransientBanner(Lang("Scanning target LUN..."))
+            
+            self.chosenLUN = self.probedLUNs[inChoice]
+            self.dbPresent = RemoteDB.Inst().TestLUN(self.newConf, self.chosenIQN, self.chosenLUN)
 
-    def DoAction(self):
-        if isinstance(self.deviceToErase, Struct):
-            deviceName = self.DeviceString(self.deviceToErase)
+            if self.dbPresent:
+                self.ChangeState('USEDB')
+            else:
+                self.ChangeState('CREATEDB')
+
+    def HandleUseChoice(self, inChoice):
+        if inChoice == 'USE':
+            self.layout.TransientBanner(Lang("Configuring Remote Database..."))
+            Data.Inst().StopXAPI()
+            try:
+                try:
+                    self.dbPresent = RemoteDB.Inst().ReadyForUse(self.newConf, self.chosenIQN, self.chosenLUN)
+                    self.layout.PopDialogue()
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                        Lang("Configuration Successful")))
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+            finally:
+                Data.Inst().StartXAPI()
+                Data.Inst().Update()
+        elif inChoice == 'FORMAT':
+            self.ChangeState('CREATEDB')
         else:
-            deviceName = str(self.deviceToErase)
-        
-        self.layout.ExitBannerSet(Lang("Configuring Storage Repository"))
-        self.layout.SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
-        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
+            self.PopDialogue()
 
 class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):

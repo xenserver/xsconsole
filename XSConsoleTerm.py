@@ -48,6 +48,16 @@ class App:
                     self.layout.WriteParentOffset(self.cursesScreen)
                     self.layout.Create()
 
+                    if State.Inst().WeStoppedXAPI():
+                        # Restart XAPI if we crashes after stopping it
+                        Data.Inst().StartXAPI()
+                        Data.Inst().Update()
+                        
+                    if not Data.Inst().IsXAPIRunning():
+                        self.layout.PushDialogue(QuestionDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN),
+                            Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
+                                 "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
+
                     # Request password change on first boot, or if it isn't set
                     if not State.Inst().IsRecoveryMode(): # No password activity in recovery mode
                         if not Auth.Inst().IsPasswordSet() :
@@ -180,6 +190,14 @@ class App:
             
             self.layout.DoUpdate()
 
+    def HandleRestartChoice(self, inChoice):
+        if inChoice == 'y':
+            try:
+                self.layout.TransientBanner(Lang("Restarting xapi...."))
+                Data.Inst().StartXAPI()
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN), Lang("Failed: ")+Lang(e)))
+
 class Renderer:        
     def RenderStatus(self, inWindow, inText):
         (cursY, cursX) = curses.getsyx() # Store cursor position
@@ -233,6 +251,8 @@ class Layout:
         self.dialogues.append(inDialogue)
         
     def PopDialogue(self):
+        if len(self.dialogues) < 1:
+            raise Exception("Stack underflow in PopDialogue")
         self.TopDialogue().Destroy()
         self.dialogues.pop()
         self.TopDialogue().UpdateFields()
@@ -241,6 +261,12 @@ class Layout:
     def UpdateRootFields(self):
         if len(self.dialogues) > 0:
             self.dialogues[0].UpdateFields()
+    
+    def TransientBanner(self, inMessage):
+        self.PushDialogue(BannerDialogue(self, self.parent, inMessage))
+        self.Refresh()
+        self.DoUpdate()
+        self.PopDialogue()
     
     def WriteParentOffset(self, inParent):
         consoleXSize = inParent.XSize()

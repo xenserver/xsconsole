@@ -14,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 4
+    thisVersion = 5
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -25,7 +25,8 @@ class State:
         self.passwordChangeRequired = False # IsPasswordSet now takes care of this
         self.modified = True
         self.rebootMessage = None
-    
+        self.weStoppedXAPI = False
+        
     @classmethod
     def SaveFilename(self):
         return self.savePath+'/'+self.saveLeafname
@@ -89,7 +90,13 @@ class State:
     
     def IsRecoveryMode(self):
         return self.isRecoveryMode
-    
+
+    def WeStoppedXAPI(self):
+        return self.weStoppedXAPI
+        
+    def WeStoppedXAPISet(self, inValue):
+        weStoppedXAPI = inValue
+
     def AuthTimeoutSecondsSet(self, inSeconds): # Don't call this directly - use Auth.TimeoutSecondsSet
         if inSeconds < 60:
             raise Exception("Cannot set a session timeout of less than one minute")
