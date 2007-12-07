@@ -308,8 +308,7 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Reboot/Shutdown"))
     
         inPane.AddWrappedTextField(Lang(
-            "This option can reboot or shutdown this server, or reboot into Recovery Mode "
-            "to perform maintenance or restore from backups."))
+            "This option can reboot or shutdown this server."))
     
     def UpdateFieldsREBOOT(self, inPane):
         inPane.AddTitleField(Lang("Reboot Server"))
@@ -321,17 +320,6 @@ class RootDialogue(Dialogue):
             Lang("<Enter>") : Lang("Reboot Server")
         } )
 
-    def UpdateFieldsRECOVERY(self, inPane):
-        inPane.AddTitleField(Lang("Reboot Into Recovery Mode"))
-    
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to reboot this server into Recovery Mode.  "
-            "This mode is used to apply updates or patches and to restore from backups."))
-        
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reboot Into Recovery Mode")
-        } )
-        
     def UpdateFieldsSHUTDOWN(self, inPane):
         inPane.AddTitleField(Lang("Shutdown Server"))
     
@@ -408,13 +396,9 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Apply Upgrade or Patch"))
 
-        if State.Inst().IsRecoveryMode():
-            inPane.AddWrappedTextField(Lang(
-                "Press <Enter> to apply a software upgrade or patch."))
-            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upgrade or Patch") } )   
-        else:
-            inPane.AddWrappedTextField(Lang(
-                "Please enter Recovery Mode from the Reboot menu before applying an upgrade or patch."))
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to apply a software upgrade or patch."))
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upgrade or Patch") } )   
  
     def UpdateFieldsBACKUP(self, inPane):
         data = Data.Inst()
@@ -633,9 +617,6 @@ class RootDialogue(Dialogue):
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
-        elif inName == 'DIALOGUE_RECOVERY':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
-                Lang("Do you want to reboot into Recovery Mode?"), lambda x: self.RecoveryDialogueHandler(x))))
         elif inName == 'DIALOGUE_SHUTDOWN':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
@@ -651,25 +632,13 @@ class RootDialogue(Dialogue):
     def RebootDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
             try:
-                Data.Inst().RecoveryModeSet(False)
                 self.layout.ExitBannerSet(Lang("Rebooting..."))
-                self.layout.ExitCommandSet('/sbin/shutdown -r now')
-            except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Reboot Failed"), Lang(e)))
-
-    def RecoveryDialogueHandler(self,  inYesNo):
-        if inYesNo == 'y':
-            try:
-                Data.Inst().RecoveryModeSet(True)
-                self.layout.ExitBannerSet(Lang("Rebooting into Recovery Mode..."))
                 self.layout.ExitCommandSet('/sbin/shutdown -r now')
             except Exception, e:
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Reboot Failed"), Lang(e)))
 
     def ShutdownDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
-            # Don't shutdown into recovery mode - security risk
-            Data.Inst().RecoveryModeSet(False)
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
 

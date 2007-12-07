@@ -256,41 +256,6 @@ class Data:
         self.session.xenapi.host.remove_from_logging(self.host.opaqueref(), 'syslog_destination')
         self.session.xenapi.host.add_to_logging(self.host.opaqueref(), 'syslog_destination', inDestination)
         self.session.xenapi.host.syslog_reconfigure(self.host.opaqueref())
-
-    def RecoveryModeSet(self, inEnable):
-        Auth.Inst().AssertAuthenticated()
-        recoveryMode = State.Inst().IsRecoveryMode() # Tells us whether .flash needs to be mounted from xe-store
-        mountPoint = None
-        
-        if recoveryMode:
-            # Find the FLASH partition, mount it
-            status, device = commands.getstatusoutput("/sbin/findfs LABEL=xe-state")
-            if status != 0:
-                raise Exception(device)
-            mountPoint = tempfile.mktemp('.xsconsole')
-            os.mkdir(mountPoint, 0700)
-            status, output = commands.getstatusoutput("/bin/mount '"+device+"' '"+mountPoint+"'")
-            if status != 0:
-                raise Exception(output)
-        else:
-            mountPoint = '/.flash'
-            
-        recoverFile = mountPoint+'/boot_to_recover'
-            
-        if inEnable:
-            # Touch the file
-            file = os.open(recoverFile, os.O_WRONLY | os.O_CREAT, 0666)
-            os.close(file)
-        else:
-            if os.path.isfile(recoverFile):
-                os.remove(recoverFile)
-                
-        if recoveryMode:
-            # Undo the mounting operations
-            status, output = commands.getstatusoutput("/bin/umount '"+mountPoint+"'")
-            if status != 0:
-                raise Exception(output)
-            os.rmdir(mountPoint)
     
     def UpdateFromResolveConf(self):
         (status, output) = commands.getstatusoutput("/bin/cat /etc/resolv.conf")

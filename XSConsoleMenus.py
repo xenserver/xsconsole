@@ -85,42 +85,25 @@ class Menu:
         
 class RootMenu:
     def __init__(self, inDialogue):
-        if State.Inst().IsRecoveryMode():
-            rootMenu = Menu(self, None, Lang("Customize System"), [
-                ChoiceDef(Lang("Status Display"), 
-                    None,  lambda : inDialogue.ChangeStatus('STATUS')),
-                ChoiceDef(Lang("Server Management"), 
-                    lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
-                ChoiceDef(Lang("Backup, Restore and Update"), 
-                    lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
-                ChoiceDef(Lang("Technical Support"), 
-                    lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
-                ChoiceDef(Lang("Reboot or Shutdown"), 
-                    lambda : inDialogue.ChangeMenu('MENU_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOTSHUTDOWN')),
-                ChoiceDef(Lang("Local Command Shell"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
-            ])
-            rebootText = Lang("Reboot Into Normal Mode")
-        else:
-            rootMenu = Menu(self, None, Lang("Customize System"), [
-                ChoiceDef(Lang("Status Display"), 
-                    None,  lambda : inDialogue.ChangeStatus('STATUS')),
-                ChoiceDef(Lang("Authentication"), 
-                    lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
-                ChoiceDef(Lang("System Properties"), 
-                    lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
-                ChoiceDef(Lang("Server Management"), 
-                    lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
-                ChoiceDef(Lang("Backup, Restore and Update"), 
-                    lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
-                ChoiceDef(Lang("Technical Support"), 
-                    lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
-                ChoiceDef(Lang("Reboot or Shutdown"), 
-                    lambda : inDialogue.ChangeMenu('MENU_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOTSHUTDOWN')),
-                ChoiceDef(Lang("Local Command Shell"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
-            ])
-            rebootText = Lang("Reboot Server")
+        rootMenu = Menu(self, None, Lang("Customize System"), [
+            ChoiceDef(Lang("Status Display"), 
+                None,  lambda : inDialogue.ChangeStatus('STATUS')),
+            ChoiceDef(Lang("Authentication"), 
+                lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
+            ChoiceDef(Lang("System Properties"), 
+                lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
+            ChoiceDef(Lang("Server Management"), 
+                lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+            ChoiceDef(Lang("Backup, Restore and Update"), 
+                lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
+            ChoiceDef(Lang("Technical Support"), 
+                lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
+            ChoiceDef(Lang("Reboot or Shutdown"), 
+                lambda : inDialogue.ChangeMenu('MENU_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOTSHUTDOWN')),
+            ChoiceDef(Lang("Local Command Shell"), 
+                lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
+        ])
+        rebootText = Lang("Reboot Server")
         
         propertiesChoices = [
                 ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSERVER')),
@@ -196,8 +179,6 @@ class RootMenu:
         'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [
                 ChoiceDef(rebootText, 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
-                ChoiceDef(Lang("Reboot into Recovery Mode"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_RECOVERY'), lambda : inDialogue.ChangeStatus('RECOVERY')), 
                 ChoiceDef(Lang("Shutdown Server"), 
                     lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
             ])

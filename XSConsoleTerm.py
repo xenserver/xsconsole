@@ -49,21 +49,20 @@ class App:
                     self.layout.Create()
 
                     # Request password change on first boot, or if it isn't set
-                    if not State.Inst().IsRecoveryMode(): # No password activity in recovery mode
-                        if not Auth.Inst().IsPasswordSet() :
-                            self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
-                                self.layout.Window(Layout.WIN_MAIN), Lang("Please specify a password for user 'root' before continuing")))
-                        elif State.Inst().PasswordChangeRequired():
-                            self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
-                                self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
-                        elif State.Inst().RebootMessage() is not None:
-                            self.layout.PushDialogue(QuestionDialogue(
-                                self.layout,
-                                self.layout.Window(Layout.WIN_MAIN),
-                                State.Inst().RebootMessage(), lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
-                                )
+                    if not Auth.Inst().IsPasswordSet() :
+                        self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
+                            self.layout.Window(Layout.WIN_MAIN), Lang("Please specify a password for user 'root' before continuing")))
+                    elif State.Inst().PasswordChangeRequired():
+                        self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
+                            self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
+                    elif State.Inst().RebootMessage() is not None:
+                        self.layout.PushDialogue(QuestionDialogue(
+                            self.layout,
+                            self.layout.Window(Layout.WIN_MAIN),
+                            State.Inst().RebootMessage(), lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
                             )
-                            State.Inst().RebootMessageSet(None)
+                        )
+                        State.Inst().RebootMessageSet(None)
                             
                     self.layout.Clear()
                     self.MainLoop()
@@ -158,9 +157,7 @@ class App:
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             
-            if State.Inst().IsRecoveryMode():
-                bannerStr = Lang("Recovery Mode")
-            elif Auth.Inst().IsAuthenticated():
+	    if Auth.Inst().IsAuthenticated():
                 bannerStr = Lang('User')+': '+Auth.Inst().LoggedInUsername()
                 # Testing: bannerStr += ' ('+str(int(Auth.Inst().AuthAge()))+')'
             else:
