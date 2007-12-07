@@ -11,11 +11,9 @@ from pprint import pprint
 from XSConsoleBases import *
 
 oldPath = sys.path
-# Use local copy if avaialble, or if not the one in /opt/xensource/sm
-sys.path = ['.', '/opt/xensource/sm'] + sys.path
-if os.path.isfile(sys.path[0]+'/remote_db_util.py'):
-    import remote_db_util
-elif os.path.isfile(sys.path[0]+'/shared_db_util.py'):
+
+sys.path = ['/opt/xensource/sm'] + sys.path
+if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
     import shared_db_util
 sys.path = oldPath
 
