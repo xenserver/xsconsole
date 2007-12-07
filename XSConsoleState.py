@@ -14,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 5
+    thisVersion = 6
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -54,16 +54,6 @@ class State:
             
             # Fill in pseudo-state
             cls.instance.isFirstBoot = isFirstBoot
-            cls.instance.isRecoveryMode = False
-            try:
-                file = open('/proc/mounts')
-                for line in file:
-                    if re.match(r'\S+\s+\/\.flash\s+ramfs', line):
-                        cls.instance.isRecoveryMode = True
-                        break
-                close(file)
-            except Exception:
-                pass # Ignore failure
             cls.instance.MakeSane()
             
         return cls.instance
@@ -88,9 +78,6 @@ class State:
     def IsFirstBoot(self):
         return self.isFirstBoot
     
-    def IsRecoveryMode(self):
-        return self.isRecoveryMode
-
     def WeStoppedXAPI(self):
         return self.weStoppedXAPI
         

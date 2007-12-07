@@ -36,10 +36,7 @@ class CursesPalette:
         if curses.can_change_color():
             # Define colours on colour-changing terminals - these are terminals with the ccc
             # flag in their capabilities in terminfo
-            if State.Inst().IsRecoveryMode():
-                prefix = 'recovery_'
-            else:
-                prefix = ''
+            prefix = ''
                 
             # Some terminals advertise that they can change colours but don't,
             # so the following keeps things at least legible in that case
@@ -64,12 +61,8 @@ class CursesPalette:
             fgDark = curses.COLOR_WHITE
             bgDark = curses.COLOR_BLACK # Ensure bgDark != bgBright for MODAL_HIGHLIGHT colour
             
-            if State.Inst().IsRecoveryMode():
-                bgNormal = curses.COLOR_BLUE
-                bgBright = curses.COLOR_BLUE
-            else:
-                bgNormal = curses.COLOR_RED
-                bgBright = curses.COLOR_RED
+            bgNormal = curses.COLOR_RED
+            bgBright = curses.COLOR_RED
 
         cls.colours['MAIN_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
         cls.colours['MENU_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
