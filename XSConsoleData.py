@@ -630,7 +630,8 @@ class Data:
                 pass # Fail silently
     
     def IsXAPIRunning(self):
-        status, output = commands.getstatusoutput("/etc/init.d/xapi status")
+        # Avoids /etc/init.d/xapi status as it corrupts the screen font and can error out with Errno 4: Interrupted system call
+        status, output = commands.getstatusoutput("/sbin/pidof -s /opt/xensource/bin/xapi")
         return status == 0
         
     def StopXAPI(self):
@@ -638,13 +639,14 @@ class Data:
             State.Inst().WeStoppedXAPISet(True)
             State.Inst().SaveIfRequired()
         
-            status, output = commands.getstatusoutput("/etc/init.d/xapi stop")
+            # Setting TERM=xterm prevents /etc/profile.d/lang.sh reconfiguring the screen font
+            status, output = commands.getstatusoutput("(export TERM=xterm && /etc/init.d/xapi stop)")
             if status != 0:
                 raise Exception(output)
                 
     def StartXAPI(self):
         if not self.IsXAPIRunning():
-            status, output = commands.getstatusoutput("/etc/init.d/xapi start")
+            status, output = commands.getstatusoutput("(export TERM=xterm && /etc/init.d/xapi start)")
             if status != 0:
                 raise Exception(output)
                 

@@ -12,9 +12,14 @@ from XSConsoleBases import *
 
 oldPath = sys.path
 
-sys.path = ['/opt/xensource/sm'] + sys.path
-if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
-    import shared_db_util
+# Local shared_db_util.py overrides system copy
+sys.path = ['.', '/opt/xensource/sm'] + sys.path
+if os.path.isfile(sys.path[0]+'/shared_db_util.py') or os.path.isfile(sys.path[1]+'/shared_db_util.py'):
+    try:
+        import shared_db_util
+    except Exception, e:
+        print "Exception importing shared_db_util.py: " + str(e)
+        # Ignore
 sys.path = oldPath
 
 class RemoteDB:
@@ -92,6 +97,16 @@ class RemoteDB:
 
     def ReadyForUse(self, inParams, inIQN, inLUN):
         target, port = inIQN.portal.split(':')
+        # Prevent script failure by writing this first
+        shared_db_util.write_remote_db_conf(
+            inParams.get('localiqn', self.LocalIQN()),
+            target,
+            int(port),
+            inParams.get('username', ''),
+            inParams.get('password', ''),
+            inIQN.name,
+            inLUN
+        )        
         retVal = shared_db_util.ready_for_use(
             inParams.get('localiqn', self.LocalIQN()),
             target,

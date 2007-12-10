@@ -139,8 +139,15 @@ class FileUtils:
         popenObj.tochild.write(";\n")
         popenObj.tochild.write(";\n")
         popenObj.tochild.close() # Send EOF
-        popenObj.wait() # Must wait for completon before mkfs
         
+        while True:
+            try:
+                popenObj.wait() # Must wait for completion before mkfs
+                break
+            except IOError, e:
+                if e.errno != errno.EINTR: # Loop if EINTR
+                    raise
+                
         os.system('/bin/sync')
         
         # Format the new partition with VFAT

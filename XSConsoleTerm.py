@@ -48,16 +48,15 @@ class App:
                     self.layout.WriteParentOffset(self.cursesScreen)
                     self.layout.Create()
 
-                    # Startup check removed - corrupts screen font
-                    # if State.Inst().WeStoppedXAPI():
-                    #    # Restart XAPI if we crashes after stopping it
-                    #    Data.Inst().StartXAPI()
-                    #    Data.Inst().Update()
+                    if State.Inst().WeStoppedXAPI():
+                        # Restart XAPI if we crashes after stopping it
+                        Data.Inst().StartXAPI()
+                        Data.Inst().Update()
                         
-                    #if not Data.Inst().IsXAPIRunning():
-                    #    self.layout.PushDialogue(QuestionDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN),
-                    #        Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
-                    #             "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
+                    if not Data.Inst().IsXAPIRunning():
+                        self.layout.PushDialogue(QuestionDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN),
+                            Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
+                                 "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
 
                     # Request password change on first boot, or if it isn't set
                     if not Auth.Inst().IsPasswordSet() :
