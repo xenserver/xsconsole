@@ -919,7 +919,7 @@ class SRDialogue(Dialogue):
 
     def DoAction(self):
         if isinstance(self.deviceToErase, Struct):
-            deviceName = self.DeviceString(self.deviceToErase)
+            deviceName = self.deviceToErase.device
         else:
             deviceName = str(self.deviceToErase)
         
