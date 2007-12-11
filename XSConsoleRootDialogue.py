@@ -417,6 +417,19 @@ class RootDialogue(Dialogue):
             "Press <Enter> to restore the server state from removable media."))
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } ) 
  
+    def UpdateFieldsREVERT(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Revert to a Pre-Patch Version"))
+
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to revert to a version prior to an applied patch."))
+        inPane.NewLine()
+        
+        inPane.AddStatusField(Lang('Current Label', 16), data.backup.currentlabel(''))
+        inPane.AddStatusField(Lang('Previous Label', 16), data.backup.previouslabel(''))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Revert") } ) 
+ 
     def UpdateFieldsBUGREPORT(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Upload Bug Report"))
@@ -438,6 +451,23 @@ class RootDialogue(Dialogue):
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Save Bug Report") } )  
         
+    def UpdateFieldsVERBOSEBOOT(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Enable/Disable Verbose Boot Mode"))
+
+        if State.Inst().VerboseBoot() is None:
+            message = Lang('unknown.  To enable or disable')
+        elif State.Inst().VerboseBoot():
+            message = Lang('enabled.  To disable')
+        else:
+            message = Lang('disabled.  To enable')
+
+        inPane.AddWrappedTextField(Lang(
+            "This option will control the level of information displayed as this server boots.  "
+            "The current state of verbose boot mode is ")+message+Lang(" press <Enter>."))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Configure") } )  
+    
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("DNS Servers"))
@@ -631,12 +661,17 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_VALIDATE':
             self.layout.PushDialogue(ValidateDialogue(self.layout,  self.parent))
+        elif inName == 'DIALOGUE_VERBOSEBOOT':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(VerboseBootDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_PATCH':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(PatchDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_BACKUP':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(BackupDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_RESTORE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RestoreDialogue(self.layout,  self.parent))),
+        elif inName == 'DIALOGUE_REVERT':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+                Lang("Do you want to revert this patch?"), lambda x: self.RevertDialogueHandler(x))))
         elif inName == 'DIALOGUE_BUGREPORT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("This operation may upload sensitive data to the support server ") +
@@ -671,6 +706,18 @@ class RootDialogue(Dialogue):
         if inYesNo == 'y':
             self.layout.ExitBannerSet(Lang("Shutting down..."))
             self.layout.ExitCommandSet('/sbin/shutdown -h now')
+
+    def RevertDialogueHandler(self, inYesNo):
+        if inYesNo == 'y':
+            try:
+                Data.Inst().Revert()
+                self.layout.PushDialogue(QuestionDialogue(
+                    self.layout, self.parent,
+                    Lang("To use the reverted version you need to reboot.  Would you like to reboot now?"),
+                    lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
+                ))
+            except Exception, e:
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Revert Failed"), Lang(e)))
 
     def BugReportDialogueHandler(self, inYesNo):
         if inYesNo == 'y':

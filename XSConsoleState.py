@@ -14,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 6
+    thisVersion = 7
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -26,7 +26,7 @@ class State:
         self.modified = True
         self.rebootMessage = None
         self.weStoppedXAPI = False
-        
+        self.verboseBoot = False
     @classmethod
     def SaveFilename(self):
         return self.savePath+'/'+self.saveLeafname
@@ -73,6 +73,13 @@ class State:
         
     def RebootMessageSet(self, inValue):
         self.rebootMessage = inValue
+        self.modified = True
+    
+    def VerboseBoot(self):
+        return self.verboseBoot
+        
+    def VerboseBootSet(self, inValue):
+        self.verboseBoot = inValue
         self.modified = True
     
     def IsFirstBoot(self):

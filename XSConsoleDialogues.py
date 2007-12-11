@@ -1241,6 +1241,52 @@ class RemoteShellDialogue(Dialogue):
             else:
                 self.layout.SubshellCommandSet('/etc/init.d/sshd stop && sleep 2')
 
+class VerboseBootDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        paneHeight = 9
+        pane = self.NewPane('verboseboot', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(Lang("Configure Verbose Boot Mode"))
+        pane.AddBox()
+
+        self.remoteShellMenu = Menu(self, None, Lang("Configure Verbose Boot Mode"), [
+            ChoiceDef(Lang("Enable"), lambda: self.HandleChoice(True) ), 
+            ChoiceDef(Lang("Disable"), lambda: self.HandleChoice(False) )
+            ])
+    
+        self.UpdateFields()
+        
+    def UpdateFields(self):
+        pane = self.Pane('verboseboot')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please select an option"))
+        pane.AddMenuField(self.remoteShellMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def HandleKey(self, inKey):
+        handled = self.remoteShellMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+                
+    def HandleChoice(self, inChoice):
+        data = Data.Inst()
+        self.layout.PopDialogue()
+        self.layout.TransientBanner(Lang("Updating..."))
+        
+        try:
+            data.SetVerboseBoot(inChoice)
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+        else:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Updated")))
+
 class ValidateDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)

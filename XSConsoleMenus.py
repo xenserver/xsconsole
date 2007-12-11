@@ -123,6 +123,19 @@ class RootMenu:
         if Data.Inst().cpld.version('') != '':
             propertiesChoices.append(ChoiceDef(Lang("CPLD Version"), None, lambda : inDialogue.ChangeStatus('CPLD')))
         
+        burpChoices = [
+            ChoiceDef(Lang("Apply Patch or Update"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
+                lambda : inDialogue.ChangeStatus('PATCH')),
+            ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
+                lambda : inDialogue.ChangeStatus('BACKUP')),
+            ChoiceDef(Lang("Restore Server State From Backup"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESTORE'),
+                lambda : inDialogue.ChangeStatus('RESTORE'))
+        ]
+            
+        if Data.Inst().backup.canrevert(False):
+            burpChoices.append(ChoiceDef(Lang("Revert to Pre-Patch Version"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REVERT'),
+                lambda : inDialogue.ChangeStatus('REVERT')))
+        
         self.menus = {
             'MENU_ROOT' : rootMenu,
             
@@ -158,25 +171,20 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('CHANGETIMEOUT'))
             ]), 
  
-         'MENU_BURP' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Patch"), [
-                ChoiceDef(Lang("Apply Patch or Update"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
-                    lambda : inDialogue.ChangeStatus('PATCH')),
-                ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
-                    lambda : inDialogue.ChangeStatus('BACKUP')),
-                ChoiceDef(Lang("Restore Server State From Backup"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESTORE'),
-                    lambda : inDialogue.ChangeStatus('RESTORE'))
-            ]),
+         'MENU_BURP' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Patch"), burpChoices),
             
         'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
-                ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
-                    lambda : inDialogue.ChangeStatus('REMOTESHELL')),
-                ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
-                    lambda : inDialogue.ChangeStatus('VALIDATE')),
-                ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
-                    lambda : inDialogue.ChangeStatus('BUGREPORT')) ,
-                ChoiceDef(Lang("Save Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SAVEBUGREPORT'),
-                    lambda : inDialogue.ChangeStatus('SAVEBUGREPORT'))
-            ]), 
+            ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
+                lambda : inDialogue.ChangeStatus('REMOTESHELL')),
+            ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
+                lambda : inDialogue.ChangeStatus('VALIDATE')),
+            ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
+                lambda : inDialogue.ChangeStatus('BUGREPORT')) ,
+            ChoiceDef(Lang("Save Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SAVEBUGREPORT'),
+                lambda : inDialogue.ChangeStatus('SAVEBUGREPORT')),
+            ChoiceDef(Lang("Enable/Disable Verbose Boot Mode"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VERBOSEBOOT'),
+                lambda : inDialogue.ChangeStatus('VERBOSEBOOT'))
+        ]), 
  
         'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [
                 ChoiceDef(rebootText, 

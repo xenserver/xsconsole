@@ -177,6 +177,7 @@ class Data:
         self.UpdateFromResolveConf()
         self.UpdateFromSysconfig()
         self.UpdateFromRemoteDBConf()
+        self.UpdateFromPatchVersions()
         
         if os.path.isfile("/sbin/chkconfig"):
             (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
@@ -291,6 +292,62 @@ class Data:
             self.data['remotedb']['defaultlocaliqn'] = RemoteDB.Inst().LocalIQN()
         except Exception, e:
             pass
+
+    def RootLabel(self):
+        output = commands.getoutput('/bin/cat /proc/cmdline')
+        match = re.search(r'root=\s*LABEL\s*=\s*(\S+)', output)
+        if match:
+            retVal = match.group(1)
+        else:
+            retVal = 'xe-0x'
+        return retVal
+
+    def GetVersion(self, inLabel):
+        match = re.match(r'(xe-|rt-)(\d+)[a-z]', inLabel)
+        if match:
+            retVal = int(match.group(2))
+        else:
+            retVal = 0
+        
+        return retVal
+
+    def UpdateFromPatchVersions(self):
+        command = '/sbin/findfs LABEL='+self.RootLabel()
+        status, output = commands.getstatusoutput(command)
+        bootDevice = None
+        if status == 0:
+            match = re.match(r'(.*)\d+$', output)
+            if match:
+                bootDevice = match.group(1)
+            
+        self.data['backup'] = {
+            'bootdevice' : bootDevice,
+            'canrevert' : False
+        }
+        
+        if bootDevice is not None:
+            sda1Version = self.GetVersion(commands.getoutput("/sbin/e2label "+bootDevice+"1"))
+            sda2Version = self.GetVersion(commands.getoutput("/sbin/e2label "+bootDevice+"2"))
+            currentVersion = self.GetVersion(self.RootLabel())
+            self.data['backup']['currentlabel'] = currentVersion
+            
+            if currentVersion == sda1Version and sda2Version < sda1Version:
+                self.data['backup']['canrevert'] = True
+                self.data['backup']['revertto'] = 2
+                self.data['backup']['previouslabel'] = sda2Version
+            elif currentVersion == sda2Version and sda1Version < sda2Version:
+                self.data['backup']['canrevert'] = True
+                self.data['backup']['revertto'] = 1
+                self.data['backup']['previouslabel'] = sda1Version
+
+    def Revert(self):
+        if self.backup.canrevert(False):
+            status, output = commands.getstatusoutput("/opt/xensource/libexec/bootable.sh "+
+                self.backup.bootdevice()+" "+str(self.backup.revertto()))
+            if status != 0:
+                raise Exception(output)
+        else:
+            raise Exception("Unable to revert")
             
     def SaveToResolvConf(self):
         # Double-check authentication
@@ -652,3 +709,29 @@ class Data:
                 
             State.Inst().WeStoppedXAPISet(False)
             State.Inst().SaveIfRequired()
+            
+    def SetVerboseBoot(self, inVerbose):
+            mountPoint = tempfile.mktemp(".xsconsole")
+            if not os.path.isdir(mountPoint):
+                os.mkdir(mountPoint, 0700)
+                
+            try:
+                status, output = commands.getstatusoutput("/bin/mount LABEL=IHVCONFIG "+mountPoint + " 2>&1")
+                if status != 0:
+                    raise Exception(output)
+                    
+                if inVerbose:
+                    name = 'noisy'
+                else:
+                    name='quiet'
+                    
+                os.system('/bin/cp -f '+mountPoint+'/'+name+'.opt '+mountPoint+'/linux.opt')
+                os.system('/bin/cp -f '+mountPoint+'/x'+name+'.opt '+mountPoint+'/xen.opt')
+
+                State.Inst().VerboseBootSet(inVerbose)
+
+            finally:
+                commands.getstatusoutput("/bin/umount "+mountPoint + " 2>&1")
+                time.sleep(2)
+                os.rmdir(mountPoint)
+                
