@@ -99,6 +99,7 @@ class App:
                         # Does not return
                     else:
                         os.system(self.layout.ExitCommand())
+                        Data.Inst().Update() # Pick up changes caused by the subshell command
 
             except KeyboardInterrupt, e: # Catch Ctrl-C
                 Data.Reset()
