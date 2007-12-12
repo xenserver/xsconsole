@@ -183,7 +183,9 @@ class RootMenu:
             ChoiceDef(Lang("Save Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SAVEBUGREPORT'),
                 lambda : inDialogue.ChangeStatus('SAVEBUGREPORT')),
             ChoiceDef(Lang("Enable/Disable Verbose Boot Mode"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VERBOSEBOOT'),
-                lambda : inDialogue.ChangeStatus('VERBOSEBOOT'))
+                lambda : inDialogue.ChangeStatus('VERBOSEBOOT')),
+            ChoiceDef(Lang("Reset to Factory Defaults"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESET'),
+                lambda : inDialogue.ChangeStatus('RESET'))
         ]), 
  
         'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [

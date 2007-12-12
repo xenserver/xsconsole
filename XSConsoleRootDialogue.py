@@ -468,6 +468,16 @@ class RootDialogue(Dialogue):
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Configure") } )  
     
+    def UpdateFieldsRESET(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Reset to Factory Defaults"))
+
+        inPane.AddWrappedTextField(Lang(
+            "This option will reset all configuration information to default values, "
+            "delete all virtual machines and delete all storage repositories on local disks."))
+            
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset") } )  
+    
     def UpdateFieldsDNS(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("DNS Servers"))
@@ -663,6 +673,8 @@ class RootDialogue(Dialogue):
             self.layout.PushDialogue(ValidateDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_VERBOSEBOOT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(VerboseBootDialogue(self.layout, self.parent)))
+        elif inName == 'DIALOGUE_RESET':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ResetDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_PATCH':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(PatchDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_BACKUP':

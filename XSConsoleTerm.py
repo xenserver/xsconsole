@@ -49,11 +49,11 @@ class App:
                     self.layout.Create()
 
                     if State.Inst().WeStoppedXAPI():
-                        # Restart XAPI if we crashes after stopping it
+                        # Restart XAPI if we crashed after stopping it
                         Data.Inst().StartXAPI()
                         Data.Inst().Update()
                         
-                    if not Data.Inst().IsXAPIRunning():
+                    if not Data.Inst().IsXAPIRunning() and State.Inst().RebootMessage() is None:
                         self.layout.PushDialogue(QuestionDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN),
                             Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
                                  "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))

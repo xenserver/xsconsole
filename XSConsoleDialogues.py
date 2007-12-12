@@ -1287,6 +1287,92 @@ class VerboseBootDialogue(Dialogue):
         else:
             self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Updated")))
 
+class ResetDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        self.ChangeState('INITIAL')
+        
+    def BuildPaneBase(self, inHeight):
+        paneHeight = min(inHeight,  22)
+        pane = self.NewPane('reset', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane.Win().TitleSet(Lang("Reset to Factory Defaults"))
+        pane.AddBox()
+    
+    def BuildPaneINITIAL(self):
+        self.BuildPaneBase(10)
+        self.UpdateFields()
+
+    def BuildPaneCONFIRM(self):
+        self.BuildPaneBase(8)
+        self.UpdateFields()
+    
+    def ChangeState(self, inState):
+        self.state = inState
+        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+    
+    def UpdateFields(self):
+        self.Pane('reset').ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane('reset')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_FLASH', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("WARNING"))
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddWrappedTextField(Lang("This function will delete ALL configuration information, ALL virtual machines "
+            "and ALL information within storage repositories on local disks.  "
+            "This operation cannot be undone.  Do you want to continue?"))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def UpdateFieldsCONFIRM(self):
+        pane = self.Pane('reset')
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddWrappedBoldTextField(Lang("Press <Enter> to confirm that you want to reset configuration data and "
+            "erase all information in storage repositories on local disks.  "
+            "The data cannot be recovered after this step."))
+        pane.NewLine()
+
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset to Factory Defaults"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            self.ChangeState('CONFIRM')
+            handled = True
+            
+        return handled
+        
+    def HandleKeyCONFIRM(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_ENTER':
+            self.DoAction()
+            handled = True
+            
+        return handled
+
+    def DoAction(self):
+        self.layout.ExitBannerSet(Lang("Resetting..."))
+        self.layout.SubshellCommandSet("/opt/xensource/libexec/revert-to-factory yesimeanit && sleep 2")
+        State.Inst().RebootMessageSet(Lang("This server must reboot to complete the reset process.  Reboot the server now?"))
+
 class ValidateDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)

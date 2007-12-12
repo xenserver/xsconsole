@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2007-12-07, 18:49:49 -->
+<!-- Saved: 2007-12-12, 12:08:03 -->
 <!-- Copyright (C) 2007 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -57,16 +57,10 @@
       <Name>XSConsoleUtils.py</Name>
     </Source>
     <Source>
-      <Name>XSConsoleConfigOEM.py</Name>
-    </Source>
-    <Source>
       <Name>XSConsoleDataUtils.py</Name>
     </Source>
     <Source>
       <Name>XSConsoleRemoteDB.py</Name>
-    </Source>
-    <Source>
-      <Name>shared_db_util.py</Name>
     </Source>
   </Sources>
   <Forms>
