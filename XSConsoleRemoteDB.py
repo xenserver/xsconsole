@@ -36,6 +36,15 @@ class RemoteDB:
         return retVal
         
     def LocalIQN(self):
+        # Try using the XenAPI first if xapi is running
+        if shared_db_util.is_xapi_running():
+            try:
+                retVal = shared_db_util.get_local_iqn_from_xapi()
+                if retVal <> '':
+                    return retVal
+            except:
+                pass 
+        # Otherwise use the database read tool
         retVal = shared_db_util.get_local_iqn(False) # Try local conf file
         if retVal == '':
             retVal = shared_db_util.get_local_iqn(True) # Try remote conf file
