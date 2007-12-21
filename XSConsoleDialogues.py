@@ -168,7 +168,7 @@ class InfoDialogue(Dialogue):
 
         if self.info is not None:
             pane.NewLine()
-            pane.AddWrappedCentredTextField(self.info)
+            pane.AddWrappedTextField(self.info)
 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
@@ -231,10 +231,6 @@ class QuestionDialogue(Dialogue):
 class InterfaceDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
-        pane.TitleSet(Lang("Management Interface Configuration"))
-        pane.AddBox()
         
         choiceDefs = []
 
@@ -264,7 +260,7 @@ class InterfaceDialogue(Dialogue):
             ChoiceDef(Lang("Static"), lambda: self.HandleModeChoice('Static') ), 
             ])
         
-        self.state = 'INITIAL'
+        self.ChangeState('INITIAL')
 
         # Get best guess of current values
         self.mode = 'DHCP'
@@ -286,11 +282,18 @@ class InterfaceDialogue(Dialogue):
         else:
             self.modeMenu.CurrentChoiceSet(0)
     
+        self.ChangeState('INITIAL')
         self.UpdateFields()
+        
+    def BuildPane(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Management Interface Configuration"))
+        pane.AddBox()
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         pane.ResetFields()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         
         pane.AddTitleField(Lang("Select NIC for management interface"))
         pane.AddMenuField(self.nicMenu)
@@ -299,6 +302,7 @@ class InterfaceDialogue(Dialogue):
     def UpdateFieldsMODE(self):
         pane = self.Pane()
         pane.ResetFields()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         
         pane.AddTitleField(Lang("Select DHCP or Static IP Address Configuration"))
         pane.AddMenuField(self.modeMenu)
@@ -317,8 +321,10 @@ class InterfaceDialogue(Dialogue):
     def UpdateFieldsPRECOMMIT(self):
         pane = self.Pane()
         pane.ResetFields()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        
         if self.nic is None:
-            pane.AddTextField(Lang("No management interface will be configured"))
+            pane.AddWrappedTextField(Lang("No management interface will be configured"))
         else:
             pif = Data.Inst().host.PIFs()[self.nic]
             pane.AddStatusField(Lang("Device",  16),  pif['device'])
@@ -335,6 +341,10 @@ class InterfaceDialogue(Dialogue):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
     
+    def ChangeState(self, inState):
+        self.state = inState
+        self.BuildPane()
+        
     def HandleKeyINITIAL(self, inKey):
         return self.nicMenu.HandleKey(inKey)
 
@@ -350,7 +360,7 @@ class InterfaceDialogue(Dialogue):
                 self.IP = inputValues['IP']
                 self.netmask = inputValues['netmask']
                 self.gateway = inputValues['gateway']
-                self.state = 'PRECOMMIT'
+                self.ChangeState('PRECOMMIT')
                 self.UpdateFields()
             else:
                 pane.ActivateNextInput()
@@ -399,18 +409,18 @@ class InterfaceDialogue(Dialogue):
     def HandleNICChoice(self,  inChoice):
         self.nic = inChoice
         if self.nic is None:
-            self.state = 'PRECOMMIT'
+            self.ChangeState('PRECOMMIT')
         else:
-            self.state = 'MODE'
+            self.ChangeState('MODE')
         self.UpdateFields()
         
     def HandleModeChoice(self,  inChoice):
         self.mode = inChoice
         if self.mode == 'DHCP':
-            self.state = 'PRECOMMIT'
+            self.ChangeState('PRECOMMIT')
             self.UpdateFields()
         else:
-            self.state = 'STATICIP'
+            self.ChangeState('STATICIP')
             self.UpdateFields() # Setup input fields first
             self.Pane().InputIndexSet(0) # and then choose the first
             
@@ -1286,7 +1296,6 @@ class ResetDialogue(Dialogue):
         pane.AddWrappedBoldTextField(Lang("Press <Enter> to confirm that you want to reset configuration data and "
             "erase all information in storage repositories on local disks.  "
             "The data cannot be recovered after this step."))
-        pane.NewLine()
 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset to Factory Defaults"), Lang("<Esc>") : Lang("Cancel") } )
 

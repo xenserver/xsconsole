@@ -33,18 +33,18 @@ class Language:
             retVal = str(inLabel)
         else:
             retVal = inLabel
-                
         return retVal
 
     @classmethod
     def ReflowText(cls, inText, inWidth):
+        # Return an array of string that are at most inWidth characters long
         retArray = []
         text = inText+" "
         while len(text) > 0:
-            spacePos = text.rfind(' ', 0, inWidth)
-            retPos = text.find("\r", 0, inWidth)
+            spacePos = text.rfind(' ', 0, inWidth+1) # returns max (lastParam-1), i.e. 'aaaaa'.rfind('a', 0, 3) == 2
+            retPos = text.find("\r", 0, inWidth+1)
             if retPos == -1:
-                retPos = text.find("\n", 0, inWidth)
+                retPos = text.find("\n", 0, inWidth+1)
             if retPos != -1:
                 spacePos = retPos
             if spacePos == -1:
@@ -52,7 +52,7 @@ class Language:
             else:
                 lineLength = spacePos
             
-            thisLine = text[0:lineLength]
+            thisLine = text[:lineLength]
             thisLine = thisLine.replace("\t", " ") # Tab is used as a non-breaking space
             thisLine = thisLine.replace("\r", "RET") # Debugging
             retArray.append(thisLine)

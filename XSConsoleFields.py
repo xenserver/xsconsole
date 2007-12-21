@@ -124,7 +124,7 @@ class WrappedTextField(Field):
                 inPane.AddText(line, inXPos+offset, yPos, self.colour)
             else:
                 inPane.AddText(line, inXPos, yPos, self.colour)
-                
+                        
             yPos += 1
 
     def Width(self):
@@ -273,8 +273,8 @@ class FieldArranger:
         if self.hasBox:
             xOffset = self.BOXWIDTH
             yOffset = self.BOXWIDTH
-            xSize = self.baseXSize - 2*self.BOXWIDTH
-            ySize = self.baseYSize - 2*self.BOXWIDTH
+            xSize = self.baseXSize - self.BOXWIDTH
+            ySize = self.baseYSize - self.BOXWIDTH
         else:
             xOffset = 0
             yOffset = 0
@@ -286,7 +286,7 @@ class FieldArranger:
             yStart = yOffset+self.BORDER
         else:
             # If inYStep is negative, start from the bottom
-            yStart = ySize
+            yStart = ySize - self.BORDER
         
         xPos = xStart
         yPos = yStart
@@ -299,7 +299,7 @@ class FieldArranger:
             
             retVal.append(Struct(xpos = xPos, ypos = yPos))
             
-            field.UpdateWidth(xSize - xPos - self.BORDER)
+            field.UpdateWidth((xSize - self.BORDER) - xPos)
             xMax = max(xMax, xPos + field.Width())
             
             if flow == Field.FLOW_RIGHT:

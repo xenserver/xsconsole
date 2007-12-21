@@ -22,9 +22,9 @@ class RootDialogue(Dialogue):
     
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        menuPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(1, 2, 38, 21)), 'menu')
+        menuPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(1, 2, 39, 21)), 'menu')
         menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT')
-        statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(41, 2, 38, 21)), 'status')
+        statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(40, 2, 39, 21)), 'status')
         statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
         self.menu = RootMenu(self)
         self.currentStatus = 'STATUS'
@@ -42,13 +42,12 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Management Network Parameters"))
         
         if len(data.derived.managementpifs([])) == 0:
-            inPane.AddTextField(Lang("<No network configured>"))
+            inPane.AddWrappedTextField(Lang("<No network configured>"))
         else:
             inPane.AddStatusField(Lang('Device', 16), data.derived.managementpifs()[0]['device'])
             inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
             inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
             inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
-        inPane.NewLine()
     
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
         
@@ -79,7 +78,6 @@ class RootDialogue(Dialogue):
 
         inPane.NewLine()
         inPane.AddWrappedTextField(Lang("Only logged in users can reconfigure and control this server."))
-        inPane.NewLine()
         
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -161,7 +159,6 @@ class RootDialogue(Dialogue):
 
         inPane.AddTitleField(Lang("Hostname"))
         inPane.AddWrappedTextField(data.host.name_label())
-        inPane.NewLine()
         
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -182,7 +179,6 @@ class RootDialogue(Dialogue):
         
         inPane.AddTitleField(Lang("Asset Tag"))
         inPane.AddWrappedTextField(data.dmi.asset_tag(Lang("None"))) # FIXME: Get from XenAPI
-        inPane.NewLine()
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -233,13 +229,12 @@ class RootDialogue(Dialogue):
         for pif in data.host.PIFs([]):
             inPane.AddWrappedBoldTextField(pif['metrics']['device_name'])
             if pif['metrics']['carrier']:
-                inPane.AddTextField(Lang("(connected)"))
+                inPane.AddWrappedTextField(Lang("(connected)"))
             else:
-                inPane.AddTextField(Lang("(not connected)"))
+                inPane.AddWrappedTextField(Lang("(not connected)"))
                 
             inPane.AddStatusField(Lang("MAC Address", 16), pif['MAC'])
             inPane.AddStatusField(Lang("Device", 16), pif['device'])
-            inPane.NewLine()
 
     def UpdateFieldsBMC(self, inPane):
         data = Data.Inst()
@@ -255,7 +250,7 @@ class RootDialogue(Dialogue):
         
         inPane.AddTitleField(Lang("CPLD Information"))
 
-        inPane.AddTextField(Lang("Not available"))
+        inPane.AddWrappedTextField(Lang("Not available"))
 
     def UpdateFieldsBIOS(self, inPane):
         data = Data.Inst()
@@ -273,7 +268,7 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Current Management Interface"))
         
         if len(data.derived.managementpifs([])) == 0:
-            inPane.AddTextField(Lang("<No interface configured>"))
+            inPane.AddWrappedTextField(Lang("<No interface configured>"))
         else:
             for pif in data.derived.managementpifs([]):
                 inPane.AddStatusField(Lang('Device', 16), pif['device'])
