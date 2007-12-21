@@ -113,8 +113,8 @@ class Auth:
         auth.set_item(PAM.PAM_USER, inUsername)
         auth.set_item(PAM.PAM_CONV, PAMConv)
         
-        FIXME auth.authenticate() 
-        FIXME auth.acct_mgmt()
+        auth.authenticate() 
+        auth.acct_mgmt()
         
         # No exception implies a successful login
         
