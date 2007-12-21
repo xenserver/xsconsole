@@ -32,11 +32,11 @@ class Dialogue:
         ParamsToAttr()
         self.panes = {}
 
-    def Pane(self, inName):
-        return self.panes[inName]
+    def Pane(self, inName = None):
+        return self.panes[FirstValue(inName, 0)]
 
-    def NewPane(self, inName, inPane):
-        self.panes[inName] = inPane
+    def NewPane(self,inPane, inName = None):
+        self.panes[FirstValue(inName, 0)] = inPane
         return inPane
 
     def Title(self):

@@ -11,16 +11,20 @@ but you can't.  The lambda: self.HandleChoice(i) all refer to the same i so all 
 
 3.  There's reasonable separation between the data (XSConsoleData.py) and UI (XSConsole(Root)Dialogues.py) but no separation between the UI and control mechanisms.  The code that causes data changes, mounts and scans devices, etc. is spread amonst the dialogues.
 
-4.  It's tricky to get the ncurses display to refresh without flicker.  Using the curses erase or clear methods on windows can lead to flickering redraws.  Currently only scrolling in the right hand pane of the root dialogue has this problem.
+4.  It's tricky to get the ncurses display to refresh without flicker.  Using the curses erase or clear methods on windows can lead to flickering redraws.  Currently only scrolling in the right hand pane of the root dialogue has this problem.  Since there's not much use of erase or clear the app does pretty minimal redraws, and things like spurious kernel message that scroll the screen can leave it in a mess for some time. 
 
-5.  The size limit on menu fields is hard-coded to 10, and that number is also used in some of the dialogues.  Menus with more than 10 entries, where the names of all entires aren't the same length, may have redraw problems because chracters are not overwritten.
+5.  The vertical size limit on menu fields is hard-coded to 10, and that number is also used in some of the dialogues.  Menus with more than 10 entries, where the names of all entires aren't the same length, may have redraw problems because chracters are not overwritten.
 
 6.  The app doesn't automatically size windows depending on what's required to contain its fields.  It probably should, but right now you have to calculate the size in advance.
 
-7.  The Create VDB/Plug VBD/Mount VBD/Use VBD/Unmount VBD/Unplug VBD/Destroy VBD sequence isn't rock solid if it fails or you Ctrl-C out or kill the process half way through.  The app attempts to tidy up by deleting dangling VBDs (identified by 'xsconsole_tmp' in their other_config) on startup, otherwise these would build up over time.  VBDs can also fail to unplug immediately after an umount because the kernel is still tidying up after the umount, so the app tries twice.
+7.  The Create VDB/Plug VBD/Mount VBD/Use VBD/Unmount VBD/Unplug VBD/Destroy VBD sequence isn't rock solid if it fails or if you Ctrl-C out or kill the process half way through.  The app attempts to tidy up by deleting dangling VBDs (identified by 'xsconsole_tmp' in their other_config) on startup, otherwise these would build up over time.  VBDs can also fail to unplug immediately after an umount because the kernel is still tidying up after the umount, so the app tries twice.
 
-8.  Whilst operation like mount are done on the virtualised device /dev/xapi/whatever/whatever, fdisk and mkfs uses the device directly /dev/whatever.
+8.  Whilst operation like mount are done using the virtualised device /dev/xapi/whatever/whatever, fdisk and mkfs uses the device directly /dev/whatever.
 
 9.  Circular imports can be a problem in this app.  XSConsoleData.py (or anything it imports) can't import XSConsoleDataUtils.py, for example, and if it does the app throws weird exceptions about missing names that don't make sense.  Similarly for the XSConsoleData.py/XSConsoleAuth.py/XSConsoleState.py trio.
 
 10.  Data.Inst().Update() is a fairly expensive operation as it reloads and reprocesses almost everything.
+
+11.  BannerDialogues shouldn't be left on the dialogue stack when you return to the main loop.  If they are the app will crash out as the BennerDialogue has no keypress handler.  If you want a dialogue box that persists you need an InfoDialogue, which is the same thing with an <Enter> OK help field and a keypress handler.
+
+12.  In OEM builds xsconsole is started from inittab with a pretty minimal enviroment.  There's no PATH set up, and /usr/bin/xsconsole sets USER itself (since scripts like xen-bugtool require it).

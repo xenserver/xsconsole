@@ -112,6 +112,7 @@ class App:
             except Exception, e:
                 sys.stderr.write(Lang(e)+"\n")
                 doQuit = True
+                raise # FIXME
         
 
     def MainLoop(self):

@@ -10,92 +10,110 @@ from XSConsoleCurses import *
 from XSConsoleFields import *
 from XSConsoleLang import *
 
-class DialoguePane:
-    LEFT_XSTART = 1
-    TITLE_XSTART = LEFT_XSTART
-    TITLE_YSTART = 1
+class PaneSizer:
+    def __init__(self):
+        pass
+        
+    def Update(self, inSource):
+        pass
     
-    def __init__(self, inXPos, inYPos, inXSize, inYSize, inParent = None):
-        self.window = CursesWindow(inXPos, inYPos, inXSize, inYSize, inParent)
+    def XPos(self):
+        return self.xPos
+
+    def YPos(self):
+        return self.yPos
+
+    def XSize(self):
+        return self.xSize
+
+    def YSize(self):
+        return self.ySize
+        
+class PaneSizerFixed(PaneSizer):
+    def __init__(self, inXPos, inYPos, inXSize, inYSize):
+        self.xPos = inXPos
+        self.yPos = inYPos
         self.xSize = inXSize
         self.ySize = inYSize
-        self.xOffset = 0
-        self.yOffset = 0
-        self.yScrollPos = 0
-        self.ResetFields()
-        self.ResetPosition()
+
+class PaneSizerCentre(PaneSizer):
+    def __init__(self, inParent):
+        self.parent = inParent
+        self.xSize = self.parent.XSize()
+        self.ySize = self.parent.YSize()
+        self.xPos = 0
+        self.yPos = 0
     
-    def ResetFields(self):
-        self.fields = {}
-        self.staticFields = {}
-        self.inputFields = []
-        self.inputIndex = None
+    def Update(self, inArranger):
+        self.xSize = min(inArranger.XBounds(), self.parent.XSize() - 4)
+        self.ySize = min(inArranger.YBounds(), self.parent.YSize() - 4)
+        self.xPos = (self.parent.XSize() - self.xSize) / 2
+        self.yPos = (self.parent.YSize() - self.ySize) / 2
 
-    def Win(self):
-        return self.window
+class DialoguePane:    
+    def __init__(self, inParent = None, inSizer = None):
+        self.parent = inParent
+        self.sizer = FirstValue(inSizer, PaneSizerCentre(self.parent))
+        self.window = None
+        self.fieldGroup = FieldGroup()
+        self.arranger = FieldArranger(self.fieldGroup, self.sizer.XSize(), self.sizer.YSize())
+        self.inputTracker = FieldInputTracker(self.fieldGroup)
+        self.yScrollPos = 0
+        self.title = None
+        self.hasBox = False
+        
+    def ResetPosition(self):
+        pass
 
-    def NumStaticFields(self):
-        return len(self.staticFields)
+    # Delegations to FieldGroup
+    def ResetFields(self): self.fieldGroup.Reset()
+    def NumStaticFields(self): return self.fieldGroup.NumStaticFields()
+    def GetFieldValues(self): return self.fieldGroup.GetFieldValues()
 
-    def AddBox(self):
-        if not self.window.HasBox():
+    # Delegations to FieldInputTracker
+    def ActivateNextInput(self): return self.inputTracker.ActivateNextInput()
+    def ActivatePreviousInput(self): return self.inputTracker.ActivatePreviousInput()
+    def IsLastInput(self): return self.inputTracker.IsLastInput()
+    def CurrentInput(self): return self.inputTracker.CurrentInput()
+    def InputIndexSet(self, inIndex): return self.inputTracker.InputIndexSet(inIndex)
+    def NeedsCursor(self): return self.inputTracker.NeedsCursor()
+
+    def RemakeWindow(self):
+        if self.window is not None:
+            self.window.Delete()
+            win
+        self.sizer.Update(self.arranger)
+        self.arranger.XSizeSet(self.sizer.XSize())
+        self.arranger.YSizeSet(self.sizer.YSize())
+
+        self.window = CursesWindow(self.sizer.XPos(), self.sizer.YPos(), self.sizer.XSize(), self.sizer.YSize(), self.parent)
+        if self.title is not None:
+            self.window.TitleSet(self.title)
+        if self.hasBox:
             self.window.AddBox()
-            self.xSize -= 2
-            self.ySize -= 2
-            self.xOffset += 1
-            self.yOffset += 1
-            self.ResetPosition()
-
-    def ActivateNextInput(self): 
-        self.InputIndexSet((self.inputIndex + 1) % len(self.inputFields))
-            
-    def ActivatePreviousInput(self): 
-        self.InputIndexSet((self.inputIndex + len(self.inputFields) - 1) % len(self.inputFields))
-            
-    def IsLastInput(self):
-        return self.inputIndex + 1 == len(self.inputFields)
-
-    def CurrentInput(self):
-        if self.inputIndex is not None:
-            fieldName = self.inputFields[self.inputIndex]
-            retVal = self.fields[fieldName].fieldObj
-        else:
-            retVal = None
-        return retVal
-
-    def InputIndexSet(self, inIndex):
-        if self.inputIndex is not None:
-            self.CurrentInput().Deactivate()
-        
-        self.inputIndex = inIndex
-        
-        if self.inputIndex is not None:
-            self.CurrentInput().Activate()
-
-    def NeedsCursor(self):
-        if self.inputIndex is not None:
-            retVal = True
-        else:
-            retVal = False
-        return retVal
 
     def CursorOff(self):
-        self.window.CursorOff()
+        self.Win().CursorOff()
         
-    def GetFieldValues(self):
-        retVal = {}
-        for fieldName in self.inputFields:
-            retVal[fieldName] = self.fields[fieldName].fieldObj.Content()
-        return retVal
-
     def Refresh(self):
         self.Win().Refresh()
 
+    def Win(self):
+        if self.window is None:
+            self.RemakeWindow()
+        return self.window
+
+    def AddBox(self):
+        self.hasBox = True
+        if self.window is not None:
+            self.window.AddBox()
+        self.arranger.AddBox()
+    
+    def TitleSet(self, inTitle):
+        self.title = inTitle
+    
     def NeedsScroll(self):
-        if self.yPos >= self.ySize:
-            return True
-        else:
-            return False
+        return self.arranger.YSize() >= self.Win().YSize()
 
     def ScrollPageUp(self):
         if self.yScrollPos > 0:
@@ -113,109 +131,98 @@ class DialoguePane:
         self.brightColour = inBright
         self.highlightColour = inHighlight or inBright
         self.titleColour = inTitle or inBright
-        self.window.DefaultColourSet(self.baseColour)
-        self.window.Redraw()
-
-    def ResetPosition(self, inXPos = None, inYPos = None):
-        self.xPos = self.xOffset + FirstValue(inXPos, self.TITLE_XSTART)
-        self.yPos = self.yOffset + FirstValue(inYPos, self.TITLE_YSTART)
-        self.xStart = self.xPos
 
     def MakeLabel(self, inLabel = None):
-        if inLabel:
-            retVal = inLabel
-        else:
-            # Generate unique but repeatable label
-            retVal = str(self.xPos) + ',' +str(self.yPos)
-        return retVal
+        return inLabel
 
-    def AddField(self, inObj, inTag = None):
-        self.fields[inTag or self.MakeLabel()] = Struct(xpos = self.xPos, ypos = self.yPos, fieldObj = inObj)
-        self.xPos += inObj.Width()
+    def AddBodyFieldObj(self, inObj, inTag = None):
+        self.fieldGroup.BodyFieldAdd(inTag or self.MakeLabel(), inObj)
         return inObj
 
-    def AddStaticField(self, inObj, inTag = None):
-        self.staticFields[inTag or self.MakeLabel()] = Struct(xpos = self.xPos, ypos = self.yPos, fieldObj = inObj)
-        self.xPos += inObj.Width()
+    def AddStaticFieldObj(self, inObj, inTag = None):
+        self.fieldGroup.StaticFieldAdd(inTag or self.MakeLabel(), inObj)
+        return inObj
+
+    def AddInputFieldObj(self, inObj, inTag = None):
+        self.fieldGroup.InputFieldAdd(inTag or self.MakeLabel(), inObj)
         return inObj
 
     def NewLine(self, inNumLines = None):
-        self.xPos = self.xStart
-        self.yPos += FirstValue(inNumLines, 1)
+        self.AddBodyFieldObj(SeparatorField(Field.FLOW_RETURN))
 
     def AddTitleField(self, inTitle):
-        self.AddField(TextField(inTitle, self.titleColour))
-        self.NewLine(2)
+        self.AddBodyFieldObj(TextField(inTitle, self.titleColour, Field.FLOW_DOUBLERETURN))
         
-    def AddTextField(self, inText):
-        self.AddField(TextField(inText, self.baseColour))
-        self.NewLine()
+    def AddTextField(self, inText, inFlow = None):
+        self.AddBodyFieldObj(TextField(inText, self.baseColour, FirstValue(inFlow, Field.FLOW_RIGHT)))
     
-    def AddWrappedTextField(self, inText):
-        width = self.window.xSize - self.xPos - 1
-        field = self.AddField(WrappedTextField(str(inText), width, self.baseColour))
-        self.NewLine(field.Height())
+    def AddWrappedTextField(self, inText, inFlow = None):
+        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.baseColour, FirstValue(inFlow, Field.FLOW_RETURN)))
 
-    def AddWrappedBoldTextField(self, inText):
-        width = self.window.xSize - self.xPos - 1
-        field = self.AddField(WrappedTextField(str(inText), width, self.brightColour))
-        self.NewLine(field.Height())
+    def AddWrappedBoldTextField(self, inText, inFlow = None):
+        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.brightColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+
+    def AddWrappedCentredTextField(self, inText, inFlow = None):
+        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.baseColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+        field.SetCentred()
+
+    def AddWrappedCentredBoldTextField(self, inText, inFlow = None):
+        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.brightColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+        field.SetCentred()
 
     def AddStatusField(self, inName, inValue):
-        self.AddField(TextField(str(inName), self.brightColour))
-        width = self.window.xSize - self.xPos - 1
-        field = self.AddField(WrappedTextField(str(inValue), width, self.baseColour))
-        self.NewLine(field.Height())
+        self.AddBodyFieldObj(TextField(str(inName), self.brightColour, Field.FLOW_RIGHT))
+        self.AddBodyFieldObj(WrappedTextField(str(inValue), self.baseColour, Field.FLOW_RETURN))
     
     def AddInputField(self, inName, inValue, inLabel):
-        self.AddField(TextField(str(inName), self.brightColour))
-        self.AddField(InputField(str(inValue), self.highlightColour), inLabel)
-        self.inputFields.append(inLabel)
-        self.NewLine()
+        self.AddBodyFieldObj(TextField(str(inName), self.brightColour, Field.FLOW_RIGHT))
+        self.AddInputFieldObj(InputField(str(inValue), self.highlightColour, Field.FLOW_RETURN), inLabel)
     
     def AddPasswordField(self, inName, inValue, inLabel):
-        self.AddField(TextField(str(inName), self.brightColour))
-        passwordField = InputField(str(inValue), self.highlightColour)
+        self.AddBodyFieldObj(TextField(str(inName), self.brightColour, Field.FLOW_RIGHT))
+        passwordField = InputField(str(inValue), self.highlightColour, Field.FLOW_RETURN)
         passwordField.HideText()
-        self.AddField(passwordField, inLabel)        
-        self.inputFields.append(inLabel)
-        self.NewLine()
+        self.AddInputFieldObj(passwordField, inLabel)
     
     def AddMenuField(self, inMenu):
         # Arbitrarily limit menu size to 10 lines
-        field = self.AddField(MenuField(inMenu, self.baseColour, self.highlightColour, 10))
-        self.NewLine(field.Height() + 1)
+        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.highlightColour, 10, Field.FLOW_RETURN))
     
     def AddKeyHelpField(self, inKeys):
-        (oldXPos, oldYPos) = (self.xPos, self.yPos)
-        self.xPos = self.xOffset + 1
-        self.yPos = self.yOffset + self.ySize - 1
         for name in sorted(inKeys):
-            self.AddStaticField(TextField(str(name), self.brightColour))
-            self.xPos += 1
-            self.AddStaticField(TextField(str(inKeys[name]), self.baseColour))
-            self.xPos += 1
+            self.AddStaticFieldObj(TextField(str(name), self.brightColour, Field.FLOW_RIGHT))
+            self.AddStaticFieldObj(TextField(str(inKeys[name]), self.baseColour, Field.FLOW_RIGHT))
 
-        (self.xPos, self.yPos) = (oldXPos, oldYPos)
-    
     def Render(self):
-        self.window.Erase()
+        win = self.Win()
+        win.DefaultColourSet(self.baseColour)
+        win.Erase()
         
         # Shrink the clip window to allow space for the static fields
-        self.window.YClipMaxSet(self.window.YSize() - 1)
+        ySize = win.YSize() - 1
+        win.YClipMaxSet(ySize)
         
-        for field in self.fields.values():
+        bodyLayout = self.arranger.BodyLayout()
+        
+        for field in self.fieldGroup.BodyFields():
+            layout = bodyLayout.pop(0)
             # Check whether visible - first whether off the top, then whether off the bottom
-            if field.ypos + field.fieldObj.Height() > self.yScrollPos and field.ypos <= self.yScrollPos + self.ySize:
-                field.fieldObj.Render(self.window, field.xpos, field.ypos - self.yScrollPos)
+            if layout.ypos + field.Height() > self.yScrollPos and layout.ypos <= self.yScrollPos + ySize:
+
+                field.Render(win, layout.xpos, layout.ypos - self.yScrollPos)
         
-        self.window.YClipMaxSet(self.window.YSize())
-        for field in self.staticFields.values():
+        win.YClipMaxSet(win.YSize())
+        
+        staticLayout = self.arranger.StaticLayout()
+        
+        for field in self.fieldGroup.StaticFields():
             # Static fields aren't affected by the scroll position, and get a larger clip window
             # so then can fill the bottom line
-            field.fieldObj.Render(self.window, field.xpos, field.ypos)
-        
-        self.window.Refresh()
+            layout = staticLayout.pop(0)
+            field.Render(win, layout.xpos, layout.ypos)
+
+        win.Refresh()
             
     def Delete(self):
-        self.window.Delete()
+        self.Win().Delete()
+        self.window = None

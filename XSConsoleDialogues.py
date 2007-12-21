@@ -21,19 +21,15 @@ class LoginDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.successFunc = inSuccessFunc
-        if self.text is None:
-            paneHeight = 7
-        else:
-            paneHeight = 9
-        pane = self.NewPane('login', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.Win().TitleSet("Login")
+        pane.TitleSet("Login")
         pane.AddBox()
         self.UpdateFields()
         pane.InputIndexSet(0)
         
     def UpdateFields(self):
-        pane = self.Pane('login')
+        pane = self.Pane()
         pane.ResetFields()
         if self.text is not None:
             pane.AddTitleField(self.text)
@@ -47,7 +43,7 @@ class LoginDialogue(Dialogue):
         
     def HandleKey(self, inKey):
         handled = True
-        pane = self.Pane('login')
+        pane = self.Pane()
         if inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
         elif inKey == 'KEY_ENTER':
@@ -86,24 +82,16 @@ class ChangePasswordDialogue(Dialogue):
         self.text = inText
         self.successFunc = inSuccessFunc
         self.isPasswordSet = Auth.Inst().IsPasswordSet()
-            
-        if self.text is None:
-            paneHeight = 7
-        else:
-            paneHeight = 9
-            
-        if self.isPasswordSet:
-            paneHeight += 1 # For old password field
-            
-        pane = self.NewPane('changepassword', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.Win().TitleSet("Change Password")
+        pane.TitleSet("Change Password")
         pane.AddBox()
         self.UpdateFields()
         pane.InputIndexSet(0)
         
     def UpdateFields(self):
-        pane = self.Pane('changepassword')
+        pane = self.Pane()
         pane.ResetFields()
         if self.text is not None:
             pane.AddTitleField(self.text)
@@ -119,7 +107,7 @@ class ChangePasswordDialogue(Dialogue):
         
     def HandleKey(self, inKey):
         handled = True
-        pane = self.Pane('changepassword')
+        pane = self.Pane()
         if inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
         elif inKey == 'KEY_ENTER':
@@ -166,31 +154,22 @@ class InfoDialogue(Dialogue):
         self.text = inText
         self.info = inInfo
         
-        if inInfo is None:
-            paneHeight = 5 + len(Language.ReflowText(self.text, 70))
-        else:
-            paneHeight = 7 + len(Language.ReflowText(self.info, 70))
-                
-        paneHeight = min(paneHeight,  22)
-        
-        pane = self.NewPane('info', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
 
     def UpdateFields(self):
-        pane = self.Pane('info')
+        pane = self.Pane()
         pane.ResetFields()
-        if len(self.text) < 70:
-            # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 1)
-        else:
-            pane.ResetPosition(1, 1)
+        pane.ResetPosition()
         
-        pane.AddWrappedBoldTextField(self.text)
+        pane.AddWrappedCentredBoldTextField(self.text)
+
         if self.info is not None:
-            pane.ResetPosition(1, 3)
-            pane.AddWrappedTextField(self.info)
+            pane.NewLine()
+            pane.AddWrappedCentredTextField(self.info)
+
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
     def HandleKey(self, inKey):
@@ -205,46 +184,34 @@ class BannerDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
-        paneHeight = 4 + len(Language.ReflowText(self.text, 70))
-        paneHeight = min(paneHeight,  22)
-        pane = self.NewPane('banner', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
 
     def UpdateFields(self):
-        pane = self.Pane('banner')
+        pane = self.Pane()
         pane.ResetFields()
-        if len(self.text) < 70:
-            # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 1)
-        else:
-            pane.ResetPosition(1, 1)
+        pane.ResetPosition()
         
-        pane.AddWrappedBoldTextField(self.text)
+        pane.AddWrappedCentredBoldTextField(self.text)
 
 class QuestionDialogue(Dialogue):
     def __init__(self, inLayout, inParent, inText,  inHandler):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         self.handler = inHandler
-        paneHeight = 5 + len(Language.ReflowText(self.text, 70))
-        paneHeight = min(paneHeight,  22)
-        pane = self.NewPane('question', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
 
     def UpdateFields(self):
-        pane = self.Pane('question')
+        pane = self.Pane()
         pane.ResetFields()
-        if len(self.text) < 70:
-            # Centre text if short
-            pane.ResetPosition(37 - len(self.text) / 2, 1)
-        else:
-            pane.ResetPosition(1, 1)
+        pane.ResetPosition()
         
-        pane.AddWrappedBoldTextField(self.text)
+        pane.AddWrappedCentredBoldTextField(self.text)
 
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Yes"),  Lang("<Esc>") : Lang("No")  } )
     
@@ -264,12 +231,9 @@ class QuestionDialogue(Dialogue):
 class InterfaceDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        numNICs = len(Data.Inst().host.PIFs([]))
-        paneHeight = max(numNICs,  5) + 6
-        paneHeight = min(paneHeight,  22)
-        pane = self.NewPane('interface', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
-        pane.Win().TitleSet(Lang("Management Interface Configuration"))
+        pane.TitleSet(Lang("Management Interface Configuration"))
         pane.AddBox()
         
         choiceDefs = []
@@ -325,7 +289,7 @@ class InterfaceDialogue(Dialogue):
         self.UpdateFields()
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('interface')
+        pane = self.Pane()
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select NIC for management interface"))
@@ -333,7 +297,7 @@ class InterfaceDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
 
     def UpdateFieldsMODE(self):
-        pane = self.Pane('interface')
+        pane = self.Pane()
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select DHCP or Static IP Address Configuration"))
@@ -341,7 +305,7 @@ class InterfaceDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
     def UpdateFieldsSTATICIP(self):
-        pane = self.Pane('interface')
+        pane = self.Pane()
         pane.ResetFields()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddTitleField(Lang("Enter Static IP Address Configuration"))
@@ -351,7 +315,7 @@ class InterfaceDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
     def UpdateFieldsPRECOMMIT(self):
-        pane = self.Pane('interface')
+        pane = self.Pane()
         pane.ResetFields()
         if self.nic is None:
             pane.AddTextField(Lang("No management interface will be configured"))
@@ -368,7 +332,7 @@ class InterfaceDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         
     def UpdateFields(self):
-        self.Pane('interface').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
     
     def HandleKeyINITIAL(self, inKey):
@@ -379,7 +343,7 @@ class InterfaceDialogue(Dialogue):
 
     def HandleKeySTATICIP(self, inKey):
         handled = True
-        pane = self.Pane('interface')
+        pane = self.Pane()
         if inKey == 'KEY_ENTER':
             if pane.IsLastInput():
                 inputValues = pane.GetFieldValues()
@@ -402,7 +366,7 @@ class InterfaceDialogue(Dialogue):
 
     def HandleKeyPRECOMMIT(self, inKey):
         handled = True
-        pane = self.Pane('interface')
+        pane = self.Pane()
         if inKey == 'KEY_ENTER':
             self.layout.PopDialogue()
             self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Reconfiguring network...")))
@@ -448,7 +412,7 @@ class InterfaceDialogue(Dialogue):
         else:
             self.state = 'STATICIP'
             self.UpdateFields() # Setup input fields first
-            self.Pane('interface').InputIndexSet(0) # and then choose the first
+            self.Pane().InputIndexSet(0) # and then choose the first
             
     def Commit(self):
         if self.nic is None:
@@ -468,10 +432,9 @@ class DNSDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
         data=Data.Inst()
-        paneHeight = 10
-        pane = self.NewPane('dns', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
-        pane.Win().TitleSet(Lang("DNS Configuration"))
+        pane.TitleSet(Lang("DNS Configuration"))
         pane.AddBox()
         
         choiceDefs = [
@@ -495,7 +458,7 @@ class DNSDialogue(Dialogue):
         self.UpdateFields()
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('dns')
+        pane = self.Pane()
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Add or Remove Nameserver Entries"))
@@ -503,7 +466,7 @@ class DNSDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
     
     def UpdateFieldsADD(self):
-        pane = self.Pane('dns')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -514,7 +477,7 @@ class DNSDialogue(Dialogue):
             pane.InputIndexSet(0)
 
     def UpdateFieldsREMOVE(self):
-        pane = self.Pane('dns')
+        pane = self.Pane()
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select Nameserver Entry To Remove"))
@@ -522,7 +485,7 @@ class DNSDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") , Lang("<Esc>") : Lang("Cancel") } )
         
     def UpdateFields(self):
-        self.Pane('dns').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
     
     def HandleKeyINITIAL(self, inKey):
@@ -530,7 +493,7 @@ class DNSDialogue(Dialogue):
      
     def HandleKeyADD(self, inKey):
         handled = True
-        pane = self.Pane('dns')
+        pane = self.Pane()
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
@@ -592,15 +555,9 @@ class DNSDialogue(Dialogue):
 class InputDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        if self.Custom('info') is None:
-            paneHeight = 5
-        else:
-            paneHeight = 6+len(Language.ReflowText(self.Custom('info'), 70))
-        paneHeight += len(self.Custom('fields'))
-        paneHeight = min(paneHeight, 22)
-        pane = self.NewPane('input', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.Win().TitleSet(self.Custom('title'))
+        pane.TitleSet(self.Custom('title'))
         pane.AddBox()
         self.UpdateFields()
         pane.InputIndexSet(0)
@@ -609,7 +566,7 @@ class InputDialogue(Dialogue):
         return self.custom.get(inKey, None)
     
     def UpdateFields(self):
-        pane = self.Pane('input')
+        pane = self.Pane()
         pane.ResetFields()
         if self.Custom('info') is not None:
             pane.AddWrappedTextField(self.Custom('info'))
@@ -628,7 +585,7 @@ class InputDialogue(Dialogue):
     
     def HandleKey(self, inKey):
         handled = True
-        pane = self.Pane('input')
+        pane = self.Pane()
         if inKey == 'KEY_ESCAPE':
             self.layout.PopDialogue()
         elif inKey == 'KEY_ENTER':
@@ -638,7 +595,7 @@ class InputDialogue(Dialogue):
                 try:
                     self.layout.PopDialogue()
                     self.layout.DoUpdate()
-                    title, info = self.HandleCommit(self.Pane('input').GetFieldValues())
+                    title, info = self.HandleCommit(self.Pane().GetFieldValues())
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, title, info))
                 except Exception, e:
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+Lang(e)))
@@ -753,20 +710,19 @@ class SRDialogue(Dialogue):
         )
         return retVal
         
-    def BuildPaneBase(self, inHeight):
-        paneHeight = min(inHeight,  22)
-        pane = self.NewPane('sr', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Claim Disk As Storage Repository"))
+    def BuildPaneBase(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Claim Disk As Storage Repository"))
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
-        self.BuildPaneBase(9)
+        self.BuildPaneBase()
         self.UpdateFields()
         
     def BuildPaneDEVICE(self):
         self.deviceList = FileUtils.SRDeviceList()
         
-        self.BuildPaneBase(8+len(self.deviceList))
+        self.BuildPaneBase()
         
         choiceDefs = []
         for device in self.deviceList:
@@ -782,11 +738,11 @@ class SRDialogue(Dialogue):
         self.UpdateFields()
 
     def BuildPaneCUSTOM(self):
-        self.BuildPaneBase(11)
+        self.BuildPaneBase()
         self.UpdateFields()
         
     def BuildPaneCONFIRM(self):
-        self.BuildPaneBase(11)
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def ChangeState(self, inState):
@@ -794,11 +750,11 @@ class SRDialogue(Dialogue):
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
     
     def UpdateFields(self):
-        self.Pane('sr').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('sr')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_FLASH', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -808,7 +764,7 @@ class SRDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsDEVICE(self):
-        pane = self.Pane('sr')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -818,7 +774,7 @@ class SRDialogue(Dialogue):
             "<F5>" : Lang("Rescan") } )
 
     def UpdateFieldsCUSTOM(self):
-        pane = self.Pane('sr')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -832,7 +788,7 @@ class SRDialogue(Dialogue):
             pane.InputIndexSet(0)
             
     def UpdateFieldsCONFIRM(self):
-        pane = self.Pane('sr')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -887,7 +843,7 @@ class SRDialogue(Dialogue):
     
     def HandleKeyCUSTOM(self, inKey):
         handled = True
-        pane = self.Pane('sr')
+        pane = self.Pane()
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
@@ -947,18 +903,17 @@ class RemoteDBDialogue(Dialogue):
         
         return retVal
 
-    def BuildPaneBase(self, inHeight):
-        paneHeight = min(inHeight, 22)
-        pane = self.NewPane('remotedb', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Remote Database Configuration"))
+    def BuildPaneBase(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Remote Database Configuration"))
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
-        self.BuildPaneBase(14)
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def BuildPaneCHOOSEIQN(self):
-        self.BuildPaneBase(7+len(self.probedIQNs))
+        self.BuildPaneBase()
 
         choiceDefs = []
         
@@ -973,7 +928,7 @@ class RemoteDBDialogue(Dialogue):
         self.UpdateFields()
 
     def BuildPaneCHOOSELUN(self):
-        self.BuildPaneBase(7+len(self.probedLUNs))
+        self.BuildPaneBase()
 
         choiceDefs = []
         
@@ -988,11 +943,11 @@ class RemoteDBDialogue(Dialogue):
         self.UpdateFields()
 
     def BuildPaneCREATEDB(self):
-        self.BuildPaneBase(11)
+        self.BuildPaneBase()
         self.UpdateFields()
         
     def BuildPaneUSEDB(self):
-        self.BuildPaneBase(14)
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def ChangeState(self, inState):
@@ -1000,7 +955,7 @@ class RemoteDBDialogue(Dialogue):
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('remotedb')
+        pane = self.Pane()
         data = Data.Inst()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
@@ -1024,7 +979,7 @@ class RemoteDBDialogue(Dialogue):
             pane.InputIndexSet(0)
             
     def UpdateFieldsCHOOSEIQN(self):
-        pane = self.Pane('remotedb')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1033,7 +988,7 @@ class RemoteDBDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsCHOOSELUN(self):
-        pane = self.Pane('remotedb')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1042,7 +997,7 @@ class RemoteDBDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
             
     def UpdateFieldsCREATEDB(self):
-        pane = self.Pane('remotedb')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1057,7 +1012,7 @@ class RemoteDBDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format and Create"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsUSEDB(self):
-        pane = self.Pane('remotedb')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1074,12 +1029,12 @@ class RemoteDBDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK") } )
 
     def UpdateFields(self):
-        self.Pane('remotedb').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def HandleKeyINITIAL(self, inKey):
         handled = True
-        pane = self.Pane('remotedb')
+        pane = self.Pane()
 
         if inKey == 'KEY_ENTER':
             if not pane.IsLastInput():
@@ -1193,9 +1148,8 @@ class RemoteShellDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
-        paneHeight = 9
-        pane = self.NewPane('remoteshell', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Configure Remote Shell"))
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Configure Remote Shell"))
         pane.AddBox()
 
         self.remoteShellMenu = Menu(self, None, Lang("Configure Remote Shell"), [
@@ -1206,7 +1160,7 @@ class RemoteShellDialogue(Dialogue):
         self.UpdateFields()
         
     def UpdateFields(self):
-        pane = self.Pane('remoteshell')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1244,10 +1198,8 @@ class RemoteShellDialogue(Dialogue):
 class VerboseBootDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-
-        paneHeight = 9
-        pane = self.NewPane('verboseboot', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Configure Verbose Boot Mode"))
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Configure Verbose Boot Mode"))
         pane.AddBox()
 
         self.remoteShellMenu = Menu(self, None, Lang("Configure Verbose Boot Mode"), [
@@ -1258,7 +1210,7 @@ class VerboseBootDialogue(Dialogue):
         self.UpdateFields()
         
     def UpdateFields(self):
-        pane = self.Pane('verboseboot')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1293,18 +1245,17 @@ class ResetDialogue(Dialogue):
 
         self.ChangeState('INITIAL')
         
-    def BuildPaneBase(self, inHeight):
-        paneHeight = min(inHeight,  22)
-        pane = self.NewPane('reset', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Reset to Factory Defaults"))
+    def BuildPaneBase(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Reset to Factory Defaults"))
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
-        self.BuildPaneBase(10)
+        self.BuildPaneBase()
         self.UpdateFields()
 
     def BuildPaneCONFIRM(self):
-        self.BuildPaneBase(8)
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def ChangeState(self, inState):
@@ -1312,11 +1263,11 @@ class ResetDialogue(Dialogue):
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
     
     def UpdateFields(self):
-        self.Pane('reset').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('reset')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_FLASH', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1328,7 +1279,7 @@ class ResetDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsCONFIRM(self):
-        pane = self.Pane('reset')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1379,11 +1330,10 @@ class ValidateDialogue(Dialogue):
 
         data = Data.Inst()
 
-        paneHeight = 10
-        pane = self.NewPane('validate', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
+        pane = self.NewPane(DialoguePane(self.parent))
         
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
-        pane.Win().TitleSet(Lang("Validate Server Configuration"))
+        pane.TitleSet(Lang("Validate Server Configuration"))
         pane.AddBox()
     
         if 'vmx' in data.cpuinfo.flags([]) or 'svm' in data.cpuinfo.flags([]):
@@ -1409,7 +1359,7 @@ class ValidateDialogue(Dialogue):
         self.UpdateFields()
         
     def UpdateFields(self):
-        pane = self.Pane('validate')
+        pane = self.Pane()
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Validation Results"))
@@ -1437,10 +1387,9 @@ class FileDialogue(Dialogue):
     def Custom(self, inKey):
         return self.custom.get(inKey, None)
     
-    def BuildPaneBase(self, inHeight):
-        paneHeight = min(inHeight,  22)
-        pane = self.NewPane('file', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(self.Custom('title'))
+    def BuildPaneBase(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(self.Custom('title'))
         pane.AddBox()
     
     def BuildPaneINITIAL(self):
@@ -1458,19 +1407,19 @@ class FileDialogue(Dialogue):
 
         self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
 
-        self.BuildPaneBase(7+len(choiceDefs))
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def BuildPaneUSBNOTFORMATTED(self):
-        self.BuildPaneBase(6)
+        self.BuildPaneBase()
         self.UpdateFields()
         
     def BuildPaneUSBNOTMOUNTABLE(self):
-        self.BuildPaneBase(8)
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def BuildPaneFILES(self):
-        self.BuildPaneBase(7+min(len(self.fileList)+1, 10)) # Menu field limited to 10 lines, +1 is for custom filename field
+        self.BuildPaneBase()
         
         choiceDefs = []
         for filename in self.fileList:
@@ -1482,11 +1431,11 @@ class FileDialogue(Dialogue):
         self.UpdateFields()
         
     def BuildPaneCONFIRM(self):
-        self.BuildPaneBase(12)
+        self.BuildPaneBase()
         self.UpdateFields()
 
     def BuildPaneCUSTOM(self):
-        self.BuildPaneBase(10)
+        self.BuildPaneBase()
         self.UpdateFields()
     
     def ChangeState(self, inState):
@@ -1494,11 +1443,11 @@ class FileDialogue(Dialogue):
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
     
     def UpdateFields(self):
-        self.Pane('file').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('file')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1508,7 +1457,7 @@ class FileDialogue(Dialogue):
             "<F5>" : Lang("Rescan") } )
 
     def UpdateFieldsUSBNOTFORMATTED(self):
-        pane = self.Pane('file')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1516,7 +1465,7 @@ class FileDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format media"), Lang("<Esc>") : Lang("Exit") } )
 
     def UpdateFieldsUSBNOTMOUNTABLE(self):
-        pane = self.Pane('file')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1524,7 +1473,7 @@ class FileDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format Media"), Lang("<Esc>") : Lang("Exit") } )
 
     def UpdateFieldsFILES(self):
-        pane = self.Pane('file')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1533,7 +1482,7 @@ class FileDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsCUSTOM(self):
-        pane = self.Pane('file')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1544,7 +1493,7 @@ class FileDialogue(Dialogue):
             pane.InputIndexSet(0)
 
     def UpdateFieldsCONFIRM(self):
-        pane = self.Pane('file')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -1616,7 +1565,7 @@ class FileDialogue(Dialogue):
         
     def HandleKeyCUSTOM(self, inKey):
         handled = True
-        pane = self.Pane('file')
+        pane = self.Pane()
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
@@ -1975,10 +1924,8 @@ class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
-        paneHeight = 11
-        paneHeight = min(paneHeight,  22)
-        pane = self.NewPane('testnetwork', DialoguePane(3, 12 - paneHeight/2, 74, paneHeight, self.parent))
-        pane.Win().TitleSet(Lang("Test Network Configuration"))
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Test Network Configuration"))
         pane.AddBox()
         
         gatewayName = Data.Inst().ManagementGateway()
@@ -1997,11 +1944,11 @@ class TestNetworkDialogue(Dialogue):
         self.UpdateFields()
 
     def UpdateFields(self):
-        self.Pane('testnetwork').ResetPosition()
+        self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
         
     def UpdateFieldsINITIAL(self):
-        pane = self.Pane('testnetwork')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
@@ -2010,7 +1957,7 @@ class TestNetworkDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         
     def UpdateFieldsCUSTOM(self):
-        pane = self.Pane('testnetwork')
+        pane = self.Pane()
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
@@ -2040,7 +1987,7 @@ class TestNetworkDialogue(Dialogue):
         
     def HandleKeyCUSTOM(self, inKey):
         handled = True
-        pane = self.Pane('testnetwork')
+        pane = self.Pane()
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
@@ -2070,7 +2017,7 @@ class TestNetworkDialogue(Dialogue):
         if custom:
             self.state = 'CUSTOM'
             self.UpdateFields()
-            self.Pane('testnetwork').InputIndexSet(0)
+            self.Pane().InputIndexSet(0)
         else:
             self.DoPing(pingTarget)
 

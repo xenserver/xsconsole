@@ -8,8 +8,36 @@
 from XSConsoleBases import *
 from XSConsoleLang import *
 
-class InputField:
-    def __init__(self, text, colour):
+class Field:
+    FLOW_INVALID=0
+    FLOW_NONE=1
+    FLOW_RIGHT=2
+    FLOW_RETURN=3
+    FLOW_DOUBLERETURN=4
+
+    LAYOUT_MINWIDTH = 48 # Minimum width for dialogue
+
+    def Flow(self):
+        return self.flow
+
+    def UpdateWidth(self, inWidth):
+        pass
+
+class SeparatorField(Field):
+    def __init__(self, flow):
+        ParamsToAttr()
+        
+    def Render(self, inPane, inX, inY):
+        pass
+
+    def Width(self):
+        return 1
+
+    def Height(self):
+        return 1
+
+class InputField(Field):
+    def __init__(self, text, colour, flow):
         ParamsToAttr()
         self.activated = False
         self.cursorPos = len(self.text)
@@ -36,7 +64,7 @@ class InputField:
             inPane.CursorOn(inX+self.cursorPos, inY)
 
     def Width(self):
-        return len(self.text)
+        return max(40, len(self.text))
     
     def Height(self):
         return 1
@@ -60,8 +88,8 @@ class InputField:
             handled = False
         return handled
 
-class TextField:
-    def __init__(self, text, colour):
+class TextField(Field):
+    def __init__(self, text, colour, flow):
         ParamsToAttr()
         
     def Render(self, inPane, inX, inY):
@@ -73,25 +101,43 @@ class TextField:
     def Height(self):
         return 1
         
-class WrappedTextField:
-    def __init__(self, text, width, colour):
+class WrappedTextField(Field):
+    def __init__(self, text, colour, flow):
         ParamsToAttr()
-        self.wrappedText = Language.ReflowText(self.text, width)
+        self.wrappedWidth = None
+        self.wrappedText = []
+        self.centred = False
         
+    def SetCentred(self):
+        self.centred = True
+        
+    def UpdateWidth(self, inWidth):
+        if self.wrappedWidth is None or self.wrappedWidth != inWidth:
+            self.wrappedWidth = inWidth
+            self.wrappedText = Language.ReflowText(self.text, self.wrappedWidth)
+
     def Render(self, inPane, inXPos, inYPos):
         yPos = inYPos
         for line in self.wrappedText:
-            inPane.AddText(line, inXPos, yPos, self.colour)
+            if self.centred:
+                offset = (self.wrappedWidth - len(line)) / 2
+                inPane.AddText(line, inXPos+offset, yPos, self.colour)
+            else:
+                inPane.AddText(line, inXPos, yPos, self.colour)
+                
             yPos += 1
 
     def Width(self):
-        return max ( len(line) for line in self.wrappedText )
+        retVal = 1
+        for line in self.wrappedText:
+            retVal = max(retVal, len(line))
+        return retVal
 
     def Height(self):
         return len(self.wrappedText)
 
-class MenuField:
-    def __init__(self, menu, colour, highlight, height):
+class MenuField(Field):
+    def __init__(self, menu, colour, highlight, height, flow):
         ParamsToAttr()
         self.scrollPoint = 0
         self.height = min(self.height, len(self.menu.ChoiceDefs()))
@@ -126,3 +172,193 @@ class MenuField:
                 colour = self.colour
                 
             inPane.AddText(choiceDefs[choiceNum].name, inXPos, inYPos + i, colour)
+
+class FieldGroup:
+    def __init__(self):
+        self.Reset()
+        
+    def Reset(self):
+        self.bodyFields = []
+        self.bodyFieldNames = []
+        self.staticFields = []
+        self.staticFieldNames = []
+        # Fields are ordered, so the order of field names is recorded here and the fields themselves are in bodyFields
+        self.inputOrder = []
+        self.inputTags = {}
+        
+    def NumStaticFields(self):
+        return len(self.staticFields)
+
+    def NumInputFields(self):
+        return len(self.inputOrder)
+
+    def BodyFields(self):
+        return self.bodyFields
+
+    def StaticFields(self):
+        return self.staticFields
+
+    def InputField(self, inIndex):
+        return self.inputOrder[inIndex]
+        
+    def BodyFieldAdd(self, inTag, inField):
+        self.bodyFields.append(inField)
+        
+    def StaticFieldAdd(self, inTag, inField):
+        self.staticFields.append(inField)
+    
+    def InputFieldAdd(self, inTag, inField):
+        # Three reference to the same field
+        self.inputTags[inTag] = inField
+        self.inputOrder.append(inField)
+        self.bodyFields.append(inField)
+
+    def GetFieldValues(self):
+        retVal = {}
+        for key, field in self.inputTags.iteritems():
+            retVal[key] = field.Content()
+
+        return retVal
+        
+class FieldArranger:
+    BOXWIDTH = 1
+    BORDER = 1
+    
+    def __init__(self, inFieldGroup, inXSize, inYSize):
+        self.fieldGroup = inFieldGroup
+        self.baseXSize = inXSize
+        self.baseYSize = inYSize
+        self.hasBox = False
+        self.layoutXSize = None
+        self.layoutYSize = None
+    
+    def XSizeSet(self, inXSize):
+        self.baseXSize = inXSize
+        self.layoutXSize = None
+        self.layoutYSize = None
+    
+    def YSizeSet(self, inYSize):
+        self.baseYSize = inYSize
+        self.layoutXSize = None
+        self.layoutYSize = None
+    
+    def XSize(self):
+        if self.layoutXSize is None:
+            self.layoutXSize = max(self.BodyLayout().pop().xpos, self.StaticLayout().pop().xpos)
+        return max(self.layoutXSize, Field.LAYOUT_MINWIDTH)
+    
+    def YSize(self):
+        if self.layoutYSize is None:
+            self.layoutYSize = self.BodyLayout().pop().ypos # Static layout not included
+        return self.layoutYSize
+    
+    def XBounds(self):
+        if self.hasBox:
+            retVal = self.XSize()+4
+        else:
+            retVal = self.XSize()+2
+        return retVal
+            
+    def YBounds(self):
+        if self.hasBox:
+            retVal = self.YSize()+3
+        else:
+            retVal = self.YSize()+1
+        return retVal
+        
+    def AddBox(self):
+        self.hasBox = True
+
+    def LayoutFields(self, inFields, inYStep):
+        if self.hasBox:
+            xOffset = self.BOXWIDTH
+            yOffset = self.BOXWIDTH
+            xSize = self.baseXSize - 2*self.BOXWIDTH
+            ySize = self.baseYSize - 2*self.BOXWIDTH
+        else:
+            xOffset = 0
+            yOffset = 0
+            xSize = self.baseXSize
+            ySize = self.baseYSize
+    
+        xStart = xOffset+self.BORDER
+        if inYStep >= 0:
+            yStart = yOffset+self.BORDER
+        else:
+            # If inYStep is negative, start from the bottom
+            yStart = ySize
+        
+        xPos = xStart
+        yPos = yStart
+        
+        xMax = xPos
+        
+        retVal = []
+        for field in inFields:
+            flow = field.Flow()
+            
+            retVal.append(Struct(xpos = xPos, ypos = yPos))
+            
+            field.UpdateWidth(xSize - xPos - self.BORDER)
+            xMax = max(xMax, xPos + field.Width())
+            
+            if flow == Field.FLOW_RIGHT:
+                xPos += field.Width() + 1
+            elif flow == Field.FLOW_RETURN:
+                xPos = xStart
+                yPos += inYStep * field.Height()
+            elif flow == Field.FLOW_DOUBLERETURN:
+                xPos = xStart
+                yPos += inYStep * (field.Height()+1)
+            elif flow == Field.FLOW_NONE:
+                pass # Leave xPos and yPos as they are
+            else:
+                raise Exception("Unknown flow type: "+str(flow))
+        
+        retVal.append(Struct(xpos = xMax, ypos = yPos)) # End marker
+
+        return retVal
+
+    def BodyLayout(self):
+        return self.LayoutFields(self.fieldGroup.BodyFields(), 1)
+
+    def StaticLayout(self):
+        return self.LayoutFields(self.fieldGroup.StaticFields(), -1)
+
+class FieldInputTracker:
+    def __init__(self, inFieldGroup):
+        self.fieldGroup = inFieldGroup
+        self.inputIndex = None
+    
+    def ActivateNextInput(self): 
+        self.InputIndexSet((self.inputIndex + 1) % self.fieldGroup.NumInputFields())
+            
+    def ActivatePreviousInput(self):
+        numFields = self.fieldGroup.NumInputFields()
+        self.InputIndexSet((self.inputIndex + numFields - 1) % numFields)
+            
+    def IsLastInput(self):
+        return self.inputIndex + 1 == self.fieldGroup.NumInputFields()
+
+    def CurrentInput(self):
+        if self.inputIndex is not None:
+            retVal = self.fieldGroup.InputField(self.inputIndex)
+        else:
+            retVal = None
+        return retVal
+
+    def InputIndexSet(self, inIndex):
+        if self.inputIndex is not None:
+            self.CurrentInput().Deactivate()
+        
+        self.inputIndex = inIndex
+        
+        if self.inputIndex is not None:
+            self.CurrentInput().Activate()
+
+    def NeedsCursor(self):
+        if self.inputIndex is not None:
+            retVal = True
+        else:
+            retVal = False
+        return retVal

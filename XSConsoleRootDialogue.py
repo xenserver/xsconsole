@@ -22,9 +22,9 @@ class RootDialogue(Dialogue):
     
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
-        menuPane = self.NewPane('menu', DialoguePane(1, 2, 38, 21, self.parent))
+        menuPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(1, 2, 38, 21)), 'menu')
         menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT')
-        statusPane = self.NewPane('status', DialoguePane(41, 2, 38, 21, self.parent))
+        statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(41, 2, 38, 21)), 'status')
         statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
         self.menu = RootMenu(self)
         self.currentStatus = 'STATUS'

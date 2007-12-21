@@ -32,7 +32,6 @@ class CursesPalette:
         cls.pairIndex = 1
         config = Config.Inst()
 
-
         if curses.can_change_color():
             # Define colours on colour-changing terminals - these are terminals with the ccc
             # flag in their capabilities in terminfo

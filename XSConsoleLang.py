@@ -5,7 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import XenAPI
+import XenAPI # For XenAPI.Failure
 
 # Global function
 def Lang(inLabel, inPad = 0):
@@ -61,5 +61,5 @@ class Language:
                 text = text[lineLength:] # Split at non-space/return, so keep
             else:
                 text = text[lineLength+1:] # Split at space or return so discard
-        
+            
         return retArray

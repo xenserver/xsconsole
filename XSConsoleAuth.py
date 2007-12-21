@@ -6,6 +6,7 @@
 # countries.
 
 import os, re, sys, time
+import PAM # From PyPAM module
 
 from XSConsoleBases import *
 from XSConsoleLang import *
@@ -92,11 +93,33 @@ class Auth:
     
     def ProcessLogin(self, inUsername, inPassword):
         self.isAuthenticated = False
-    
-        session= self.TCPSession(inPassword, inUsername)
+        
+        if inUsername != 'root':
+            raise Exception(Lang("Only root can log in here"))
+        
+        # Old method via xapi
+        # session= self.TCPSession(inPassword, inUsername)
 
+        def PAMConv(inAuth, inQueryList, inUserData):
+            retVal = []
+            for query in inQueryList:
+                if query[1] == PAM.PAM_PROMPT_ECHO_ON or query[1] == PAM.PAM_PROMPT_ECHO_OFF:
+                    # Return inPassword from the scope that encloses this function
+                    retVal.append((inPassword, 0)) # Append a tuple with two values (so double brackets)
+            return retVal
+            
+        auth = PAM.pam()
+        auth.start('passwd')
+        auth.set_item(PAM.PAM_USER, inUsername)
+        auth.set_item(PAM.PAM_CONV, PAMConv)
+        
+        FIXME auth.authenticate() 
+        FIXME auth.acct_mgmt()
+        
         # No exception implies a successful login
-        self.CloseSession(session)
+        
+        # self.CloseSession(session) # Reuired for old method
+        
         self.loggedInUsername = inUsername
         if self.testingHost is not None:
             # Store password when testing only
