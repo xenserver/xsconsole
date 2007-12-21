@@ -63,7 +63,7 @@ class DialoguePane:
         self.hasBox = False
         
     def ResetPosition(self):
-        pass
+        self.arranger.Reset()
 
     # Delegations to FieldGroup
     def ResetFields(self): self.fieldGroup.Reset()
@@ -81,7 +81,6 @@ class DialoguePane:
     def RemakeWindow(self):
         if self.window is not None:
             self.window.Delete()
-            win
         self.sizer.Update(self.arranger)
         self.arranger.XSizeSet(self.sizer.XSize())
         self.arranger.YSizeSet(self.sizer.YSize())
@@ -120,7 +119,7 @@ class DialoguePane:
             self.yScrollPos -= 1
         
     def ScrollPageDown(self):
-        if self.yScrollPos + self.ySize <= self.yPos:
+        if self.yScrollPos + self.Win().YSize() <= self.arranger.YSize():
             self.yScrollPos += 1
 
     def ResetScroll(self):

@@ -235,6 +235,7 @@ class RootDialogue(Dialogue):
                 
             inPane.AddStatusField(Lang("MAC Address", 16), pif['MAC'])
             inPane.AddStatusField(Lang("Device", 16), pif['device'])
+            inPane.NewLine()
 
     def UpdateFieldsBMC(self, inPane):
         data = Data.Inst()

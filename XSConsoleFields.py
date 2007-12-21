@@ -229,9 +229,12 @@ class FieldArranger:
         self.baseXSize = inXSize
         self.baseYSize = inYSize
         self.hasBox = False
+        self.Reset()
+    
+    def Reset(self):
         self.layoutXSize = None
         self.layoutYSize = None
-    
+        
     def XSizeSet(self, inXSize):
         self.baseXSize = inXSize
         self.layoutXSize = None
