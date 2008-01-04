@@ -91,15 +91,18 @@ class App:
                             print(line)
                         sys.stdout.flush()
                     commandList = self.layout.ExitCommand().split()
-                    # Double-check authentication
-                    Auth.Inst().AssertAuthenticated()
 
-                    if self.layout.ExitCommandIsExec():
-                        os.execv(commandList[0], commandList)
-                        # Does not return
+                    if len(commandList) == 0:
+                        doQuit = True
                     else:
-                        os.system(self.layout.ExitCommand())
-                        Data.Inst().Update() # Pick up changes caused by the subshell command
+                        # Double-check authentication
+                        Auth.Inst().AssertAuthenticated()
+                        if self.layout.ExitCommandIsExec():
+                            os.execv(commandList[0], commandList)
+                            # Does not return
+                        else:
+                            os.system(self.layout.ExitCommand())
+                            Data.Inst().Update() # Pick up changes caused by the subshell command
 
             except KeyboardInterrupt, e: # Catch Ctrl-C
                 Data.Reset()
@@ -112,7 +115,7 @@ class App:
             except Exception, e:
                 sys.stderr.write(Lang(e)+"\n")
                 doQuit = True
-                raise # FIXME
+                raise
         
 
     def MainLoop(self):

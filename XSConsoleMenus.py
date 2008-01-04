@@ -5,6 +5,8 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
+import sys
+
 from pprint import pprint
 
 from XSConsoleBases import *
@@ -28,6 +30,9 @@ class Menu:
     def Title(self): return self.title
     def ChoiceDefs(self): return self.choiceDefs
     def ChoiceIndex(self): return self.choiceIndex
+
+    def AppendChoiceDef(self, inChoice):
+        self.choiceDefs.append(inChoice)
 
     def CurrentChoiceSet(self,  inChoice):
         self.choiceIndex = inChoice
@@ -103,6 +108,12 @@ class RootMenu:
             ChoiceDef(Lang("Local Command Shell"), 
                 lambda : inDialogue.ActivateDialogue('DIALOGUE_LOCALSHELL'), lambda : inDialogue.ChangeStatus('LOCALSHELL'))
         ])
+        
+         # When started from inittab, mingetty adds -f root to the command, so use this to suppress the Quit choice
+        if not '-f' in sys.argv:
+            rootMenu.AppendChoiceDef(ChoiceDef(Lang("Quit"), 
+                lambda : inDialogue.ActivateDialogue('DIALOGUE_QUIT'), lambda : inDialogue.ChangeStatus('QUIT')))
+        
         rebootText = Lang("Reboot Server")
         
         propertiesChoices = [

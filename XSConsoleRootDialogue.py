@@ -333,6 +333,12 @@ class RootDialogue(Dialogue):
             "Press <Enter> to start a local command shell on this server.  "
             "This shell will have root privileges."))
  
+    def UpdateFieldsQUIT(self, inPane):
+        inPane.AddTitleField(Lang("Quit"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to quit this console."))
+ 
     def UpdateFieldsBURP(self, inPane):
         inPane.AddTitleField(Lang("Backup, Restore and Update"))
     
@@ -695,6 +701,9 @@ class RootDialogue(Dialogue):
                 Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
         elif inName == 'DIALOGUE_LOCALSHELL':
             self.AuthenticatedOnly(lambda: self.StartLocalShell())
+        elif inName == 'DIALOGUE_QUIT':
+                self.layout.ExitBannerSet(Lang("Quitting..."))
+                self.layout.ExitCommandSet('') # Just exit
             
     def StartLocalShell(self):
         user = os.environ.get('USER', 'root')
