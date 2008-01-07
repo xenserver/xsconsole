@@ -536,10 +536,10 @@ class RootDialogue(Dialogue):
             if data.remotedb.username('') != '':
                 inPane.AddStatusField(Lang('Username', 10), data.remotedb.username())
             inPane.NewLine()
-            inPane.AddTitleField(Lang("Initiator IQN:"))
+            inPane.AddTitleField(Lang("Initiator IQN"))
             inPane.AddWrappedTextField(data.remotedb.localiqn())
             inPane.NewLine()
-            inPane.AddTitleField(Lang("Target IQN:"))
+            inPane.AddTitleField(Lang("Target IQN"))
             inPane.AddWrappedTextField(data.remotedb.remoteiqn())
 
         inPane.AddKeyHelpField( {

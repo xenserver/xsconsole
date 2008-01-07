@@ -27,6 +27,7 @@ class State:
         self.rebootMessage = None
         self.weStoppedXAPI = False
         self.verboseBoot = False
+        
     @classmethod
     def SaveFilename(self):
         return self.savePath+'/'+self.saveLeafname
@@ -89,7 +90,8 @@ class State:
         return self.weStoppedXAPI
         
     def WeStoppedXAPISet(self, inValue):
-        weStoppedXAPI = inValue
+        self.weStoppedXAPI = inValue
+        self.modified = True
 
     def AuthTimeoutSecondsSet(self, inSeconds): # Don't call this directly - use Auth.TimeoutSecondsSet
         if inSeconds < 60:

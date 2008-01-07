@@ -1331,6 +1331,7 @@ class ResetDialogue(Dialogue):
     def DoAction(self):
         self.layout.ExitBannerSet(Lang("Resetting..."))
         self.layout.SubshellCommandSet("/opt/xensource/libexec/revert-to-factory yesimeanit && sleep 2")
+        Data.Inst().SetVerboseBoot(False)
         State.Inst().RebootMessageSet(Lang("This server must reboot to complete the reset process.  Reboot the server now?"))
 
 class ValidateDialogue(Dialogue):
