@@ -5,7 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import os, re, sys, time
+import os, pwd, re, sys, time
 import PAM # From PyPAM module
 
 from XSConsoleBases import *
@@ -178,21 +178,18 @@ class Auth:
         # Security critical - mustn't wrongly return False
         retVal = True
         
-        file = open("/etc/passwd")
-        for line in file:
-            if re.match(r'root:', line):
-                if re.match(r'root:!!:', line):
-                    retVal = False
-                break # break on any root: line
-        file.close()
+        rootHash = pwd.getpwnam("root")[1]
+        if rootHash == '!!':
+            retVal = False
+            
         return retVal
     
     def ChangePassword(self, inOldPassword, inNewPassword):
 
         if not self.IsPasswordSet():
             # Write password directly
-            pipe = os.popen("/usr/sbin/chpasswd", "w")
-            pipe.write("root:"+inNewPassword+"\n")
+            pipe = os.popen("/usr/bin/passwd --stdin root > /dev/null", "w")
+            pipe.write(inNewPassword+"\n")
             pipe.close()
             
             # xlock won't have started if there's no password, so start it now
@@ -204,8 +201,8 @@ class Auth:
             session.xenapi.session.change_password(inOldPassword, inNewPassword)
             if isSlave:
                 # Write local password as well
-                pipe = os.popen("/usr/sbin/chpasswd", "w")
-                pipe.write("root:"+inNewPassword+"\n")
+                pipe = os.popen("/usr/bin/passwd --stdin root > /dev/null", "w")
+                pipe.write(inNewPassword+"\n")
                 pipe.close()
             
         # Caller handles exceptions
