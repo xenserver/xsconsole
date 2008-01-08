@@ -16,7 +16,6 @@ from XSConsoleLang import *
 from XSConsoleState import *
 from XSConsoleUtils import *
 
-
 class DataMethod:
     def __init__(self, inSend, inName):
         self.send = inSend
@@ -176,11 +175,12 @@ class Data:
 
         self.UpdateFromResolveConf()
         self.UpdateFromSysconfig()
+        self.UpdateFromNTPConf()
         self.UpdateFromRemoteDBConf()
         self.UpdateFromPatchVersions()
         
         if os.path.isfile("/sbin/chkconfig"):
-            (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd")
+            (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd && /sbin/chkconfig --list ntpd")
             if status == 0:
                 self.ScanChkConfig(output.split("\n"))
 
@@ -248,9 +248,11 @@ class Data:
         if status != 0:
             raise Exception(output)
 
-
     def NameserversSet(self, inServers):
         self.data['dns']['nameservers'] = inServers
+
+    def NTPServersSet(self, inServers):
+        self.data['ntp']['servers'] = inServers
 
     def LoggingDestinationSet(self, inDestination):
         Auth.Inst().AssertAuthenticated()
@@ -271,6 +273,11 @@ class Data:
         if status == 0:
             self.ScanSysconfigNetwork(output.split("\n"))
     
+    def UpdateFromNTPConf(self):
+        (status, output) = commands.getstatusoutput("/bin/cat /etc/ntp.conf")
+        if status == 0:
+            self.ScanNTPConf(output.split("\n"))
+            
     def StringToBool(self, inString):
         return inString.lower().startswith('true')
 
@@ -377,6 +384,21 @@ class Data:
         finally:
             if file is not None: file.close()
             self.UpdateFromSysconfig()
+    
+    def SaveToNTPConf(self):
+        # Double-check authentication
+        Auth.Inst().AssertAuthenticated()
+        
+        file = None
+        try:
+            file = open("/etc/ntp.conf", "w")
+            for other in self.ntp.othercontents([]):
+                file.write(other+"\n")
+            for server in self.ntp.servers([]):
+                file.write("server "+server+"\n")
+        finally:
+            if file is not None: file.close()
+            self.UpdateFromNTPConf()
     
     def ScanDmiDecode(self, inLines):
         STATE_NEXT_ELEMENT = 2
@@ -498,7 +520,11 @@ class Data:
             elif re.match(r'sshd.*5\s*:\s*off', line, re.IGNORECASE):
                 self.data['chkconfig']['sshd'] = False
             # else leave as Unknown
-    
+            elif re.match(r'ntpd.*5\s*:\s*on', line, re.IGNORECASE):
+                self.data['chkconfig']['ntpd'] = True
+            elif re.match(r'ntpd.*5\s*:\s*off', line, re.IGNORECASE):
+                self.data['chkconfig']['ntpd'] = False
+
     def ScanResolvConf(self, inLines):
         self.data['dns'] = {
             'nameservers' : [], 
@@ -524,6 +550,20 @@ class Data:
             else:
                 self.data['sysconfig']['network']['othercontents'].append(line)
     
+    def ScanNTPConf(self, inLines):
+        if not 'ntp' in self.data:
+            self.data['ntp'] = {}
+        
+        self.data['ntp']['servers'] = []
+        self.data['ntp']['othercontents'] = []
+        
+        for line in inLines:
+            match = re.match(r'server\s+(\S+)', line)
+            if match:
+                self.data['ntp']['servers'].append(match.group(1))
+            else:
+                self.data['ntp']['othercontents'].append(line)
+                
     def ScanCPUInfo(self, inLines):
         self.data['cpuinfo'] = {}
         for line in inLines:
@@ -709,6 +749,27 @@ class Data:
                 
             State.Inst().WeStoppedXAPISet(False)
             State.Inst().SaveIfRequired()
+    
+    def EnableNTP(self):
+        status, output = commands.getstatusoutput(
+            "(export TERM=xterm && /sbin/chkconfig ntpd on && /etc/init.d/ntpd start)")
+        if status != 0:
+            raise Exception(output)
+        
+    def DisableNTP(self):
+        status, output = commands.getstatusoutput(
+            "(export TERM=xterm && /sbin/chkconfig ntpd off && /etc/init.d/ntpd stop)")
+        if status != 0:
+            raise Exception(output)
+
+    def RestartNTP(self):
+        status, output = commands.getstatusoutput("(export TERM=xterm && /etc/init.d/ntpd restart)")
+        if status != 0:
+            raise Exception(output)
+
+    def NTPStatus(self):
+        status, output = commands.getstatusoutput("/usr/bin/ntpstat")
+        return output
             
     def SetVerboseBoot(self, inVerbose):
             mountPoint = tempfile.mktemp(".xsconsole")

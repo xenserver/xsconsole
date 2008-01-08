@@ -704,6 +704,171 @@ class SyslogDialogue(InputDialogue):
             message = Lang("Logging destination set to '")+inValues['destination'] + "'."
         return Lang('Logging Destination Change Successful'), message        
 
+class NTPDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        data=Data.Inst()
+            
+        choiceDefs = [
+            ChoiceDef(Lang("Enable NTP time synchronization"), lambda: self.HandleInitialChoice('ENABLE') ), 
+            ChoiceDef(Lang("Disable NTP time synchronization"), lambda: self.HandleInitialChoice('DISABLE') ),
+            ChoiceDef(Lang("Add an NTP server"), lambda: self.HandleInitialChoice('ADD') ) ]
+        
+        if len(data.ntp.servers([])) > 0:
+            choiceDefs.append(ChoiceDef(Lang("Remove a single NTP server"), lambda: self.HandleInitialChoice('REMOVE') ))
+            choiceDefs.append(ChoiceDef(Lang("Remove all NTP servers"), lambda: self.HandleInitialChoice('REMOVEALL') ))
+            
+        if Auth.Inst().IsTestMode():
+            # Show Status is a testing-only function
+            choiceDefs.append(ChoiceDef(Lang("Show Status (ntpstat)"), lambda: self.HandleInitialChoice('STATUS') ))
+            
+        self.ntpMenu = Menu(self, None, Lang("Configure Network Time"), choiceDefs)
+    
+        self.ChangeState('INITIAL')
+        
+    def BuildPane(self):
+        if self.state == 'REMOVE':
+            choiceDefs = []
+            for server in Data.Inst().ntp.servers([]):
+                choiceDefs.append(ChoiceDef(server, lambda: self.HandleRemoveChoice(self.removeMenu.ChoiceIndex())))
+        
+            self.removeMenu = Menu(self, None, Lang("Remove NTP Server"), choiceDefs)
+            
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("Configure Network Time"))
+        pane.AddBox()
+        self.UpdateFields()
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please Select an Option"))
+        pane.AddMenuField(self.ntpMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsADD(self):
+        pane = self.Pane()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please Enter the NTP Server Name or Address"))
+        pane.AddWrappedTextField(Lang("NTP servers supplied by DHCP may overwrite values configured here."))
+        pane.NewLine()
+        pane.AddInputField(Lang("Server", 16), '', 'name')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") , Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+
+    def UpdateFieldsREMOVE(self):
+        pane = self.Pane()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Select Server Entry To Remove"))
+        pane.AddWrappedTextField(Lang("NTP servers supplied by DHCP may overwrite values configured here."))
+        pane.NewLine()
+        
+        pane.AddMenuField(self.removeMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        
+    def UpdateFields(self):
+        self.Pane().ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+    
+    def ChangeState(self, inState):
+        self.state = inState
+        self.BuildPane()
+    
+    def HandleKeyINITIAL(self, inKey):
+        return self.ntpMenu.HandleKey(inKey)
+     
+    def HandleKeyADD(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            inputValues = pane.GetFieldValues()
+            self.layout.PopDialogue()
+            data=Data.Inst()
+            servers = data.ntp.servers([])
+            servers.append(inputValues['name'])
+            data.NTPServersSet(servers)
+            self.Commit(Lang("NTP server")+" "+inputValues['name']+" "+Lang("added"))
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+
+    def HandleKeyREMOVE(self, inKey):
+        return self.removeMenu.HandleKey(inKey)
+        
+    def HandleKey(self,  inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+            
+    def HandleInitialChoice(self,  inChoice):
+        data = Data.Inst()
+        try:
+            if inChoice == 'ENABLE':
+                self.layout.TransientBanner(Lang("Enabling..."))
+                data.EnableNTP()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("NTP Time Synchronization Enabled")))
+            elif inChoice == 'DISABLE':
+                self.layout.TransientBanner(Lang("Disabling..."))
+                data.DisableNTP()
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("NTP Time Synchronization Disabled")))
+            elif inChoice == 'ADD':
+                self.ChangeState('ADD')
+            elif inChoice == 'REMOVE':
+                self.ChangeState('REMOVE')
+            elif inChoice == 'REMOVEALL':
+                self.layout.PopDialogue()
+                data.NTPServersSet([])
+                self.Commit(Lang("All server entries deleted"))
+            elif inChoice == 'STATUS':
+                message = data.NTPStatus()+Lang("\n\n(Initial synchronization may take several minutes)")
+                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("NTP Status"), message))
+
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
+            
+        data.Update()
+
+    def HandleRemoveChoice(self,  inChoice):
+        self.layout.PopDialogue()
+        data=Data.Inst()
+        servers = data.ntp.servers([])
+        thisServer = servers[inChoice]
+        del servers[inChoice]
+        data.NTPServersSet(servers)
+        self.Commit(Lang("NTP server")+" "+thisServer+" "+Lang("deleted"))
+        data.Update()
+
+    def Commit(self, inMessage):
+        data=Data.Inst()
+        try:
+            data.SaveToNTPConf()
+            if data.chkconfig.ntpd(False):
+                self.layout.TransientBanner(Lang("Restarting NTP daemon with new configuration..."))
+                data.RestartNTP()
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, inMessage))
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+Lang(e)))
+
+        data.Update()
+
 class SRDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)

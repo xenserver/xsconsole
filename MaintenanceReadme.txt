@@ -9,11 +9,11 @@ for i in range(len(choiceArray)):
     
 but you can't.  The lambda: self.HandleChoice(i) all refer to the same i so all selections have the same value - the final value of i.  Variations of the same have the same problem.
 
-3.  There's reasonable separation between the data (XSConsoleData.py) and UI (XSConsole(Root)Dialogues.py) but no separation between the UI and control mechanisms.  The code that causes data changes, mounts and scans devices, etc. is spread amonst the dialogues.
+3.  There's reasonable separation between the data (XSConsoleData.py) and UI (XSConsole(Root)Dialogues.py) but no separation between the UI and control mechanisms.  The code that causes data changes, etc. is spread amonst the dialogues.
 
 4.  It's tricky to get the ncurses display to refresh without flicker.  Using the curses erase or clear methods on windows can lead to flickering redraws.  Currently only scrolling in the right hand pane of the root dialogue has this problem.  Since there's not much use of erase or clear the app does pretty minimal redraws, and things like spurious kernel message that scroll the screen can leave it in a mess for some time. 
 
-5.  The vertical size limit on menu fields is hard-coded to 10, and that number is also used in some of the dialogues.  Menus with more than 10 entries, where the names of all entires aren't the same length, may have redraw problems because chracters are not overwritten.
+5.  The vertical size limit on menu fields is hard-coded to 10.  Menus with more than 10 entries, where the names of all entries aren't the same length, may have redraw problems because characters are not overwritten.
 
 6.  The Create VDB/Plug VBD/Mount VBD/Use VBD/Unmount VBD/Unplug VBD/Destroy VBD sequence isn't rock solid if it fails or if you Ctrl-C out or kill the process half way through.  The app attempts to tidy up by deleting dangling VBDs (identified by 'xsconsole_tmp' in their other_config) on startup, otherwise these would build up over time.  VBDs can also fail to unplug immediately after an umount because the kernel is still tidying up after the umount, so the app tries twice.
 

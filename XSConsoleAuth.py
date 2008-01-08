@@ -24,8 +24,11 @@ class Auth:
         self.defaultPassword = ''
         self.testingHost = None
         self.authTimestampSeconds = None
+        
+        self.testMode = False
         # The testing.txt file is used for testing only
         if os.path.isfile(sys.path[0]+"/testing.txt"):
+            self.testMode = True
             testingFile = open(sys.path[0]+"/testing.txt")
             for line in testingFile:
                 match = re.match(r'host=(\w+)', line)
@@ -42,6 +45,9 @@ class Auth:
         if cls.instance is None:
             cls.instance = Auth()
         return cls.instance
+    
+    def IsTestMode(self):
+        return self.testMode
     
     def AuthAge(self):
         if self.isAuthenticated:

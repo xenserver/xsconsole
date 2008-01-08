@@ -562,6 +562,32 @@ class RootDialogue(Dialogue):
             Lang("<F5>") : Lang("Refresh")
         })
 
+    def UpdateFieldsNTP(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Network Time (NTP)"))
+        
+        inPane.AddWrappedTextField(Lang("One or more network time servers can be configured to synchronize time between servers.  This is especially important for pooled servers."))
+        inPane.NewLine()
+        
+        if not data.chkconfig.ntpd(False):
+            inPane.AddWrappedTextField(Lang("Currently NTP is disabled, and the following servers are configured."))
+        else:
+            inPane.AddWrappedTextField(Lang("Currently NTP is enabled, and the following servers are configured."))
+        
+        inPane.NewLine()
+        
+        servers = data.ntp.servers([])        
+        if len(servers) == 0:
+            inPane.AddWrappedTextField(Lang("<No servers configured>"))
+        else:
+            for server in servers:
+                inPane.AddWrappedTextField(server)
+        
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Reconfigure"),
+            Lang("<F5>") : Lang("Refresh")
+        })
+
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
@@ -629,9 +655,7 @@ class RootDialogue(Dialogue):
         self.menu.CurrentMenu().HandleEnter()
     
     def Reset(self):
-        self.ChangeMenu('MENU_ROOT')
-        self.menu.CurrentMenu().CurrentChoiceSet(0)
-        self.menu.CurrentMenu().HandleEnter()
+        self.menu.Reset()
         self.UpdateFields()
         self.Pane('menu').Refresh()
         self.Pane('status').Refresh()
@@ -659,6 +683,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SYSLOG':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_NTP':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(NTPDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SR':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':

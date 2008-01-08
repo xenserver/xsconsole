@@ -116,7 +116,7 @@ class State:
             
             saveFile = open(self.SaveFilename(), "w")
             pickler = pickle.Pickler(saveFile)
-            self.modified = False # Modify before saving`
+            self.modified = False # Set unmodified before saving
             pickler.dump(self)
             saveFile.close()
         except Exception, e:

@@ -162,6 +162,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_HOSTNAME'), lambda : inDialogue.ChangeStatus('HOSTNAME')),
                 ChoiceDef(Lang("Remote Logging (syslog)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
+                ChoiceDef(Lang("Network Time (NTP)"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_NTP'), lambda : inDialogue.ChangeStatus('NTP')),
                 ChoiceDef(Lang("Disks and Storage Repositories"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
                 ChoiceDef(Lang("Setup Remote Database"),
@@ -215,3 +217,12 @@ class RootMenu:
     def ChangeMenu(self, inKey):
         self.currentKey = inKey
         self.CurrentMenu().HandleEnter()
+
+    def Reset(self):
+        self.currentKey = 'MENU_ROOT'
+        
+        for menu in self.menus.values():
+            menu.CurrentChoiceSet(0)
+            
+        self.CurrentMenu().HandleEnter()
+        
