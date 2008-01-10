@@ -103,28 +103,28 @@ class Auth:
         if inUsername != 'root':
             raise Exception(Lang("Only root can log in here"))
         
-        if True: # FIXME Use old method for now
-            # Old method - create a TCP session
-            session= self.TCPSession(inPassword, inUsername)
-            self.CloseSession(session)
-            # No exception implies a successful login
-        else:
-            def PAMConv(inAuth, inQueryList, inUserData):
-                retVal = []
-                for query in inQueryList:
-                    if query[1] == PAM.PAM_PROMPT_ECHO_ON or query[1] == PAM.PAM_PROMPT_ECHO_OFF:
-                        # Return inPassword from the scope that encloses this function
-                        retVal.append((inPassword, 0)) # Append a tuple with two values (so double brackets)
-                return retVal
-                
-            auth = PAM.pam()
-            auth.start('passwd')
-            auth.set_item(PAM.PAM_USER, inUsername)
-            auth.set_item(PAM.PAM_CONV, PAMConv)
+        # Old method - create a TCP session
+        # session= self.TCPSession(inPassword, inUsername)
+        # self.CloseSession(session)
+        # No exception implies a successful login
+        
+        def PAMConv(inAuth, inQueryList, *theRest):
+            # *theRest consumes the userData argument from later versions of PyPAM
+            retVal = []
+            for query in inQueryList:
+                if query[1] == PAM.PAM_PROMPT_ECHO_ON or query[1] == PAM.PAM_PROMPT_ECHO_OFF:
+                    # Return inPassword from the scope that encloses this function
+                    retVal.append((inPassword, 0)) # Append a tuple with two values (so double brackets)
+            return retVal
             
-            auth.authenticate() 
-            auth.acct_mgmt()
-            # No exception implies a successful login
+        auth = PAM.pam()
+        auth.start('passwd')
+        auth.set_item(PAM.PAM_USER, inUsername)
+        auth.set_item(PAM.PAM_CONV, PAMConv)
+        
+        auth.authenticate() 
+        auth.acct_mgmt()
+        # No exception implies a successful login
 
         self.loggedInUsername = inUsername
         if self.testingHost is not None:
