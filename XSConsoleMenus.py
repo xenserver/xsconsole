@@ -164,6 +164,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
                 ChoiceDef(Lang("Network Time (NTP)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_NTP'), lambda : inDialogue.ChangeStatus('NTP')),
+                ChoiceDef(Lang("Set Timezone"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TIMEZONE'), lambda : inDialogue.ChangeStatus('TIMEZONE')),
                 ChoiceDef(Lang("Disks and Storage Repositories"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
                 ChoiceDef(Lang("Setup Remote Database"),

@@ -588,6 +588,18 @@ class RootDialogue(Dialogue):
             Lang("<F5>") : Lang("Refresh")
         })
 
+    def UpdateFieldsTIMEZONE(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Set Timezone"))
+        
+        inPane.AddWrappedTextField(Lang("Use this option to set the timezone for this server."))
+        inPane.NewLine()
+        if data.timezones.current('') != '':
+            inPane.AddWrappedTextField(Lang("The current timezone is"))
+            inPane.NewLine()
+            inPane.AddWrappedTextField(data.timezones.current(Lang('<Unknown>')))
+            inPane.NewLine()
+
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
@@ -598,7 +610,9 @@ class RootDialogue(Dialogue):
         menuPane.ResetFields()
         menuPane.ResetPosition()
         menuPane.AddTitleField(self.menu.CurrentMenu().Title())
-        menuPane.AddMenuField(self.menu.CurrentMenu())
+        # Scrolling doesn't work well for this menu because it's recreated on update.  Preserving the
+        # scroll position would imporove it if there are more than 15 entries
+        menuPane.AddMenuField(self.menu.CurrentMenu(), 15) # Allow extra height for this menu
         statusPane = self.Pane('status')
         try:
             statusPane.ResetFields()
@@ -685,6 +699,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_NTP':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(NTPDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_TIMEZONE':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(TimezoneDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SR':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':

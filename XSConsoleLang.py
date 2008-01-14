@@ -55,6 +55,7 @@ class Language:
             thisLine = text[:lineLength]
             thisLine = thisLine.replace("\t", " ") # Tab is used as a non-breaking space
             thisLine = thisLine.replace("\r", "RET") # Debugging
+            thisLine = thisLine.strip() # Remove leading whitespace (generally the second space in a double space)
             retArray.append(thisLine)
             
             if spacePos == -1:

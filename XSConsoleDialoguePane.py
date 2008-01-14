@@ -183,9 +183,9 @@ class DialoguePane:
         passwordField.HideText()
         self.AddInputFieldObj(passwordField, inLabel)
     
-    def AddMenuField(self, inMenu):
+    def AddMenuField(self, inMenu, inHeight = None):
         # Arbitrarily limit menu size to 10 lines
-        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.highlightColour, 10, Field.FLOW_RETURN))
+        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.highlightColour, FirstValue(inHeight, 10), Field.FLOW_RETURN))
     
     def AddKeyHelpField(self, inKeys):
         for name in sorted(inKeys):

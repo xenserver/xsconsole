@@ -7,7 +7,7 @@
 
 import XenAPI
 
-import commands, re, sys, tempfile
+import commands, re, shutil, sys, tempfile
 from pprint import pprint
 
 from XSConsoleAuth import *
@@ -77,6 +77,8 @@ class Data:
     def Create(self):
         # Create fills in data that never changes.  Update fills volatile data
         self.data = {}
+        
+        self.ReadTimezones()
         
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
@@ -178,6 +180,7 @@ class Data:
         self.UpdateFromNTPConf()
         self.UpdateFromRemoteDBConf()
         self.UpdateFromPatchVersions()
+        self.UpdateFromTimezone()
         
         if os.path.isfile("/sbin/chkconfig"):
             (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd && /sbin/chkconfig --list ntpd")
@@ -570,6 +573,54 @@ class Data:
             match = re.match(r'flags\s*:\s*(.*)', line)
             if match:
                 self.data['cpuinfo']['flags'] = match.group(1).split()
+
+    def ReadTimezones(self):
+        self.data['timezones'] = {
+            'continents': {
+                Lang('Africa') : 'Africa',
+                Lang('Americas') : 'America',
+                Lang('US') : 'US',
+                Lang('Canada') : 'Canada',
+                Lang('Asia') : 'Asia',
+                Lang('Atlantic Ocean') : 'Atlantic',
+                Lang('Australia') : 'Australia',
+                Lang('Europe') : 'Europe',
+                Lang('Indian Ocean') : 'Indian',
+                Lang('Pacific Ocean') : 'Pacific',
+                Lang('Other') : 'Etc'
+            },
+            'cities' : {} 
+        }
+        
+        filterExp = re.compile('('+'|'.join(self.data['timezones']['continents'].values())+')')
+
+        zonePath = '/usr/share/zoneinfo'
+        for root, dirs, files in os.walk(zonePath):
+            for filename in files:
+                filePath = os.path.join(root, filename)
+                localPath = filePath[len(zonePath)+1:] # Just the path afer /usr/share/zoneinfo/
+                if filterExp.match(localPath):
+                    # Store only those entries starting with on of our known prefixes
+                    self.data['timezones']['cities'][localPath] = filePath
+
+    def UpdateFromTimezone(self):
+        if os.path.isfile('/etc/timezone'):
+            file = open('/etc/timezone')
+            self.data['timezones']['current'] = file.readline().rstrip()
+            file.close()
+
+    def TimezoneSet(self, inTimezone):
+        localtimeFile = '/etc/localtime'
+        if os.path.isfile(localtimeFile):
+            os.remove(localtimeFile)
+        shutil.copy(self.timezones.cities({})[inTimezone], localtimeFile)
+        
+        file = open('/etc/timezone', 'w')
+        file.write(inTimezone+"\n")
+        file.close()
+        
+    def CurrentTimeString(self):
+        return commands.getoutput('/bin/date -R')
 
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway, inDNS = None):
         # Double-check authentication
