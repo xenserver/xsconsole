@@ -600,6 +600,18 @@ class RootDialogue(Dialogue):
             inPane.AddWrappedTextField(data.timezones.current(Lang('<Unknown>')))
             inPane.NewLine()
 
+    def UpdateFieldsKEYBOARD(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Keyboard Language and Layout"))
+        
+        inPane.AddWrappedTextField(Lang("Use this option to select the correct language and layout for your keyboard."))
+        inPane.NewLine()
+        if data.keyboard.currentname('') != '':
+            inPane.AddWrappedTextField(Lang("The current keyboard type is"))
+            inPane.NewLine()
+            inPane.AddWrappedTextField(data.keyboard.currentname(Lang('<Unknown>')))
+            inPane.NewLine()
+            
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
@@ -611,7 +623,7 @@ class RootDialogue(Dialogue):
         menuPane.ResetPosition()
         menuPane.AddTitleField(self.menu.CurrentMenu().Title())
         # Scrolling doesn't work well for this menu because it's recreated on update.  Preserving the
-        # scroll position would imporove it if there are more than 15 entries
+        # scroll position would improve it if there are more than 15 entries
         menuPane.AddMenuField(self.menu.CurrentMenu(), 15) # Allow extra height for this menu
         statusPane = self.Pane('status')
         try:
@@ -701,6 +713,8 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(NTPDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_TIMEZONE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(TimezoneDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_KEYBOARD':
+            self.layout.PushDialogue(KeyboardDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_SR':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':

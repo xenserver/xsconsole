@@ -33,6 +33,10 @@ class App:
         # Purge leftover VBDs at startup
         Data.Inst().PurgeVBDs()
         
+        # Reinstate keymap
+        if State.Inst().Keymap() is not None:
+            Data.Inst().KeymapSet(State.Inst().Keymap())
+        
         while not doQuit:
             try:
                 try:
@@ -142,7 +146,13 @@ class App:
             elif resized and gotKey is not None:
                 if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
                 resized = False
-                
+            
+            # Screen out non-ASCII and unusual characters
+            for char in FirstValue(gotKey, ''):
+                if char >="\177": # Characters 128 and greater
+                    gotKey = None
+                    break
+    
             needsRefresh = False
             secondsNow = time.time()
             secondsRunning = secondsNow - startSeconds

@@ -12,6 +12,7 @@ from pprint import pprint
 
 from XSConsoleAuth import *
 from XSConsoleRemoteDB import *
+from XSConsoleKeymaps import *
 from XSConsoleLang import *
 from XSConsoleState import *
 from XSConsoleUtils import *
@@ -79,6 +80,7 @@ class Data:
         self.data = {}
         
         self.ReadTimezones()
+        self.ReadKeymaps()
         
         (status, output) = commands.getstatusoutput("dmidecode")
         if status != 0:
@@ -181,6 +183,7 @@ class Data:
         self.UpdateFromRemoteDBConf()
         self.UpdateFromPatchVersions()
         self.UpdateFromTimezone()
+        self.UpdateFromKeymap()
         
         if os.path.isfile("/sbin/chkconfig"):
             (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd && /sbin/chkconfig --list ntpd")
@@ -622,6 +625,62 @@ class Data:
     def CurrentTimeString(self):
         return commands.getoutput('/bin/date -R')
 
+    def ReadKeymaps(self):
+        self.data['keyboard'] = {
+            'keymaps' : {} 
+        }
+
+        keymapsPath = '/lib/kbd/keymaps/i386'
+        excludeExp = re.compile(re.escape(keymapsPath)+r'/include')
+        
+        filterExp = re.compile(r'(.*).map.gz$')
+
+        for root, dirs, files in os.walk(keymapsPath):
+            for filename in files:
+                if not excludeExp.match(root):
+                    match = filterExp.match(filename)
+                    if match:
+                        filePath = os.path.join(root, filename)
+                        self.data['keyboard']['keymaps'][match.group(1)] = filePath
+        
+        self.data['keyboard']['namestomaps'] = Keymaps.NamesToMaps()
+        for value in self.data['keyboard']['namestomaps'].values():
+            if not value in self.data['keyboard']['keymaps']:
+                print "Warning: Missing keymap " + value
+    
+    def KeymapSet(self, inKeymap):
+        # mapFile = self.keyboard.keymaps().get(inKeymap, None)
+        # if mapFile is None:
+        #     raise Exception(Lang("Unknown keymap '")+str(inKeymap)+"'")
+        
+        keymapParam = ShellUtils.MakeSafeParam(inKeymap)
+        # Load the keymap now
+        status, output = commands.getstatusoutput('/bin/loadkeys "'+keymapParam+'"')
+        if status != 0:
+            raise Exception(output)
+        
+        # Use state-based method to ensure that keymap is set on first run
+        State.Inst().KeymapSet(keymapParam)
+
+        # Store the keymap for next boot
+        # Currently this has no effect
+        file = open('/etc/sysconfig/keyboard', 'w')
+        file.write('KEYTABLE="'+keymapParam+'"\n')
+        file.close()
+    
+    def KeymapToName(self, inKeymap):
+        # Derive a name to present to the user
+        mapName = inKeymap
+        for key, value in self.keyboard.namestomaps({}).iteritems():
+            if value == inKeymap:
+                mapName = key
+        
+        return mapName
+    
+    def UpdateFromKeymap(self):
+        keymap = State.Inst().Keymap()
+        self.data['keyboard']['currentname'] = self.KeymapToName(keymap)
+    
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway, inDNS = None):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()

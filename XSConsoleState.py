@@ -14,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 7
+    thisVersion = 8
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -27,6 +27,7 @@ class State:
         self.rebootMessage = None
         self.weStoppedXAPI = False
         self.verboseBoot = False
+        self.keymap = None
         
     @classmethod
     def SaveFilename(self):
@@ -83,6 +84,13 @@ class State:
         self.verboseBoot = inValue
         self.modified = True
     
+    def Keymap(self):
+        return self.keymap
+        
+    def KeymapSet(self, inValue):
+        self.keymap = inValue
+        self.modified = True
+
     def IsFirstBoot(self):
         return self.isFirstBoot
     

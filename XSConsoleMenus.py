@@ -172,6 +172,8 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTEDB'), lambda : inDialogue.ChangeStatus('REMOTEDB')),
                 ChoiceDef(Lang("Install License File"), lambda: inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'),
                     lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
+                ChoiceDef(Lang("Keyboard Language and Layout"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_KEYBOARD'), lambda : inDialogue.ChangeStatus('KEYBOARD')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
             ]),
