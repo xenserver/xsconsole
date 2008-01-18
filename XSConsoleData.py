@@ -109,6 +109,14 @@ class Data:
         
         self.Update()
     
+    def FakeMetrics(self, inPIF):
+        retVal = {
+            'carrier' : False,
+            'device_name' : '',
+            'vendor_name' : ''
+            }
+        return retVal
+    
     def Update(self):
         self.data['host'] = {}
 
@@ -129,13 +137,29 @@ class Data:
                 
                 def convertPIF(inPIF):
                     retVal = self.session.xenapi.PIF.get_record(inPIF)
-                    retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
-                    if retVal['network'] != 'OpaqueRef:NULL':
+                    try:
+                        retVal['metrics'] = self.session.xenapi.PIF_metrics.get_record(retVal['metrics'])
+                    except XenAPI.Failure:
+                        retVal['metrics' ] = self.FakeMetrics(inPIF)
+                    
+                    try:
                         retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
+                    except XenAPI.Failure, e:
+                        pass # Ignore failure
+                        
                     retVal['opaqueref'] = inPIF
                     return retVal
     
                 self.data['host']['PIFs'] = map(convertPIF, self.data['host']['PIFs'])
+    
+                # Create missing PIF names
+                for pif in self.data['host']['PIFs']:
+                    if pif['metrics']['device_name'] == '':
+                        if not pif['physical']:
+                            # Bonded PIF
+                            pif['metrics']['device_name'] = Lang("Virtual PIF within ")+pif['network'].get('name_label', Lang('<Unknown>'))
+                        else:
+                            pif['metrics']['device_name'] = Lang('<Unknown>')
     
                 # Sort PIFs by device name for consistent order
                 self.data['host']['PIFs'].sort(lambda x, y : cmp(x['device'], y['device']))

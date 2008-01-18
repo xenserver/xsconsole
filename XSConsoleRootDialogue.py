@@ -224,7 +224,7 @@ class RootDialogue(Dialogue):
     def UpdateFieldsPIF(self, inPane):
         data = Data.Inst()
         
-        inPane.AddTitleField(Lang("Physical Network Interfaces"))
+        inPane.AddTitleField(Lang("Network Interfaces"))
         
         for pif in data.host.PIFs([]):
             inPane.AddWrappedBoldTextField(pif['metrics']['device_name'])
@@ -491,7 +491,7 @@ class RootDialogue(Dialogue):
             inPane.AddWrappedTextField(str(dns))
         inPane.NewLine()
         inPane.AddWrappedTextField(Lang("Changes to this configuration may be overwritten if any "
-                                        "interfaces are configured to used DHCP."))
+                                        "interfaces are configured to use DHCP."))
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Reconfigure DNS"),
             Lang("<F5>") : Lang("Refresh")
