@@ -36,7 +36,7 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(data.dmi.system_manufacturer())
         inPane.AddWrappedTextField(data.dmi.system_product_name())
         inPane.NewLine()
-        inPane.AddWrappedTextField(data.host.software_version.product_brand() + ' ' +
+        inPane.AddWrappedTextField(Language.Inst().Branding(data.host.software_version.product_brand()) + ' ' +
             data.derived.fullversion())
         inPane.NewLine()
         inPane.AddTitleField(Lang("Management Network Parameters"))
@@ -126,7 +126,7 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("XenServer Product Information"))
-        inPane.AddStatusField(Lang("Name", 16), str(data.host.software_version.product_brand()))
+        inPane.AddStatusField(Lang("Name", 16), Language.Inst().Branding((data.host.software_version.product_brand())))
         inPane.AddStatusField(Lang("Version", 16), str(data.derived.fullversion()))
         inPane.AddStatusField(Lang("Xen Version", 16), str(data.host.software_version.xen()))
         inPane.AddStatusField(Lang("Kernel Version",16), str(data.host.software_version.linux()))
@@ -142,7 +142,7 @@ class RootDialogue(Dialogue):
             expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
         
         inPane.AddTitleField(Lang("License"))
-        inPane.AddStatusField(Lang("Product SKU", 16), str(data.host.license_params.sku_type()))
+        inPane.AddStatusField(Lang("Product SKU", 16), str(Language.Inst().Branding(data.host.license_params.sku_type())))
         inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
         inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
         inPane.NewLine()

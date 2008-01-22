@@ -5,7 +5,10 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
+from XSConsoleConfig import *
+
 import XenAPI # For XenAPI.Failure
+
 
 # Global function
 def Lang(inLabel, inPad = 0):
@@ -15,6 +18,17 @@ def Lang(inLabel, inPad = 0):
     return retStr
     
 class Language:
+    instance = None
+    
+    def __init__(self):
+        self.brandingMap = Config.Inst().BrandingMap()
+    
+    @classmethod
+    def Inst(self):
+        if self.instance is None:
+            self.instance = Language()
+        return self.instance
+    
     @classmethod
     def Quantity(cls, inText, inNumber):
         if inNumber == 1:
@@ -64,3 +78,7 @@ class Language:
                 text = text[lineLength+1:] # Split at space or return so discard
             
         return retArray
+
+    def Branding(self, inText):
+        # Return either the value in the hash or (if not present) the unchanged parameter
+        return self.brandingMap.get(inText, inText)

@@ -128,6 +128,7 @@ class App:
         startSeconds = time.time()
         lastDataUpdateSeconds = startSeconds
         resized = False
+        data = Data.Inst()
         
         self.layout.DoUpdate()
         while not doQuit:
@@ -157,11 +158,11 @@ class App:
             secondsNow = time.time()
             secondsRunning = secondsNow - startSeconds
 
-            if Data.Inst().host.address('') == '':
+            if data.host.address('') == '':
                 # If the host doesn't yet have an IP, reload data occasionally to pick up DHCP updates
                 if secondsNow - lastDataUpdateSeconds >= 4:
                     lastDataUpdateSeconds = secondsNow
-                    Data.Inst().Update()
+                    data.Update()
                     self.layout.UpdateRootFields()
                     needsRefresh = True
     
@@ -175,26 +176,26 @@ class App:
                     self.layout.TopDialogue().Reset()
                     needsRefresh = True
                 elif gotKey == 'KEY_F(5)':
-                    Data.Inst().Update()
+                    data.Update()
                     self.layout.UpdateRootFields()
                     needsRefresh = True
                     
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             
+            bannerStr = Language.Inst().Branding(data.host.software_version.product_brand('')) + ' ' + data.host.software_version.product_version('')
+            
             if Auth.Inst().IsAuthenticated():
-                bannerStr = Lang('User')+': '+Auth.Inst().LoggedInUsername()
-                # Testing: bannerStr += ' ('+str(int(Auth.Inst().AuthAge()))+')'
+                hostStr = Auth.Inst().LoggedInUsername()+'@'+data.host.name_label('')
             else:
-                data = Data.Inst()
-                bannerStr = data.host.software_version.product_brand('') + ' ' + data.host.software_version.product_version('')
+                hostStr = data.host.name_label('')
                 
             # Testing
             # if gotKey is not None:
             #     bannerStr = gotKey
             
-            timeStr = time.strftime("%H:%M:%S", time.localtime())
-            statusLine = "%-70s%10.10s" % (bannerStr ,timeStr)
+            timeStr = time.strftime(" %H:%M:%S ", time.localtime())
+            statusLine = ("%-35s%10.10s%35.35s" % (bannerStr[:35], timeStr[:10], hostStr[:35]))
             self.renderer.RenderStatus(self.layout.Window(Layout.WIN_TOPLINE), statusLine)
 
             if needsRefresh:

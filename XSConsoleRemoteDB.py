@@ -13,8 +13,8 @@ from XSConsoleBases import *
 oldPath = sys.path
 
 # Local shared_db_util.py overrides system copy
-sys.path = ['.', '/opt/xensource/sm'] + sys.path
-if os.path.isfile(sys.path[0]+'/shared_db_util.py') or os.path.isfile(sys.path[1]+'/shared_db_util.py'):
+sys.path = ['/opt/xensource/sm'] + sys.path
+if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
     try:
         import shared_db_util
     except Exception, e:

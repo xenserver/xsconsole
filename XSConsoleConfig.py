@@ -43,6 +43,10 @@ class Config:
     def FTPServer(self):
         return self.ftpserver
     
+    def BrandingMap(self):
+        return {}
+        
+    
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):
     import XSConsoleConfigOEM
