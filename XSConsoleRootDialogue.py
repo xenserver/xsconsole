@@ -522,6 +522,12 @@ class RootDialogue(Dialogue):
             Lang("<Enter>") : Lang("Configure SRs")
         })
 
+    def UpdateFieldsREMOTE(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Remote Resource Configuration"))
+    
+        inPane.AddWrappedTextField(Lang("This menu configures Storage Repositories for suspend images and crash dumps, and remote databases."))
+
     def UpdateFieldsREMOTEDB(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Setup Remote Database"))
