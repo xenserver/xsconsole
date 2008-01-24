@@ -99,6 +99,8 @@ class RootMenu:
                 lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
             ChoiceDef(Lang("Server Management"), 
                 lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+            ChoiceDef(Lang("Remote Resource Configuration"), 
+                lambda : inDialogue.ChangeMenu('MENU_REMOTE'), lambda : inDialogue.ChangeStatus('REMOTE')),
             ChoiceDef(Lang("Backup, Restore and Update"), 
                 lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
             ChoiceDef(Lang("Technical Support"), 
@@ -168,12 +170,21 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TIMEZONE'), lambda : inDialogue.ChangeStatus('TIMEZONE')),
                 ChoiceDef(Lang("Disks and Storage Repositories"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
-                ChoiceDef(Lang("Setup Remote Database"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTEDB'), lambda : inDialogue.ChangeStatus('REMOTEDB')),
                 ChoiceDef(Lang("Install License File"), lambda: inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'),
                     lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
                 ChoiceDef(Lang("Keyboard Language and Layout"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_KEYBOARD'), lambda : inDialogue.ChangeStatus('KEYBOARD')),
+                ChoiceDef(Lang("Test Network"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
+            ]),
+
+            'MENU_REMOTE' : Menu(self, 'MENU_ROOT', Lang("Remote Configuration"), [
+                ChoiceDef(Lang("Setup Remote Database"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTEDB'), lambda : inDialogue.ChangeStatus('REMOTEDB')),
+                ChoiceDef(Lang("Specify Suspend SR"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SUSPENDSR'),
+                    lambda : inDialogue.ChangeStatus('SUSPENDSR')),
+                ChoiceDef(Lang("Specify Crash Dump SR"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CRASHDUMPSR'), lambda : inDialogue.ChangeStatus('CRASHDUMPSR')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
             ]),
@@ -188,7 +199,7 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('CHANGETIMEOUT'))
             ]), 
  
-         'MENU_BURP' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Patch"), burpChoices),
+        'MENU_BURP' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Patch"), burpChoices),
             
         'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
             ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),

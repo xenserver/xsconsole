@@ -132,6 +132,18 @@ class Data:
                 # Expand the items we need in the host record
                 self.data['host']['metrics'] = self.session.xenapi.host_metrics.get_record(self.data['host']['metrics'])
                 
+                try:
+                    self.data['host']['suspend_image_sr'] = self.session.xenapi.SR.get_record(self.data['host']['suspend_image_sr'])
+                except:
+                    # NULL or dangling reference
+                    self.data['host']['suspend_image_sr'] = None
+                    
+                try:
+                    self.data['host']['crash_dump_sr'] = self.session.xenapi.SR.get_record(self.data['host']['crash_dump_sr'])
+                except:
+                    # NULL or dangling reference
+                    self.data['host']['crash_dump_sr'] = None
+                
                 convertCPU = lambda cpu: self.session.xenapi.host_cpu.get_record(cpu)
                 self.data['host']['host_CPUs'] = map(convertCPU, self.data['host']['host_CPUs'])
                 
@@ -197,8 +209,28 @@ class Data:
                         vmList[i] = self.session.xenapi.VM.get_record(vm)
                         vmList[i]['allowed_VBD_devices'] = self.session.xenapi.VM.get_allowed_VBD_devices(vm)
                         vmList[i]['opaqueref'] = vm
-                    
+                            
             except Exception, e:
+                pass # Ignore failure - just leave data empty
+
+            try:
+                self.data['sr'] = []
+
+                pbdRefs = []
+                for pbd in self.data['host'].get('PBDs', []):
+                    pbdRefs.append(pbd['opaqueref'])
+                    
+                srMap= self.session.xenapi.SR.get_all_records()
+                for opaqueRef, values in srMap.iteritems():
+                    values['opaqueref'] = opaqueRef
+                    values['islocal'] = False
+                    for pbdRef in values.get('PBDs', []):
+                        if pbdRef in pbdRefs:
+                            values['islocal'] = True
+                            
+                    self.data['sr'].append(values)
+                    
+            except:
                 pass # Ignore failure - just leave data empty
 
         self.UpdateFromResolveConf()
@@ -704,6 +736,18 @@ class Data:
     def UpdateFromKeymap(self):
         keymap = State.Inst().Keymap()
         self.data['keyboard']['currentname'] = self.KeymapToName(keymap)
+    
+    def SuspendSRSet(self, inSR):
+        # Double-check authentication
+        Auth.Inst().AssertAuthenticated()
+        self.RequireSession()
+        self.session.xenapi.host.set_suspend_image_sr(self.host.opaqueref(None), inSR['opaqueref'])
+    
+    def CrashDumpSRSet(self, inSR):
+        # Double-check authentication
+        Auth.Inst().AssertAuthenticated()
+        self.RequireSession()
+        self.session.xenapi.host.set_crash_dump_sr(self.host.opaqueref(None), inSR['opaqueref'])
     
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway, inDNS = None):
         # Double-check authentication

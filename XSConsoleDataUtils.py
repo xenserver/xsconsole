@@ -310,3 +310,23 @@ class MountVDI:
     def SizeString(self, inFilename, inDefault = None):
         return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)
         
+class SRUtils:
+    @classmethod
+    def SRList(cls, inMode = None):
+        
+        retVal = []
+        for sr in Data.Inst().sr([]):
+            name = ''
+            if sr['islocal']:
+                name += Lang('(local) ')
+            else:
+                name += Lang('(remote) ')
+                
+            name += sr['name_label']
+            
+            if inMode != 'rw' or sr['content_type'] not in ['iso']:
+                retVal.append( Struct(name = name, sr = sr) )
+            
+        retVal.sort(lambda x, y : cmp(x.name, y.name))
+
+        return retVal

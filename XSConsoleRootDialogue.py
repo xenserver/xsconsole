@@ -546,6 +546,38 @@ class RootDialogue(Dialogue):
             Lang("<Enter>") : Lang("Configure Remote DB")
         })
 
+    def UpdateFieldsSUSPENDSR(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Specify Suspend SR"))
+    
+        inPane.AddWrappedTextField(Lang("This server can be configured to use a Storage Repository for suspend images."))
+        inPane.NewLine()
+    
+        if not data.host.suspend_image_sr(False):
+            inPane.AddWrappedTextField(Lang("A Suspend Image SR is not configured on this server."))
+        else:
+            inPane.AddWrappedTextField(Lang("The SR named '")+data.host.suspend_image_sr.name_label()+Lang("' is configured as the Suspend Image SR for this server."))
+            
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Specify Suspend SR")
+        })
+
+    def UpdateFieldsCRASHDUMPSR(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Specify Crash Dump SR"))
+    
+        inPane.AddWrappedTextField(Lang("This server can be configured to use Storage Repository to store Crash Dumps."))
+        inPane.NewLine()
+    
+        if not data.host.crash_dump_sr(False):
+            inPane.AddWrappedTextField(Lang("A Crash Dump SR is not configured on this server."))
+        else:
+            inPane.AddWrappedTextField(Lang("The SR named '")+data.host.crash_dump_sr.name_label()+Lang("' is configured as the Crash Dump SR for this server."))
+            
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Specify Crash Dump SR")
+        })
+
     def UpdateFieldsSYSLOG(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Remote Logging (syslog)"))
@@ -716,13 +748,17 @@ class RootDialogue(Dialogue):
         elif inName == 'DIALOGUE_KEYBOARD':
             self.layout.PushDialogue(KeyboardDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_SR':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SRDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ClaimSRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':
             # Limit RemoteDB to one-shot only until reconfiguration is working
             if Data.Inst().remotedb.is_on_remote_storage(False):
                 self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Remote database is already configured - cannot reconfigure in this version")))
             else:
                 self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_SUSPENDSR':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SuspendSRDialogue(self.layout,  self.parent)))
+        elif inName == 'DIALOGUE_CRASHDUMPSR':
+            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(CrashDumpSRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_INSTALLLICENCE':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(LicenceDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':

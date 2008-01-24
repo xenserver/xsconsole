@@ -1075,7 +1075,7 @@ class KeyboardDialogue(Dialogue):
 
         data.Update()
 
-class SRDialogue(Dialogue):
+class ClaimSRDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
 
@@ -1757,6 +1757,122 @@ class ValidateDialogue(Dialogue):
             handled = True
 
         return handled
+
+class SRDialogue(Dialogue):
+    def __init__(self, inLayout, inParent):
+        Dialogue.__init__(self, inLayout, inParent)
+
+        self.ChangeState('INITIAL')
+    
+    def Custom(self, inKey):
+        return self.custom.get(inKey, None)
+    
+    def BuildPaneBase(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(self.Custom('title'))
+        pane.AddBox()
+    
+    def BuildPaneINITIAL(self):
+        data = Data.Inst()
+
+        self.choices = SRUtils.SRList(self.Custom('mode'))
+        choiceDefs = []
+        for choice in self.choices:
+            choiceDefs.append(ChoiceDef(choice.name, lambda: self.HandleSRChoice(self.srMenu.ChoiceIndex()) ) )
+
+        if len(choiceDefs) == 0:
+            choiceDefs.append(ChoiceDef('<No SRs available>', lambda: None)) # Avoid empty menu
+
+        self.srMenu = Menu(self, None, Lang("Select SR"), choiceDefs)
+
+        self.BuildPaneBase()
+        self.UpdateFields()
+
+    def ChangeState(self, inState):
+        self.state = inState
+        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+    
+    def UpdateFields(self):
+        self.Pane().ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane()
+        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
+        pane.ResetFields()
+        
+        pane.AddTitleField(self.Custom('prompt'))
+        pane.AddMenuField(self.srMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            self.layout.PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        handled = self.srMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_F(5)':
+            Data.Inst().Update()
+            self.BuildPaneINITIAL() # Updates menu
+            self.layout.Refresh()
+            handled = True
+        
+        return handled
+
+    def HandleSRChoice(self, inChoice):
+        self.DoAction(self.choices[inChoice].sr)
+    
+class SuspendSRDialogue(SRDialogue):
+    def __init__(self, inLayout, inParent):
+
+        self.custom = {
+            'title' : Lang("Select Storage Repository for Suspend"),
+            'prompt' : Lang("Please select a Storage Repository"),
+            'mode' : 'rw'
+        }
+        SRDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
+    def DoAction(self, inSR):
+        success = False
+        
+        self.layout.PopDialogue()
+        try:
+            Data.Inst().SuspendSRSet(inSR)
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Configuration Successful'),
+                Lang("Suspend SR set to '"+inSR['name_label']+"'")))
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration failed: ")+str(e)))
+        Data.Inst().Update()
+
+class CrashDumpSRDialogue(SRDialogue):
+    def __init__(self, inLayout, inParent):
+
+        self.custom = {
+            'title' : Lang("Select Storage Repository for Crash Dumps"),
+            'prompt' : Lang("Please select a Storage Repository"),
+            'mode' : 'rw'
+        }
+        SRDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
+        
+    def DoAction(self, inSR):
+        success = False
+        
+        self.layout.PopDialogue()
+        try:
+            Data.Inst().CrashDumpSRSet(inSR)
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Configuration Successful'),
+                Lang("Crash Dump SR set to '"+inSR['name_label']+"'")))
+        except Exception, e:
+            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration failed: ")+str(e)))
+        Data.Inst().Update()
 
 class FileDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
