@@ -32,34 +32,35 @@ class FileUtils:
         
         for pbd in Data.Inst().host.PBDs([]):
             sr = pbd.get('SR', {})
-            for vdi in sr.get('VDIs', []):
-                nameLabel = vdi.get('name_label', Lang('Unknown'))
-                readOnly = vdi.get('read_only', False)
-                if not re.match(r'(SCSI|USB)', nameLabel): # Skip if not USB or SCSI
-                    skip = True
-                elif inWritableOnly and readOnly:
-                    skip = True
-                else:
-                    match = True
-                    while match:
-                        match = re.match(r'(.*):0$', nameLabel)
+            contentType = sr.get('content_type', '')
+            if sr.get('type', '') == 'udev' and contentType in [ 'disk', 'iso' ]:
+                # Scan only SRs with type 'udev' and content type 'disk' or 'iso'
+                for vdi in sr.get('VDIs', []):
+                    nameLabel = vdi.get('name_label', Lang('Unknown'))
+                    readOnly = vdi.get('read_only', False)
+                    if inWritableOnly and readOnly:
+                        pass # Skip this VDI because we can't write to it (but need to)
+                    else:
+                        match = True
+                        while match:
+                            match = re.match(r'(.*):0$', nameLabel)
+                            if match:
+                                # Remove multiple trailing :0
+                                nameLabel = match.group(1)
+                        nameDesc = vdi.get('name_description', Lang('Unknown device'))
+                        match = re.match(r'(.*)\srev\b', nameDesc)
                         if match:
-                            # Remove multiple trailing :0
-                            nameLabel = match.group(1)
-                    nameDesc = vdi.get('name_description', Lang('Unknown device'))
-                    match = re.match(r'(.*)\srev\b', nameDesc)
-                    if match:
-                        # Remove revision information
-                        nameDesc = match.group(1)
+                            # Remove revision information
+                            nameDesc = match.group(1)
+                            
+                        deviceSize = int(vdi.get('physical_utilisation', 0))
+                        if deviceSize < 0:
+                            deviceSize = int(vdi.get('virtual_size', 0))
+    
+                        nameSize = cls.SizeString(deviceSize)
                         
-                    deviceSize = int(vdi.get('physical_utilisation', 0))
-                    if deviceSize < 0:
-                        deviceSize = int(vdi.get('virtual_size', 0))
-
-                    nameSize = cls.SizeString(deviceSize)
-                    
-                    name =  "%-50s%10.10s%10.10s" % (nameDesc[:50], nameLabel[:10], nameSize[:10])
-                    retVal.append(Struct(name = name, vdi = vdi))
+                        name =  "%-50s%10.10s%10.10s" % (nameDesc[:50], nameLabel[:10], nameSize[:10])
+                        retVal.append(Struct(name = name, vdi = vdi))
 
         retVal.sort(lambda x, y : cmp(x.vdi['name_label'], y.vdi['name_label']))
 

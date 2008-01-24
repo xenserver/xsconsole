@@ -1891,6 +1891,8 @@ class FileDialogue(Dialogue):
         pane.AddWrappedBoldTextField(Lang("File"))
         pane.AddWrappedTextField(self.filename+fileSize)
         
+        pane.NewLine()
+        
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
 
     def HandleKey(self, inKey):
