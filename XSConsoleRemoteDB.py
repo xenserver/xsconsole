@@ -5,7 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import os, sys
+import commands, os, sys
 from pprint import pprint
 
 from XSConsoleBases import *
@@ -126,3 +126,16 @@ class RemoteDB:
             inLUN
         )
         return retVal
+
+    def ConfigureNoDB(self):
+        confCommands = [
+            '/etc/init.d/xs-remote-db stop',
+            '/bin/rm /etc/xensource/remote.db.conf',
+            '/bin/cp -pf /etc/xensource/local.db.conf /etc/xensource/db.conf'
+            ]
+            
+        for command in confCommands:
+            status, output = commands.getstatusoutput(command)
+            if status != 0:
+                raise Exception(output)
+                

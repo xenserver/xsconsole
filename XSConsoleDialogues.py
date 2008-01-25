@@ -1341,7 +1341,7 @@ class RemoteDBDialogue(Dialogue):
         pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddWrappedTextField(Lang("Please enter the configuration details"))
+        pane.AddWrappedTextField(Lang("Please enter the configuration details.  Leave the hostname blank to specify no remote database."))
         pane.NewLine()
         
         pane.AddInputField(Lang("Initiator IQN",  26), data.remotedb.defaultlocaliqn(''), 'localiqn')
@@ -1406,6 +1406,7 @@ class RemoteDBDialogue(Dialogue):
         pane.AddWrappedTextField(self.IQNString(self.chosenIQN, self.chosenLUN))
         pane.NewLine()
         pane.AddMenuField(self.useMenu)
+        pane.NewLine()
         
         pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK") } )
 
@@ -1422,12 +1423,15 @@ class RemoteDBDialogue(Dialogue):
                 pane.ActivateNextInput()
             else:
                 self.newConf = pane.GetFieldValues()
-                try:
-                    self.layout.TransientBanner(Lang("Probing for IQNs..."))
-                    self.probedIQNs = RemoteDB.Inst().ProbeIQNs(self.newConf)
-                    self.ChangeState('CHOOSEIQN')
-                except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+                if self.newConf['remotehost'] == '':
+                    self.HandleUseChoice('REMOVE')
+                else:
+                    try:
+                        self.layout.TransientBanner(Lang("Probing for IQNs..."))
+                        self.probedIQNs = RemoteDB.Inst().ProbeIQNs(self.newConf)
+                        self.ChangeState('CHOOSEIQN')
+                    except Exception, e:
+                        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
                     
         elif inKey == 'KEY_TAB':
             pane.ActivateNextInput()
@@ -1512,6 +1516,20 @@ class RemoteDBDialogue(Dialogue):
             try:
                 try:
                     self.dbPresent = RemoteDB.Inst().ReadyForUse(self.newConf, self.chosenIQN, self.chosenLUN)
+                    self.layout.PopDialogue()
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                        Lang("Configuration Successful")))
+                except Exception, e:
+                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+            finally:
+                Data.Inst().StartXAPI()
+                Data.Inst().Update()
+        elif inChoice == 'REMOVE':
+            self.layout.TransientBanner(Lang("Configuring for Operation Without a Remote Database..."))
+            Data.Inst().StopXAPI()
+            try:
+                try:
+                    self.dbPresent = RemoteDB.Inst().ConfigureNoDB()
                     self.layout.PopDialogue()
                     self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
                         Lang("Configuration Successful")))
