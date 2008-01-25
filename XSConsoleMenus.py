@@ -184,9 +184,7 @@ class RootMenu:
                 ChoiceDef(Lang("Specify Suspend SR"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SUSPENDSR'),
                     lambda : inDialogue.ChangeStatus('SUSPENDSR')),
                 ChoiceDef(Lang("Specify Crash Dump SR"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CRASHDUMPSR'), lambda : inDialogue.ChangeStatus('CRASHDUMPSR')),
-                ChoiceDef(Lang("Test Network"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CRASHDUMPSR'), lambda : inDialogue.ChangeStatus('CRASHDUMPSR'))
             ]),
 
             'MENU_AUTH' : Menu(self, 'MENU_ROOT', Lang("Authentication"), [
