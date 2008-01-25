@@ -129,7 +129,7 @@ class RemoteDB:
 
     def ConfigureNoDB(self):
         confCommands = [
-            '/etc/init.d/xs-remote-db stop',
+            '(export TERM=xterm && /etc/init.d/xs-remote-db stop)',
             '/bin/rm /etc/xensource/remote.db.conf',
             '/bin/cp -pf /etc/xensource/local.db.conf /etc/xensource/db.conf'
             ]
