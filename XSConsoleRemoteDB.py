@@ -5,7 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import commands, os, sys
+import os, popen2, sys
 from pprint import pprint
 
 from XSConsoleBases import *
@@ -135,7 +135,16 @@ class RemoteDB:
             ]
             
         for command in confCommands:
-            status, output = commands.getstatusoutput(command)
-            if status != 0:
-                raise Exception(output)
+                    
+            popenObj = popen2.Popen4(command)
+            popenObj.tochild.close() # Send EOF
+            
+            # This method avoids the Interrupted System Call exception
+            while True:
+                try:
+                    popenObj.wait() # Must wait for completion
+                    break
+                except IOError, e:
+                    if e.errno != errno.EINTR: # Loop if EINTR
+                        raise
                 
