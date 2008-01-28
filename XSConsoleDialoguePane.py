@@ -125,12 +125,13 @@ class DialoguePane:
     def ResetScroll(self):
         self.yScrollPos =0
 
-    def ColoursSet(self, inBase, inBright, inHighlight = None, inTitle = None):
+    def ColoursSet(self, inBase, inBright, inHighlight = None, inSelected = None, inTitle = None):
         self.baseColour = inBase
         self.brightColour = inBright
         self.highlightColour = inHighlight or inBright
+        self.selectedColour = inSelected or 'MODAL_MENU_HIGHLIGHT' # FIXME: Remove hardcoded colour
         self.titleColour = inTitle or inBright
-
+        
     def MakeLabel(self, inLabel = None):
         return inLabel
 
@@ -175,11 +176,11 @@ class DialoguePane:
     
     def AddInputField(self, inName, inValue, inLabel):
         self.AddBodyFieldObj(TextField(str(inName), self.brightColour, Field.FLOW_RIGHT))
-        self.AddInputFieldObj(InputField(str(inValue), self.highlightColour, Field.FLOW_RETURN), inLabel)
+        self.AddInputFieldObj(InputField(str(inValue), self.highlightColour, self.selectedColour, Field.FLOW_RETURN), inLabel)
     
     def AddPasswordField(self, inName, inValue, inLabel):
         self.AddBodyFieldObj(TextField(str(inName), self.brightColour, Field.FLOW_RIGHT))
-        passwordField = InputField(str(inValue), self.highlightColour, Field.FLOW_RETURN)
+        passwordField = InputField(str(inValue), self.highlightColour, self.selectedColour, Field.FLOW_RETURN)
         passwordField.HideText()
         self.AddInputFieldObj(passwordField, inLabel)
     

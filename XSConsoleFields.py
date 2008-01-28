@@ -37,17 +37,20 @@ class SeparatorField(Field):
         return 1
 
 class InputField(Field):
-    def __init__(self, text, colour, flow):
+    def __init__(self, text, colour, selectedColour, flow):
         ParamsToAttr()
         self.activated = False
         self.cursorPos = len(self.text)
         self.hideText = False
+        self.selected = True
         
     def HideText(self):
         self.hideText = True
         
     def Activate(self):
         self.activated = True
+        self.cursorPos = len(self.text)
+        self.selected = (len(self.text) > 0)
         
     def Deactivate(self):
         self.activated = False
@@ -56,10 +59,20 @@ class InputField(Field):
         return self.text
     
     def Render(self, inPane, inX, inY):
+        colour = self.colour
+        suffix = ' '
+        if self.selected and self.activated:
+            colour = self.selectedColour
+            suffix = ''
+        
         if self.hideText:
-            inPane.AddWrappedText("*" * len(self.text), inX, inY, self.colour)
+            inPane.AddWrappedText("*" * len(self.text)+suffix, inX, inY, colour)
         else:
-            inPane.AddWrappedText(self.text, inX, inY, self.colour)
+            inPane.AddWrappedText(self.text+suffix, inX, inY, colour)
+        if self.selected:
+            # Make cursor the right colour
+            inPane.AddWrappedText(' ', inX+len(self.text), inY, self.colour)
+            
         if self.activated:
             inPane.CursorOn(inX+self.cursorPos, inY)
 
@@ -71,18 +84,33 @@ class InputField(Field):
         
     def HandleKey(self, inKey):
         handled = True
+        
+        if self.selected: # Handle keypress when the input text is selected
+            if inKey == 'KEY_LEFT':
+               self.cursorPos = 0 # Move cursor to start
+            elif inKey == 'KEY_RIGHT':
+                pass # Leave cursor at end
+            elif inKey == 'KEY_UP' or inKey == 'KEY_DOWN':
+                pass # Don't delete
+            else:
+                self.text = '' # First keypress deletes text
+            self.selected = False
+            
+        # Constain cursor within string (in case we deleted the string contents above)
+        self.cursorPos = min(self.cursorPos, len(self.text))
+
         if inKey == 'KEY_LEFT':
-            self.cursorPos = max(0, self.cursorPos - 1)
+            self.cursorPos = max(0, self.cursorPos - 1) # Move cursor left
         elif inKey == 'KEY_RIGHT':
-            self.cursorPos = min(len(self.text), self.cursorPos + 1)
+            self.cursorPos = min(len(self.text), self.cursorPos + 1) #Move cursor right
         elif inKey == 'KEY_DC':
-            self.text = self.text[:self.cursorPos] + self.text[self.cursorPos+1:]
+            self.text = self.text[:self.cursorPos] + self.text[self.cursorPos+1:] # Delete on right
         elif inKey == 'KEY_BACKSPACE':
             if (self.cursorPos > 0):
                 self.cursorPos -= 1
-                self.text = self.text[:self.cursorPos] + self.text[self.cursorPos+1:]
+                self.text = self.text[:self.cursorPos] + self.text[self.cursorPos+1:] # Delete on left
         elif len(inKey) == 1 and inKey[0] >= ' ':
-            self.text = self.text[:self.cursorPos] + inKey[0] + self.text[self.cursorPos:]
+            self.text = self.text[:self.cursorPos] + inKey[0] + self.text[self.cursorPos:] # Insert char
             self.cursorPos += 1
         else:
             handled = False

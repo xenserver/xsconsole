@@ -153,20 +153,19 @@ class CursesPane:
     def AddWrappedText(self, inString, inX, inY, inColour = None):
         yPos = inY
         width = self.xSize - inX - 1
-        if width < 1 : raise "Text outside of window"
-        
-        text = inString+" "
-        while len(text) > 0 and yPos < self.ySize:
-            spacePos = text.rfind(' ', 0, width)
-            if spacePos == -1:
-                lineLength = width
-            else:
-                lineLength = spacePos
-            
-            thisLine = text[0:lineLength]
-            text = text[lineLength+1:]
-            self.ClippedAddStr(thisLine, inX, inY, inColour)
-            yPos += 1
+        if width >= 1: # Text inside window
+            text = inString+" "
+            while len(text) > 0 and yPos < self.ySize:
+                spacePos = text.rfind(' ', 0, width)
+                if spacePos == -1:
+                    lineLength = width
+                else:
+                    lineLength = spacePos
+                
+                thisLine = text[0:lineLength]
+                text = text[lineLength+1:]
+                self.ClippedAddStr(thisLine, inX, inY, inColour)
+                yPos += 1
     
     def AddHCentredText(self, inString, inY, inColour = None):
         xStart = self.xSize / 2 - len(inString) / 2
