@@ -189,12 +189,18 @@ class Data:
                     
                 def convertPBD(inPBD):
                     retPBD = self.session.xenapi.PBD.get_record(inPBD)
-                    if retPBD['SR'] != 'OpaqueRef:NULL':
-                        srRef = retPBD['SR']
+                    srRef = retPBD['SR']
+                    try:
                         retPBD['SR'] = self.session.xenapi.SR.get_record(retPBD['SR'])
-                        retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
-                        retPBD['SR']['opaqueref'] = srRef
+                    except:
+                        retPBD['SR'] = None # retPBD['SR'] is OpaqueRef:NULL
                         
+                    if retPBD['SR'] is not None:
+                        retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
+                        for vdi in retPBD['SR']['VDIs']:
+                            vdi['SR'] = retPBD['SR']
+                            retPBD['SR']['opaqueref'] = srRef
+
                     retPBD['opaqueref'] = inPBD
                     return retPBD
                     

@@ -233,13 +233,13 @@ class MountVDI:
         
     def HandleMountFailure(self, inOutput):
         # Entered after self.Unmount has run
-        if not self.vdi['name_label'].lower().startswith('usb'):
+        if self.vdi['SR']['type'] != 'udev' or self.vdi['SR']['content_type'] != 'disk':
             # Take special action for USB devices only, i.e. don't reformat SCSI disks, etc.
             raise Exception(inOutput)
         
         if self.mode != 'rw':
             # Don't reformat media unless we're planning to write to it
-            raise Exception(inOutput)
+            raise Exception(Lang('This media is not readable.'))
         
         needsType = False
         for line in inOutput:
