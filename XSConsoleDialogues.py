@@ -22,7 +22,6 @@ class LoginDialogue(Dialogue):
         self.text = inText
         self.successFunc = inSuccessFunc
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.TitleSet("Login")
         pane.AddBox()
         self.UpdateFields()
@@ -84,7 +83,6 @@ class ChangePasswordDialogue(Dialogue):
         self.isPasswordSet = Auth.Inst().IsPasswordSet()
 
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.TitleSet("Change Password")
         pane.AddBox()
         self.UpdateFields()
@@ -155,7 +153,6 @@ class InfoDialogue(Dialogue):
         self.info = inInfo
         
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
 
@@ -185,7 +182,6 @@ class BannerDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
         self.text = inText
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
 
@@ -202,7 +198,6 @@ class QuestionDialogue(Dialogue):
         self.text = inText
         self.handler = inHandler
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddBox()
         self.UpdateFields()
 
@@ -293,7 +288,6 @@ class InterfaceDialogue(Dialogue):
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         
         pane.AddTitleField(Lang("Select NIC for management interface"))
         pane.AddMenuField(self.nicMenu)
@@ -302,7 +296,6 @@ class InterfaceDialogue(Dialogue):
     def UpdateFieldsMODE(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         
         pane.AddTitleField(Lang("Select DHCP or Static IP Address Configuration"))
         pane.AddMenuField(self.modeMenu)
@@ -311,7 +304,6 @@ class InterfaceDialogue(Dialogue):
     def UpdateFieldsSTATICIP(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.AddTitleField(Lang("Enter Static IP Address Configuration"))
         pane.AddInputField(Lang("IP Address",  14),  self.IP, 'IP')
         pane.AddInputField(Lang("Netmask",  14),  self.netmask, 'netmask')
@@ -321,7 +313,6 @@ class InterfaceDialogue(Dialogue):
     def UpdateFieldsPRECOMMIT(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         
         if self.nic is None:
             pane.AddWrappedTextField(Lang("No management interface will be configured"))
@@ -443,7 +434,6 @@ class DNSDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
         data=Data.Inst()
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.TitleSet(Lang("DNS Configuration"))
         pane.AddBox()
         
@@ -477,7 +467,6 @@ class DNSDialogue(Dialogue):
     
     def UpdateFieldsADD(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Enter the Nameserver IP Address"))
@@ -566,7 +555,6 @@ class InputDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout, inParent)
         pane = self.NewPane(DialoguePane(self.parent))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.TitleSet(self.Custom('title'))
         pane.AddBox()
         self.UpdateFields()
@@ -743,7 +731,6 @@ class NTPDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Select an Option"))
@@ -752,7 +739,6 @@ class NTPDialogue(Dialogue):
     
     def UpdateFieldsADD(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Enter the NTP Server Name or Address"))
@@ -765,7 +751,6 @@ class NTPDialogue(Dialogue):
 
     def UpdateFieldsREMOVE(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select Server Entry To Remove"))
@@ -913,7 +898,6 @@ class TimezoneDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Select Your Region"))
@@ -922,7 +906,6 @@ class TimezoneDialogue(Dialogue):
     
     def UpdateFieldsCITY(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Choose a City Within Your Timezone"))
@@ -1008,7 +991,6 @@ class KeyboardDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Select Your Keyboard Layout"))
@@ -1018,7 +1000,6 @@ class KeyboardDialogue(Dialogue):
             
     def UpdateFieldsKEYMAP(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please Select Your Keymap Name"))
@@ -1137,17 +1118,14 @@ class ClaimSRDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_FLASH', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("WARNING"))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddWarningField(Lang("WARNING"))
         pane.AddWrappedTextField(Lang("Once a disk is selected, this function will erase all information on that disk.  Do you want to continue?"))
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsDEVICE(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select a disk to erase and claim as a storage repository."))
@@ -1157,7 +1135,6 @@ class ClaimSRDialogue(Dialogue):
 
     def UpdateFieldsCUSTOM(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Enter the device name, e.g. /dev/sdb"))
@@ -1171,7 +1148,6 @@ class ClaimSRDialogue(Dialogue):
             
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddWrappedBoldTextField(Lang("Press <F8> to confirm that you want to erase all information on this disk and use it as a storage repository.  Data currently on this disk cannot be recovered after this step."))
@@ -1339,7 +1315,6 @@ class RemoteDBDialogue(Dialogue):
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         data = Data.Inst()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddWrappedTextField(Lang("Please enter the configuration details.  Leave the hostname blank to specify no remote database."))
@@ -1362,7 +1337,6 @@ class RemoteDBDialogue(Dialogue):
             
     def UpdateFieldsCHOOSEIQN(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please select from the list of discovered IQNs"))
@@ -1371,7 +1345,6 @@ class RemoteDBDialogue(Dialogue):
 
     def UpdateFieldsCHOOSELUN(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please select a LUN from the chosen IQN"))
@@ -1380,7 +1353,6 @@ class RemoteDBDialogue(Dialogue):
             
     def UpdateFieldsCREATEDB(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         if self.dbPresent or self.dbPresent is None: # Database is present but the user has chosen not to use it
@@ -1395,7 +1367,6 @@ class RemoteDBDialogue(Dialogue):
 
     def UpdateFieldsUSEDB(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         if self.dbPresent is None: # i.e. we don't know
@@ -1561,7 +1532,6 @@ class RemoteShellDialogue(Dialogue):
         
     def UpdateFields(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please select an option"))
@@ -1611,7 +1581,6 @@ class VerboseBootDialogue(Dialogue):
         
     def UpdateFields(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Please select an option"))
@@ -1668,11 +1637,9 @@ class ResetDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_FLASH', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("WARNING"))
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
+        pane.AddWarningField(Lang("WARNING"))
         pane.AddWrappedTextField(Lang("This function will delete ALL configuration information, ALL virtual machines "
             "and ALL information within storage repositories on local disks.  "
             "This operation cannot be undone.  Do you want to continue?"))
@@ -1680,7 +1647,6 @@ class ResetDialogue(Dialogue):
 
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddWrappedBoldTextField(Lang("Press <Enter> to confirm that you want to reset configuration data and "
@@ -1732,7 +1698,6 @@ class ValidateDialogue(Dialogue):
 
         pane = self.NewPane(DialoguePane(self.parent))
         
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.TitleSet(Lang("Validate Server Configuration"))
         pane.AddBox()
     
@@ -1817,7 +1782,6 @@ class SRDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(self.Custom('prompt'))
@@ -1964,7 +1928,6 @@ class FileDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(self.Custom('deviceprompt'))
@@ -1974,7 +1937,6 @@ class FileDialogue(Dialogue):
 
     def UpdateFieldsUSBNOTFORMATTED(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddWrappedBoldTextField(Lang("This USB media is not formatted.  Would you like to format it now?"))
@@ -1982,7 +1944,6 @@ class FileDialogue(Dialogue):
 
     def UpdateFieldsUSBNOTMOUNTABLE(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddWrappedBoldTextField(Lang("This USB media contains data but this application cannot mount it.  Would you like to format the media?  This will erase all data on the media."))
@@ -1990,7 +1951,6 @@ class FileDialogue(Dialogue):
 
     def UpdateFieldsFILES(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(self.Custom('fileprompt'))
@@ -1999,7 +1959,6 @@ class FileDialogue(Dialogue):
 
     def UpdateFieldsCUSTOM(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Enter Filename"))
@@ -2010,7 +1969,6 @@ class FileDialogue(Dialogue):
 
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(self.Custom('confirmprompt'))
@@ -2466,7 +2424,6 @@ class TestNetworkDialogue(Dialogue):
         
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_MENU_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Select Test"))
@@ -2475,7 +2432,6 @@ class TestNetworkDialogue(Dialogue):
         
     def UpdateFieldsCUSTOM(self):
         pane = self.Pane()
-        pane.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT')
         pane.ResetFields()
         
         pane.AddTitleField(Lang("Enter hostname or IP address to ping"))

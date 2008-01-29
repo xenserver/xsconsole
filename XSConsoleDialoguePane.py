@@ -61,6 +61,7 @@ class DialoguePane:
         self.yScrollPos = 0
         self.title = None
         self.hasBox = False
+        self.ColoursSet('MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT', 'MODAL_SELECTED', 'MODAL_BRIGHT', 'MODAL_FLASH')
         
     def ResetPosition(self):
         self.arranger.Reset()
@@ -125,12 +126,13 @@ class DialoguePane:
     def ResetScroll(self):
         self.yScrollPos =0
 
-    def ColoursSet(self, inBase, inBright, inHighlight = None, inSelected = None, inTitle = None):
+    def ColoursSet(self, inBase, inBright, inHighlight = None, inSelected = None, inTitle = None, inFlash = None):
         self.baseColour = inBase
         self.brightColour = inBright
-        self.highlightColour = inHighlight or inBright
-        self.selectedColour = inSelected or 'MODAL_MENU_HIGHLIGHT' # FIXME: Remove hardcoded colour
-        self.titleColour = inTitle or inBright
+        self.highlightColour = FirstValue(inHighlight, inBright)
+        self.selectedColour = FirstValue(inSelected, inBright)
+        self.titleColour = FirstValue(inTitle, inBright)
+        self.flashColour = FirstValue(inFlash, inBright)
         
     def MakeLabel(self, inLabel = None):
         return inLabel
@@ -152,6 +154,9 @@ class DialoguePane:
 
     def AddTitleField(self, inTitle):
         self.AddBodyFieldObj(TextField(inTitle, self.titleColour, Field.FLOW_DOUBLERETURN))
+        
+    def AddWarningField(self, inTitle):
+        self.AddBodyFieldObj(TextField(inTitle, self.flashColour, Field.FLOW_DOUBLERETURN))
         
     def AddTextField(self, inText, inFlow = None):
         self.AddBodyFieldObj(TextField(inText, self.baseColour, FirstValue(inFlow, Field.FLOW_RIGHT)))
@@ -186,7 +191,7 @@ class DialoguePane:
     
     def AddMenuField(self, inMenu, inHeight = None):
         # Arbitrarily limit menu size to 10 lines
-        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.highlightColour, FirstValue(inHeight, 10), Field.FLOW_RETURN))
+        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.selectedColour, FirstValue(inHeight, 10), Field.FLOW_RETURN))
     
     def AddKeyHelpField(self, inKeys):
         for name in sorted(inKeys):
