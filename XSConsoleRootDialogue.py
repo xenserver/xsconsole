@@ -782,8 +782,7 @@ class RootDialogue(Dialogue):
                 Lang("Do you want to revert this patch?"), lambda x: self.RevertDialogueHandler(x))))
         elif inName == 'DIALOGUE_BUGREPORT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
-                Lang("This operation may upload sensitive data to the support server ") +
-                    Config.Inst().FTPServer()+Lang(".  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))
+                Lang("This operation may upload sensitive data to the support server.  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_SAVEBUGREPORT':
             self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
                 Lang("This operation may save sensitive data to removable media.  Do you want to continue?"), lambda x: self.SaveBugReportDialogueHandler(x))))

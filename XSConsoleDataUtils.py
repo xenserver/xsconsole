@@ -159,6 +159,10 @@ class FileUtils:
             
         os.system('/bin/sync')
 
+    @classmethod
+    def BugReportFilename(cls):
+        return Data.Inst().host.name_label('bugreport')+'-'+time.strftime("%Y%m%d%H%M%S", time.gmtime())+'Z.bugrpt'
+
 class MountVDI:
     def __init__(self, inVDI, inMode = None):
         self.vdi = inVDI

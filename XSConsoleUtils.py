@@ -14,6 +14,6 @@ import re
 class ShellUtils:
     @classmethod
     def MakeSafeParam(cls, inParam):
-        if not re.match(r'[-A-Za-z0-9/._~:]*$', inParam):
+        if not re.match(r'[-A-Za-z0-9/._~:@]*$', inParam):
             raise Exception("Invalid characters in parameter '"+inParam+"'")
         return inParam

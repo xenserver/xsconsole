@@ -649,21 +649,24 @@ class BugReportDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
         self.custom = {
             'title' : Lang("Upload Bug Report"),
-            'info' : Lang("Please confirm the ftp destination and enter a proxy name if required (or blank for none)"), 
+            'info' : Lang("Please enter the destination server name, and proxy name if required (blank for none).  Use the form ftp://username:password@server:port for authenticated servers and proxies."), 
             'fields' : [
-                [Lang("Destination", 20), Config.Inst().FTPServer(), 'destination'],
-                [Lang("Proxy", 20), '', 'proxy']
+                [Lang("Destination", 14), Config.Inst().FTPServer(), 'destination'],
+                [Lang("Filename", 14), FileUtils.BugReportFilename(), 'filename'],
+                [Lang("Proxy", 14), '', 'proxy']
             ]
         }
         InputDialogue.__init__(self, inLayout, inParent)
 
     def HandleCommit(self, inValues):
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Uploading Bug Report...")))
-        self.layout.Refresh()
-        self.layout.DoUpdate()
-        
+        self.layout.TransientBanner(Lang("Uploading Bug Report..."))
+            
         hostRef = ShellUtils.MakeSafeParam(Data.Inst().host.uuid(''))
-        destURL = ShellUtils.MakeSafeParam(inValues['destination'])
+        destServer = ShellUtils.MakeSafeParam(inValues['destination'])
+        if not re.match(r'(ftp|http|https)://', destServer):
+            raise Exception(Lang('Destination name must start with ftp://, http:// or https://'))
+        destFilename = ShellUtils.MakeSafeParam(inValues['filename'])
+        destURL = destServer.rstrip('/')+'/'+destFilename.lstrip('/')
         proxy = ShellUtils.MakeSafeParam(inValues['proxy'])
         
         command = "/opt/xensource/bin/xe host-bugreport-upload host='"+hostRef+"' url='"+destURL+"'"
@@ -671,13 +674,11 @@ class BugReportDialogue(InputDialogue):
             command += " http_proxy='"+proxy+"'"
             
         status, output = commands.getstatusoutput(command)
-        
-        self.layout.PopDialogue()
                 
         if status != 0:
             raise Exception(output) 
 
-        return Lang("Bug Report Uploaded Sucessfully")
+        return (Lang("Bug Report Uploaded Sucessfully"), None)
         
 class SyslogDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
@@ -2386,13 +2387,12 @@ class LicenceDialogue(FileDialogue):
 
 class SaveBugReportDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
-
         self.custom = {
             'title' : Lang("Save Bug Report"),
             'searchregexp' : r'.*',  # Type of bugtool file is .tar
             'deviceprompt' : Lang("Select The Destination Device"), 
             'fileprompt' : Lang("Choose A Destination Filename"),
-            'filename' : 'bugreport.tar',
+            'filename' : FileUtils.BugReportFilename(),
             'confirmprompt' : Lang("Press <F8> To Save The Bug Report"),
             'mode' : 'rw'
         }
