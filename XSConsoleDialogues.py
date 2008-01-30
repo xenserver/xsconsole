@@ -1238,6 +1238,9 @@ class ClaimSRDialogue(Dialogue):
             deviceName = str(self.deviceToErase)
         
         self.layout.ExitBannerSet(Lang("Configuring Storage Repository"))
+        reformatFile = open("/var/xen/disks_to_reformat_at_boot", "a")
+        reformatFile.write(deviceName + "\n")
+        reformatFile.close()
         self.layout.SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
         State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
 
