@@ -13,8 +13,11 @@ from XSConsoleBases import *
 from XSConsoleCurses import *
 from XSConsoleData import *
 from XSConsoleDialogues import *
+from XSConsoleImporter import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
+from XSConsoleLayout import *
+from XSConsolePlugIn import *
 from XSConsoleRootDialogue import *
 from XSConsoleState import *
 
@@ -22,12 +25,19 @@ class App:
     def __init__(self):
         self.cursesScreen = None
     
+    def Build(self, inDirs = None):
+        # Search for the app plugins and include them
+        self.importer = Importer()
+        for dir in inDirs:
+            self.importer.ImportRelativeDir(dir)
+    
     def Enter(self):
         doQuit = False
 
         if '--dump' in sys.argv:
             # Testing - dump data and exit
             Data.Inst().Dump()
+            Importer.Dump()
             doQuit = True
         
         # Purge leftover VBDs at startup
@@ -48,17 +58,21 @@ class App:
                     
                     self.cursesScreen = CursesScreen()
                     self.renderer = Renderer()
-                    self.layout = Layout(self.cursesScreen)
+                    self.layout = Layout.NewInst()
+                    self.layout.ParentSet(self.cursesScreen)
                     self.layout.WriteParentOffset(self.cursesScreen)
                     self.layout.Create()
-
+                    self.layout.ParentSet(self.layout.Window(self.layout.WIN_MAIN))
+                    self.layout.CreateRootDialogue(RootDialogue(self.layout, self.layout.Window(self.layout.WIN_MAIN)))
+                    self.layout.TransientBannerHandlerSet(App.TransientBannerHandler)
+                    
                     if State.Inst().WeStoppedXAPI():
                         # Restart XAPI if we crashed after stopping it
                         Data.Inst().StartXAPI()
                         Data.Inst().Update()
                         
                     if not Data.Inst().IsXAPIRunning() and State.Inst().RebootMessage() is None:
-                        self.layout.PushDialogue(QuestionDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN),
+                        self.layout.PushDialogue(QuestionDialogue(
                             Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
                                  "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
 
@@ -71,8 +85,6 @@ class App:
                             self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
                     elif State.Inst().RebootMessage() is not None:
                         self.layout.PushDialogue(QuestionDialogue(
-                            self.layout,
-                            self.layout.Window(Layout.WIN_MAIN),
                             State.Inst().RebootMessage(), lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
                             )
                         )
@@ -209,7 +221,15 @@ class App:
                 self.layout.TransientBanner(Lang("Restarting xapi...."))
                 Data.Inst().StartXAPI()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.layout.Window(Layout.WIN_MAIN), Lang("Failed: ")+Lang(e)))
+                self.layout.PushDialogue(InfoDialogue(Lang("Failed: ")+Lang(e)))
+
+    @classmethod
+    def TransientBannerHandler(self, inMessage):
+        layout = Layout.Inst()
+        layout.PushDialogue(BannerDialogue(inMessage))
+        layout.Refresh()
+        layout.DoUpdate()
+        layout.PopDialogue()
 
 class Renderer:        
     def RenderStatus(self, inWindow, inText):
@@ -220,111 +240,3 @@ class Renderer:
         if cursX != -1 and cursY != -1:
             curses.setsyx(cursY, cursX) # Restore cursor position
         
-class Layout:
-    WIN_MAIN = 0
-    WIN_TOPLINE = 1
-    
-    APP_XSIZE = 80
-    APP_YSIZE = 24
-    
-    def __init__(self, inParent = None):
-        self.parent = inParent
-        self.windows = []
-        self.exitCommand = None # Not layout, but keep with layout for convenience
-        self.exitBanner = None # Not layout, but keep with layout for convenience
-        self.exitCommandIsExec = True # Not layout, but keep with layout for convenience
-
-    def ExitBanner(self):
-        return self.exitBanner
-        
-    def ExitBannerSet(self,  inBanner):
-        self.exitBanner = inBanner
-        
-    def ExitCommand(self):
-        return self.exitCommand
-        
-    def ExitCommandSet(self,  inCommand):
-        self.exitCommand = inCommand
-        self.exitCommandIsExec = True
-
-    def SubshellCommandSet(self, inCommand):
-        self.exitCommand = inCommand
-        self.exitCommandIsExec = False
-
-    def ExitCommandIsExec(self):
-        return self.exitCommandIsExec
-
-    def Window(self, inNum):
-        return self.windows[inNum]
-    
-    def TopDialogue(self):
-        return self.dialogues[-1]
-    
-    def PushDialogue(self, inDialogue):
-        self.dialogues.append(inDialogue)
-        
-    def PopDialogue(self):
-        if len(self.dialogues) < 1:
-            raise Exception("Stack underflow in PopDialogue")
-        self.TopDialogue().Destroy()
-        self.dialogues.pop()
-        self.TopDialogue().UpdateFields()
-        self.Refresh()
-    
-    def UpdateRootFields(self):
-        if len(self.dialogues) > 0:
-            self.dialogues[0].UpdateFields()
-    
-    def TransientBanner(self, inMessage):
-        self.PushDialogue(BannerDialogue(self, self.parent, inMessage))
-        self.Refresh()
-        self.DoUpdate()
-        self.PopDialogue()
-    
-    def WriteParentOffset(self, inParent):
-        consoleXSize = inParent.XSize()
-        consoleYSize = inParent.YSize()
-        if consoleXSize < self.APP_XSIZE or consoleYSize < self.APP_YSIZE:
-            raise Exception('Console size ('+str(consoleXSize)+', '+str(consoleYSize) +
-                ') too small for application size ('+str(self.APP_XSIZE)+', '+str(self.APP_YSIZE) +')')
-        
-        # Centralise subsequent windows
-        self.parent.OffsetSet(
-            (inParent.XSize() - self.APP_XSIZE) / 2,
-            (inParent.YSize() - self.APP_YSIZE) / 2)
-            
-    def Create(self):
-        self.windows.append(CursesWindow(0,1,self.APP_XSIZE, self.APP_YSIZE-1, self.parent)) # MainWindow
-        self.windows.append(CursesWindow(0,0,self.APP_XSIZE,1, self.parent)) # Top line window
-        self.windows[self.WIN_MAIN].DefaultColourSet('MAIN_BASE')
-        self.windows[self.WIN_TOPLINE].DefaultColourSet('TOPLINE_BASE')
-            
-        self.Window(self.WIN_MAIN).AddBox()
-        self.Window(self.WIN_MAIN).TitleSet("Configuration")
-        
-        self.dialogues = [ RootDialogue(self, self.Window(self.WIN_MAIN)) ]
-        
-    def Refresh(self):
-        self.Window(self.WIN_MAIN).Erase() # Unknown why main won't redraw without this
-        for window in self.windows:
-            window.Refresh()
-
-        for dialogue in self.dialogues:
-            dialogue.Render()
-            
-        if not self.TopDialogue().NeedsCursor():
-            self.TopDialogue().CursorOff()
-
-    def Redraw(self):
-        for window in self.windows:
-            window.Win().redrawwin()
-            window.Win().refresh()
-    
-    def Clear(self):
-        for window in self.windows:
-            window.Clear()
-        self.Refresh()
-    
-    def DoUpdate(self):
-        curses.doupdate()
-    

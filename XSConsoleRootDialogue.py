@@ -13,8 +13,10 @@ from XSConsoleConfig import *
 from XSConsoleCurses import *
 from XSConsoleData import *
 from XSConsoleDialoguePane import *
+from XSConsoleDialogueBases import *
 from XSConsoleDialogues import *
 from XSConsoleFields import *
+from XSConsoleImporter import *
 from XSConsoleLang import *
 from XSConsoleMenus import *
 
@@ -26,7 +28,7 @@ class RootDialogue(Dialogue):
         menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT', 'MENU_SELECTED')
         statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(40, 2, 39, 21)), 'status')
         statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
-        self.menu = RootMenu(self)
+        self.menu = Importer.BuildRootMenu(self)
         self.currentStatus = 'STATUS'
         self.UpdateFields()
 
@@ -115,7 +117,7 @@ class RootDialogue(Dialogue):
         
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Timeout") })
 
-    def UpdateFieldsINTERFACE(self, inPane):
+    def UpdateFieldsMANAGEMENT(self, inPane):
         inPane.AddTitleField(Lang("Server Management"))
     
         inPane.AddWrappedTextField(Lang(
@@ -263,35 +265,6 @@ class RootDialogue(Dialogue):
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
-    def UpdateFieldsSELECTNIC(self, inPane):
-        data = Data.Inst()
-        
-        inPane.AddTitleField(Lang("Current Management Interface"))
-        
-        if len(data.derived.managementpifs([])) == 0:
-            inPane.AddWrappedTextField(Lang("<No interface configured>"))
-        else:
-            for pif in data.derived.managementpifs([]):
-                inPane.AddStatusField(Lang('Device', 16), pif['device'])
-                inPane.AddStatusField(Lang('MAC Address', 16),  pif['MAC'])
-                inPane.AddStatusField(Lang('DHCP/Static IP', 16),  pif['ip_configuration_mode'])
-
-                inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
-                inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
-                inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
-                
-                inPane.NewLine()
-                inPane.AddTitleField(Lang("NIC Vendor"))
-                inPane.AddWrappedTextField(pif['metrics']['vendor_name'])
-                inPane.NewLine()
-                inPane.AddTitleField(Lang("NIC Model"))
-                inPane.AddWrappedTextField(pif['metrics']['device_name'])
-                
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure"),
-            Lang("<F5>") : Lang("Refresh")
-        })
-        
     def UpdateFieldsTESTNETWORK(self, inPane):
         inPane.AddTitleField(Lang("Test Network"))
     
@@ -656,18 +629,29 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(str(inException))
 
     def UpdateFields(self):
+        currentMenu = self.menu.CurrentMenu()
+        currentChoiceDef = currentMenu.CurrentChoiceDef()
+
         menuPane = self.Pane('menu')
         menuPane.ResetFields()
         menuPane.ResetPosition()
-        menuPane.AddTitleField(self.menu.CurrentMenu().Title())
+        menuPane.AddTitleField(currentMenu.Title())
         # Scrolling doesn't work well for this menu because it's recreated on update.  Preserving the
         # scroll position would improve it if there are more than 15 entries
-        menuPane.AddMenuField(self.menu.CurrentMenu(), 15) # Allow extra height for this menu
+        menuPane.AddMenuField(currentMenu, 15) # Allow extra height for this menu
+        
         statusPane = self.Pane('status')
+
         try:
             statusPane.ResetFields()
             statusPane.ResetPosition()
-            getattr(self, 'UpdateFields'+self.currentStatus)(statusPane) # Despatch method named 'UpdateFields'+self.currentStatus
+            
+            statusUpdateHandler = currentChoiceDef.StatusUpdateHandler()
+            if statusUpdateHandler is not None:
+                # New method - use plugin's StatusUpdateHandler
+                statusUpdateHandler(statusPane)
+            else:
+                getattr(self, 'UpdateFields'+self.currentStatus)(statusPane) # Despatch method named 'UpdateFields'+self.currentStatus
 
         except Exception, e:
             statusPane.ResetFields()
@@ -726,122 +710,122 @@ class RootDialogue(Dialogue):
             
     def AuthenticatedOnly(self, inFunc):
         if not Auth.Inst().IsAuthenticated():
-            self.layout.PushDialogue(LoginDialogue(self.layout, self.parent,
+            Layout.Inst().PushDialogue(LoginDialogue(self.layout, self.parent,
                 Lang('Please log in to perform this function'), inFunc))
         else:
             inFunc()
         
     def ActivateDialogue(self, inName):
-        if inName == 'DIALOGUE_INTERFACE':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(InterfaceDialogue(self.layout, self.parent)))
+        if inName == 'DIALOGUE_MANAGEMENT':
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(InterfaceDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGEPASSWORD':
             # Allow password change when not authenticated, to mitigate problems in pools
-            self.layout.PushDialogue(ChangePasswordDialogue(self.layout, self.parent))
+            Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent))
         elif inName == 'DIALOGUE_CHANGETIMEOUT':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_TESTNETWORK':
-            self.layout.PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
+            Layout.Inst().PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_DNS':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(DNSDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DNSDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_HOSTNAME':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(HostnameDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(HostnameDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SYSLOG':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SyslogDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SyslogDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_NTP':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(NTPDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(NTPDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_TIMEZONE':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(TimezoneDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(TimezoneDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_KEYBOARD':
-            self.layout.PushDialogue(KeyboardDialogue(self.layout,  self.parent))
+            Layout.Inst().PushDialogue(KeyboardDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_SR':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ClaimSRDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ClaimSRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_SUSPENDSR':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(SuspendSRDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SuspendSRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_CRASHDUMPSR':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(CrashDumpSRDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(CrashDumpSRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_INSTALLLICENCE':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(LicenceDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(LicenceDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTESHELL':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_VALIDATE':
-            self.layout.PushDialogue(ValidateDialogue(self.layout,  self.parent))
+            Layout.Inst().PushDialogue(ValidateDialogue(self.layout,  self.parent))
         elif inName == 'DIALOGUE_VERBOSEBOOT':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(VerboseBootDialogue(self.layout, self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(VerboseBootDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_RESET':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(ResetDialogue(self.layout, self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ResetDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_PATCH':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(PatchDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PatchDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_BACKUP':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(BackupDialogue(self.layout,  self.parent)))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(BackupDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_RESTORE':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(RestoreDialogue(self.layout,  self.parent))),
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RestoreDialogue(self.layout,  self.parent))),
         elif inName == 'DIALOGUE_REVERT':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to revert this patch?"), lambda x: self.RevertDialogueHandler(x))))
         elif inName == 'DIALOGUE_BUGREPORT':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("This operation may upload sensitive data to the support server.  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_SAVEBUGREPORT':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("This operation may save sensitive data to removable media.  Do you want to continue?"), lambda x: self.SaveBugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_REBOOT':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
         elif inName == 'DIALOGUE_SHUTDOWN':
-            self.AuthenticatedOnly(lambda: self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
         elif inName == 'DIALOGUE_LOCALSHELL':
             self.AuthenticatedOnly(lambda: self.StartLocalShell())
         elif inName == 'DIALOGUE_QUIT':
-                self.layout.ExitBannerSet(Lang("Quitting..."))
-                self.layout.ExitCommandSet('') # Just exit
+                Layout.Inst().ExitBannerSet(Lang("Quitting..."))
+                Layout.Inst().ExitCommandSet('') # Just exit
             
     def StartLocalShell(self):
         user = os.environ.get('USER', 'root')
-        self.layout.ExitBannerSet(Lang("\rShell for local user '")+user+"'.\r\r"+
+        Layout.Inst().ExitBannerSet(Lang("\rShell for local user '")+user+"'.\r\r"+
                 Lang("Type 'exit' to return to the management console.\r"))
-        self.layout.SubshellCommandSet("( export TMOUT="+str(State.Inst().AuthTimeoutSeconds())+" && /bin/bash --login )")
+        Layout.Inst().SubshellCommandSet("( export TMOUT="+str(State.Inst().AuthTimeoutSeconds())+" && /bin/bash --login )")
             
     def RebootDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
             try:
-                self.layout.ExitBannerSet(Lang("Rebooting..."))
-                self.layout.ExitCommandSet('/sbin/shutdown -r now')
+                Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
+                Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Reboot Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Reboot Failed"), Lang(e)))
 
     def ShutdownDialogueHandler(self,  inYesNo):
         if inYesNo == 'y':
-            self.layout.ExitBannerSet(Lang("Shutting down..."))
-            self.layout.ExitCommandSet('/sbin/shutdown -h now')
+            Layout.Inst().ExitBannerSet(Lang("Shutting down..."))
+            Layout.Inst().ExitCommandSet('/sbin/shutdown -h now')
 
     def RevertDialogueHandler(self, inYesNo):
         if inYesNo == 'y':
             try:
                 Data.Inst().Revert()
-                self.layout.PushDialogue(QuestionDialogue(
+                Layout.Inst().PushDialogue(QuestionDialogue(
                     self.layout, self.parent,
                     Lang("To use the reverted version you need to reboot.  Would you like to reboot now?"),
-                    lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
+                    lambda x: Layout.Inst().TopDialogue().RebootDialogueHandler(x)
                 ))
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Revert Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Revert Failed"), Lang(e)))
 
     def BugReportDialogueHandler(self, inYesNo):
         if inYesNo == 'y':
-            self.layout.PushDialogue(BugReportDialogue(self.layout, self.parent))
+            Layout.Inst().PushDialogue(BugReportDialogue(self.layout, self.parent))
 
     def SaveBugReportDialogueHandler(self, inYesNo):
         if inYesNo == 'y':
-            self.layout.PushDialogue(SaveBugReportDialogue(self.layout, self.parent))
+            Layout.Inst().PushDialogue(SaveBugReportDialogue(self.layout, self.parent))
 
     def HandleLogInOut(self):
         if Auth.Inst().IsAuthenticated():
             name = Auth.Inst().LoggedInUsername()
             Auth.Inst().LogOut()
             Data.Inst().Update()
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("User '")+name+Lang("' logged out")))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("User '")+name+Lang("' logged out")))
         else:
-            self.layout.PushDialogue(LoginDialogue(self.layout, self.parent))
+            Layout.Inst().PushDialogue(LoginDialogue(self.layout, self.parent))

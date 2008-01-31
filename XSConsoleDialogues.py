@@ -5,75 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-from XSConsoleAuth import *
-from XSConsoleBases import *
-from XSConsoleCurses import *
-from XSConsoleData import *
-from XSConsoleDataUtils import *
-from XSConsoleDialoguePane import *
-from XSConsoleFields import *
-from XSConsoleLang import *
-from XSConsoleMenus import *
-from XSConsoleUtils import *
-
-class LoginDialogue(Dialogue):
-    def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
-        Dialogue.__init__(self, inLayout, inParent)
-        self.text = inText
-        self.successFunc = inSuccessFunc
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.TitleSet("Login")
-        pane.AddBox()
-        self.UpdateFields()
-        pane.InputIndexSet(0)
-        
-    def UpdateFields(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        if self.text is not None:
-            pane.AddTitleField(self.text)
-        pane.AddInputField(Lang("Username", 14), "root", 'username')
-        pane.AddPasswordField(Lang("Password", 14), Auth.Inst().DefaultPassword(), 'password')
-        pane.AddKeyHelpField( {
-            Lang("<Esc>") : Lang("Cancel"),
-            Lang("<Enter>") : Lang("Next/OK"),
-            Lang("<Tab>") : Lang("Next")
-        })
-        
-    def HandleKey(self, inKey):
-        handled = True
-        pane = self.Pane()
-        if inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-        elif inKey == 'KEY_ENTER':
-            if not pane.IsLastInput():
-                pane.ActivateNextInput()
-            else:
-                inputValues = pane.GetFieldValues()
-                self.layout.PopDialogue()
-                self.layout.DoUpdate() # Redraw now as login can take a while
-                try:
-                    Auth.Inst().ProcessLogin(inputValues['username'], inputValues['password'])
-
-                    if self.successFunc is not None:
-                        self.successFunc()
-                    else:
-                        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Successful')))
-                
-                except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Login Failed: ')+Lang(e)))
-
-                Data.Inst().Update()
-                
-        elif inKey == 'KEY_TAB':
-            pane.ActivateNextInput()
-        elif inKey == 'KEY_BTAB':
-            pane.ActivatePreviousInput()
-        elif pane.CurrentInput().HandleKey(inKey):
-            pass # Leave handled as True
-        else:
-            handled = False
-        return handled
+from XSConsoleStandard import *
 
 class ChangePasswordDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
@@ -107,13 +39,13 @@ class ChangePasswordDialogue(Dialogue):
         handled = True
         pane = self.Pane()
         if inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
         elif inKey == 'KEY_ENTER':
             if not pane.IsLastInput():
                 pane.ActivateNextInput()
             else:
                 inputValues = pane.GetFieldValues()
-                self.layout.PopDialogue()
+                Layout.Inst().PopDialogue()
                 successMessage = Lang('Password Change Successful')
                 try:
                     if not Auth.Inst().IsAuthenticated() and self.isPasswordSet:
@@ -127,11 +59,11 @@ class ChangePasswordDialogue(Dialogue):
                     Auth.Inst().ChangePassword(inputValues.get('oldpassword', ''), inputValues['newpassword1'])
                     
                 except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Layout.Inst().PushDialogue(InfoDialogue(
                         Lang('Password Change Failed: ')+Lang(e)))
                     
                 else:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, successMessage))
+                    Layout.Inst().PushDialogue(InfoDialogue( successMessage))
                     State.Inst().PasswordChangeRequiredSet(False)
                     
                 Data.Inst().Update()
@@ -145,289 +77,6 @@ class ChangePasswordDialogue(Dialogue):
         else:
             handled = False
         return True
-
-class InfoDialogue(Dialogue):
-    def __init__(self, inLayout, inParent, inText,  inInfo = None):
-        Dialogue.__init__(self, inLayout, inParent)
-        self.text = inText
-        self.info = inInfo
-        
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.AddBox()
-        self.UpdateFields()
-
-    def UpdateFields(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        pane.ResetPosition()
-        
-        pane.AddWrappedCentredBoldTextField(self.text)
-
-        if self.info is not None:
-            pane.NewLine()
-            pane.AddWrappedTextField(self.info)
-
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
-        
-    def HandleKey(self, inKey):
-        handled = True
-        if inKey == 'KEY_ESCAPE' or inKey == 'KEY_ENTER':
-            self.layout.PopDialogue()
-        else:
-            handled = False
-        return True
-
-class BannerDialogue(Dialogue):
-    def __init__(self, inLayout, inParent, inText):
-        Dialogue.__init__(self, inLayout, inParent)
-        self.text = inText
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.AddBox()
-        self.UpdateFields()
-
-    def UpdateFields(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        pane.ResetPosition()
-        
-        pane.AddWrappedCentredBoldTextField(self.text)
-
-class QuestionDialogue(Dialogue):
-    def __init__(self, inLayout, inParent, inText,  inHandler):
-        Dialogue.__init__(self, inLayout, inParent)
-        self.text = inText
-        self.handler = inHandler
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.AddBox()
-        self.UpdateFields()
-
-    def UpdateFields(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        pane.ResetPosition()
-        
-        pane.AddWrappedCentredBoldTextField(self.text)
-
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Yes"),  Lang("<Esc>") : Lang("No")  } )
-    
-    def HandleKey(self, inKey):
-        handled = True
-        if inKey == 'y' or inKey == 'Y' or inKey == 'KEY_F(8)':
-            self.layout.PopDialogue()
-            self.handler('y')
-        elif inKey == 'n' or inKey == 'N' or inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-            self.handler('n')
-        else:
-            handled = False
-            
-        return handled
-
-class InterfaceDialogue(Dialogue):
-    def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent)
-        
-        choiceDefs = []
-
-        self.nic=0
-        currentPIF = None
-        choiceArray = []
-        for i in range(len(Data.Inst().host.PIFs([]))):
-            pif = Data.Inst().host.PIFs([])[i]
-            if currentPIF is None and pif['management']:
-                self.nic = i # Record this as best guess of current NIC
-                currentPIF = pif
-            choiceName = pif['device']+": "+pif['metrics']['device_name']+" "
-            if pif['metrics']['carrier']:
-                choiceName += '('+Lang("connected")+')'
-            else:
-                choiceName += '('+Lang("not connected")+')'
-
-            choiceDefs.append(ChoiceDef(choiceName, lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
-        
-        if len(choiceDefs) == 0:
-            choiceDefs.append(ChoiceDef(Lang("None"), lambda: self.HandleNICChoice(None)))
-
-        self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
-        
-        self.modeMenu = Menu(self, None, Lang("Select IP Address Configuration Mode"), [
-            ChoiceDef(Lang("DHCP"), lambda: self.HandleModeChoice('DHCP') ), 
-            ChoiceDef(Lang("Static"), lambda: self.HandleModeChoice('Static') ), 
-            ])
-        
-        self.ChangeState('INITIAL')
-
-        # Get best guess of current values
-        self.mode = 'DHCP'
-        self.IP = '0.0.0.0'
-        self.netmask = '0.0.0.0'
-        self.gateway = '0.0.0.0'
-        if currentPIF is not None:
-            if 'ip_configuration_mode' in currentPIF: self.mode = currentPIF['ip_configuration_mode']
-            if self.mode.lower().startswith('static'):
-                if 'IP' in currentPIF: self.IP = currentPIF['IP']
-                if 'netmask' in currentPIF: self.netmask = currentPIF['netmask']
-                if 'gateway' in currentPIF: self.gateway = currentPIF['gateway']
-    
-        # Make the menu current choices point to our best guess of current choices
-        if self.nic is not None:
-            self.nicMenu.CurrentChoiceSet(self.nic)
-        if self.mode.lower().startswith('static'):
-            self.modeMenu.CurrentChoiceSet(1)
-        else:
-            self.modeMenu.CurrentChoiceSet(0)
-    
-        self.ChangeState('INITIAL')
-        self.UpdateFields()
-        
-    def BuildPane(self):
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.TitleSet(Lang("Management Interface Configuration"))
-        pane.AddBox()
-        
-    def UpdateFieldsINITIAL(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddTitleField(Lang("Select NIC for management interface"))
-        pane.AddMenuField(self.nicMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
-
-    def UpdateFieldsMODE(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddTitleField(Lang("Select DHCP or Static IP Address Configuration"))
-        pane.AddMenuField(self.modeMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
-        
-    def UpdateFieldsSTATICIP(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        pane.AddTitleField(Lang("Enter Static IP Address Configuration"))
-        pane.AddInputField(Lang("IP Address",  14),  self.IP, 'IP')
-        pane.AddInputField(Lang("Netmask",  14),  self.netmask, 'netmask')
-        pane.AddInputField(Lang("Gateway",  14),  self.gateway, 'gateway')
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
-        
-    def UpdateFieldsPRECOMMIT(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        if self.nic is None:
-            pane.AddWrappedTextField(Lang("No management interface will be configured"))
-        else:
-            pif = Data.Inst().host.PIFs()[self.nic]
-            pane.AddStatusField(Lang("Device",  16),  pif['device'])
-            pane.AddStatusField(Lang("Name",  16),  pif['metrics']['device_name'])
-            pane.AddStatusField(Lang("IP Mode",  16),  self.mode)
-            if self.mode == 'Static':
-                pane.AddStatusField(Lang("IP Address",  16),  self.IP)
-                pane.AddStatusField(Lang("Netmask",  16),  self.netmask)
-                pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
-                
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
-        
-    def UpdateFields(self):
-        self.Pane().ResetPosition()
-        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
-    
-    def ChangeState(self, inState):
-        self.state = inState
-        self.BuildPane()
-        
-    def HandleKeyINITIAL(self, inKey):
-        return self.nicMenu.HandleKey(inKey)
-
-    def HandleKeyMODE(self, inKey):
-        return self.modeMenu.HandleKey(inKey)
-
-    def HandleKeySTATICIP(self, inKey):
-        handled = True
-        pane = self.Pane()
-        if inKey == 'KEY_ENTER':
-            if pane.IsLastInput():
-                inputValues = pane.GetFieldValues()
-                self.IP = inputValues['IP']
-                self.netmask = inputValues['netmask']
-                self.gateway = inputValues['gateway']
-                self.ChangeState('PRECOMMIT')
-                self.UpdateFields()
-            else:
-                pane.ActivateNextInput()
-        elif inKey == 'KEY_TAB':
-            pane.ActivateNextInput()
-        elif inKey == 'KEY_BTAB':
-            pane.ActivatePreviousInput()
-        elif pane.CurrentInput().HandleKey(inKey):
-            pass # Leave handled as True
-        else:
-            handled = False
-        return handled
-
-    def HandleKeyPRECOMMIT(self, inKey):
-        handled = True
-        pane = self.Pane()
-        if inKey == 'KEY_ENTER':
-            self.layout.PopDialogue()
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Reconfiguring network...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            try:
-                self.Commit()
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Successful")))
-                
-            except Exception, e:
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Failed: "+Lang(e))))
-                
-        else:
-            handled = False
-        return handled
-        
-    def HandleKey(self,  inKey):
-        handled = False
-        if hasattr(self, 'HandleKey'+self.state):
-            handled = getattr(self, 'HandleKey'+self.state)(inKey)
-        
-        if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-            handled = True
-
-        return handled
-            
-    def HandleNICChoice(self,  inChoice):
-        self.nic = inChoice
-        if self.nic is None:
-            self.ChangeState('PRECOMMIT')
-        else:
-            self.ChangeState('MODE')
-        self.UpdateFields()
-        
-    def HandleModeChoice(self,  inChoice):
-        self.mode = inChoice
-        if self.mode == 'DHCP':
-            self.ChangeState('PRECOMMIT')
-            self.UpdateFields()
-        else:
-            self.ChangeState('STATICIP')
-            self.UpdateFields() # Setup input fields first
-            self.Pane().InputIndexSet(0) # and then choose the first
-            
-    def Commit(self):
-        if self.nic is None:
-            pass # TODO: Delete interfaces
-        else:
-            data = Data.Inst()
-            pif = data.host.PIFs()[self.nic]
-            if self.mode.lower().startswith('static'):
-                # Comma-separated list of nameserver IPs
-                dns = ','.join(data.dns.nameservers([]))
-            else:
-                dns = ''
-            data.ReconfigureManagement(pif, self.mode, self.IP,  self.netmask, self.gateway, dns)
-            Data.Inst().Update()
             
 class DNSDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -497,7 +146,7 @@ class DNSDialogue(Dialogue):
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             data=Data.Inst()
             servers = data.dns.nameservers([])
             servers.append(inputValues['address'])
@@ -518,7 +167,7 @@ class DNSDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -531,12 +180,12 @@ class DNSDialogue(Dialogue):
             self.state = 'REMOVE'
             self.UpdateFields()
         elif inChoice == 'REMOVEALL':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             Data.Inst().NameserversSet([])
             self.Commit(Lang("All nameserver entries deleted"))
 
     def HandleRemoveChoice(self,  inChoice):
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         data=Data.Inst()
         servers = data.dns.nameservers([])
         thisServer = servers[inChoice]
@@ -547,65 +196,9 @@ class DNSDialogue(Dialogue):
     def Commit(self, inMessage):
         try:
             Data.Inst().SaveToResolvConf()
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, inMessage))
+            Layout.Inst().PushDialogue(InfoDialogue( inMessage))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+Lang(e)))
-
-class InputDialogue(Dialogue):
-    def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent)
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.TitleSet(self.Custom('title'))
-        pane.AddBox()
-        self.UpdateFields()
-        pane.InputIndexSet(0)
-    
-    def Custom(self, inKey):
-        return self.custom.get(inKey, None)
-    
-    def UpdateFields(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        if self.Custom('info') is not None:
-            pane.AddWrappedTextField(self.Custom('info'))
-            pane.NewLine()
-            
-        for field in self.Custom('fields'):
-            pane.AddInputField(*field)
-        
-        pane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("OK"),
-            Lang("<Esc>") : Lang("Cancel")
-        })
-    
-    def HandleCommit(self, inValues): # Override this
-        self.layout.PopDialogue()
-    
-    def HandleKey(self, inKey):
-        handled = True
-        pane = self.Pane()
-        if inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-        elif inKey == 'KEY_ENTER':
-            if not pane.IsLastInput():
-                pane.ActivateNextInput()
-            else:
-                try:
-                    self.layout.PopDialogue()
-                    self.layout.DoUpdate()
-                    title, info = self.HandleCommit(self.Pane().GetFieldValues())
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, title, info))
-                except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Failed: ')+Lang(e)))
-        elif inKey == 'KEY_TAB':
-            pane.ActivateNextInput()
-        elif inKey == 'KEY_BTAB': # BTAB not available on all platforms
-            pane.ActivatePreviousInput()
-        elif pane.CurrentInput().HandleKey(inKey):
-            pass # Leave handled as True
-        else:
-            handled = False
-        return True
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Update failed: ")+Lang(e)))
 
 class HostnameDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
@@ -647,7 +240,7 @@ class BugReportDialogue(InputDialogue):
         InputDialogue.__init__(self, inLayout, inParent)
 
     def HandleCommit(self, inValues):
-        self.layout.TransientBanner(Lang("Uploading Bug Report..."))
+        Layout.Inst().TransientBanner(Lang("Uploading Bug Report..."))
             
         hostRef = ShellUtils.MakeSafeParam(Data.Inst().host.uuid(''))
         destServer = ShellUtils.MakeSafeParam(inValues['destination'])
@@ -678,14 +271,14 @@ class SyslogDialogue(InputDialogue):
         InputDialogue.__init__(self, inLayout, inParent)
 
     def HandleCommit(self, inValues):
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Setting Logging Destination...")))
-        self.layout.Refresh()
-        self.layout.DoUpdate()
+        Layout.Inst().PushDialogue(BannerDialogue( Lang("Setting Logging Destination...")))
+        Layout.Inst().Refresh()
+        Layout.Inst().DoUpdate()
         
         Data.Inst().LoggingDestinationSet(inValues['destination'])
         Data.Inst().Update()
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
         if inValues['destination'] == '':
             message = Lang("Remote logging disabled.")
@@ -778,7 +371,7 @@ class NTPDialogue(Dialogue):
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             data=Data.Inst()
             servers = data.ntp.servers([])
             servers.append(inputValues['name'])
@@ -799,7 +392,7 @@ class NTPDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -808,32 +401,32 @@ class NTPDialogue(Dialogue):
         data = Data.Inst()
         try:
             if inChoice == 'ENABLE':
-                self.layout.TransientBanner(Lang("Enabling..."))
+                Layout.Inst().TransientBanner(Lang("Enabling..."))
                 data.EnableNTP()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("NTP Time Synchronization Enabled")))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("NTP Time Synchronization Enabled")))
             elif inChoice == 'DISABLE':
-                self.layout.TransientBanner(Lang("Disabling..."))
+                Layout.Inst().TransientBanner(Lang("Disabling..."))
                 data.DisableNTP()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("NTP Time Synchronization Disabled")))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("NTP Time Synchronization Disabled")))
             elif inChoice == 'ADD':
                 self.ChangeState('ADD')
             elif inChoice == 'REMOVE':
                 self.ChangeState('REMOVE')
             elif inChoice == 'REMOVEALL':
-                self.layout.PopDialogue()
+                Layout.Inst().PopDialogue()
                 data.NTPServersSet([])
                 self.Commit(Lang("All server entries deleted"))
             elif inChoice == 'STATUS':
                 message = data.NTPStatus()+Lang("\n\n(Initial synchronization may take several minutes)")
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("NTP Status"), message))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("NTP Status"), message))
 
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Operation Failed"), Lang(e)))
             
         data.Update()
 
     def HandleRemoveChoice(self,  inChoice):
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         data=Data.Inst()
         servers = data.ntp.servers([])
         thisServer = servers[inChoice]
@@ -847,11 +440,11 @@ class NTPDialogue(Dialogue):
         try:
             data.SaveToNTPConf()
             if data.chkconfig.ntpd(False):
-                self.layout.TransientBanner(Lang("Restarting NTP daemon with new configuration..."))
+                Layout.Inst().TransientBanner(Lang("Restarting NTP daemon with new configuration..."))
                 data.RestartNTP()
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, inMessage))
+            Layout.Inst().PushDialogue(InfoDialogue( inMessage))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Update failed: ")+Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Update failed: ")+Lang(e)))
 
         data.Update()
 
@@ -932,7 +525,7 @@ class TimezoneDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -944,13 +537,13 @@ class TimezoneDialogue(Dialogue):
     def HandleCityChoice(self,  inChoice):
         city = self.cityList[inChoice]
         data=Data.Inst()
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         try:
             data.TimezoneSet(city)
             message = Lang('The timezone has been set to ')+city +".\n\nLocal time is now "+data.CurrentTimeString()
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Timezone Set'), message))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang('Timezone Set'), message))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration failed: ")+Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration failed: ")+Lang(e)))
 
         data.Update()
 
@@ -1027,7 +620,7 @@ class KeyboardDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -1039,21 +632,21 @@ class KeyboardDialogue(Dialogue):
             try:
                 self.Commit(inChoice)
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Missing keymap: ")+Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Missing keymap: ")+Lang(e)))
             
     def HandleKeymapChoice(self, inChoice):
         self.Commit(inChoice)
     
     def Commit(self, inKeymap):
         data=Data.Inst()
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
 
         try:
             data.KeymapSet(inKeymap)
             message = Lang('Keyboard type set to ')+data.KeymapToName(inKeymap)
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, message))
+            Layout.Inst().PushDialogue(InfoDialogue( message))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration failed: ")+Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration failed: ")+Lang(e)))
 
         data.Update()
 
@@ -1166,7 +759,7 @@ class ClaimSRDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -1175,10 +768,10 @@ class ClaimSRDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Scanning...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            self.layout.PopDialogue()
+            Layout.Inst().PushDialogue(BannerDialogue( Lang("Scanning...")))
+            Layout.Inst().Refresh()
+            Layout.Inst().DoUpdate()
+            Layout.Inst().PopDialogue()
             self.ChangeState('DEVICE')
             handled = True
             
@@ -1188,13 +781,13 @@ class ClaimSRDialogue(Dialogue):
         handled = self.deviceMenu.HandleKey(inKey)
         
         if not handled and inKey == 'KEY_F(5)':
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            self.layout.PopDialogue()
+            Layout.Inst().PushDialogue(BannerDialogue( Lang("Rescanning...")))
+            Layout.Inst().Refresh()
+            Layout.Inst().DoUpdate()
+            Layout.Inst().PopDialogue()
             self.BuildPaneDEVICE() # Updates self.deviceList
             time.sleep(0.5) # Display rescanning box for a reasonable time
-            self.layout.Refresh()
+            Layout.Inst().Refresh()
             handled = True
             
         return handled
@@ -1237,11 +830,8 @@ class ClaimSRDialogue(Dialogue):
         else:
             deviceName = str(self.deviceToErase)
         
-        self.layout.ExitBannerSet(Lang("Configuring Storage Repository"))
-        reformatFile = open("/var/xen/disks_to_reformat_at_boot", "a")
-        reformatFile.write(deviceName + "\n")
-        reformatFile.close()
-        self.layout.SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
+        Layout.Inst().ExitBannerSet(Lang("Configuring Storage Repository"))
+        Layout.Inst().SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
         State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
 
 class RemoteDBDialogue(Dialogue):
@@ -1402,11 +992,11 @@ class RemoteDBDialogue(Dialogue):
                     self.HandleUseChoice('REMOVE')
                 else:
                     try:
-                        self.layout.TransientBanner(Lang("Probing for IQNs..."))
+                        Layout.Inst().TransientBanner(Lang("Probing for IQNs..."))
                         self.probedIQNs = RemoteDB.Inst().ProbeIQNs(self.newConf)
                         self.ChangeState('CHOOSEIQN')
                     except Exception, e:
-                        self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+                        Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
                     
         elif inKey == 'KEY_TAB':
             pane.ActivateNextInput()
@@ -1431,16 +1021,16 @@ class RemoteDBDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
-            self.layout.TransientBanner(Lang("Formatting..."))
+            Layout.Inst().TransientBanner(Lang("Formatting..."))
             Data.Inst().StopXAPI()
             try:
                 try:
                     self.dbPresent = RemoteDB.Inst().FormatLUN(self.newConf, self.chosenIQN, self.chosenLUN)
-                    self.layout.PopDialogue()
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Layout.Inst().PopDialogue()
+                    Layout.Inst().PushDialogue(InfoDialogue(
                         Lang("Format, Creation, and Configuration Successful")))
                 except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+                    Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
             finally:
                 Data.Inst().StartXAPI()
                 Data.Inst().Update()
@@ -1454,7 +1044,7 @@ class RemoteDBDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -1463,7 +1053,7 @@ class RemoteDBDialogue(Dialogue):
         if inChoice is None:
             self.ChangeState('CUSTOMIQN')
         else:
-            self.layout.TransientBanner(Lang("Probing for LUNs..."))
+            Layout.Inst().TransientBanner(Lang("Probing for LUNs..."))
             self.chosenIQN = self.probedIQNs[inChoice]
             self.probedLUNs = RemoteDB.Inst().ProbeLUNs(self.newConf, self.chosenIQN)
             
@@ -1473,7 +1063,7 @@ class RemoteDBDialogue(Dialogue):
         if inChoice is None:
             self.ChangeState('CUSTOMLUN')
         else:
-            self.layout.TransientBanner(Lang("Scanning target LUN..."))
+            Layout.Inst().TransientBanner(Lang("Scanning target LUN..."))
             
             self.chosenLUN = self.probedLUNs[inChoice]
 
@@ -1486,30 +1076,30 @@ class RemoteDBDialogue(Dialogue):
 
     def HandleUseChoice(self, inChoice):
         if inChoice == 'USE':
-            self.layout.TransientBanner(Lang("Configuring Remote Database..."))
+            Layout.Inst().TransientBanner(Lang("Configuring Remote Database..."))
             Data.Inst().StopXAPI()
             try:
                 try:
                     self.dbPresent = RemoteDB.Inst().ReadyForUse(self.newConf, self.chosenIQN, self.chosenLUN)
-                    self.layout.PopDialogue()
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Layout.Inst().PopDialogue()
+                    Layout.Inst().PushDialogue(InfoDialogue(
                         Lang("Configuration Successful")))
                 except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+                    Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
             finally:
                 Data.Inst().StartXAPI()
                 Data.Inst().Update()
         elif inChoice == 'REMOVE':
-            self.layout.TransientBanner(Lang("Configuring for Operation Without a Remote Database..."))
+            Layout.Inst().TransientBanner(Lang("Configuring for Operation Without a Remote Database..."))
             Data.Inst().StopXAPI()
             try:
                 try:
                     self.dbPresent = RemoteDB.Inst().ConfigureNoDB()
-                    self.layout.PopDialogue()
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                    Layout.Inst().PopDialogue()
+                    Layout.Inst().PushDialogue(InfoDialogue(
                         Lang("Configuration Successful")))
                 except Exception, e:
-                    self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+                    Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
             finally:
                 Data.Inst().StartXAPI()
                 Data.Inst().Update()
@@ -1545,28 +1135,28 @@ class RemoteShellDialogue(Dialogue):
         handled = self.remoteShellMenu.HandleKey(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
                 
     def HandleChoice(self,  inChoice):
         data = Data.Inst()
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
         try:
             data.ConfigureRemoteShell(inChoice)
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
         else:
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Configuration Updated.  Resetting the sshd process...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
+            Layout.Inst().PushDialogue(BannerDialogue( Lang("Configuration Updated.  Resetting the sshd process...")))
+            Layout.Inst().Refresh()
+            Layout.Inst().DoUpdate()
             time.sleep(2)
             if inChoice:
-                self.layout.SubshellCommandSet('/etc/init.d/sshd start && sleep 2')
+                Layout.Inst().SubshellCommandSet('/etc/init.d/sshd start && sleep 2')
             else:
-                self.layout.SubshellCommandSet('/etc/init.d/sshd stop && sleep 2')
+                Layout.Inst().SubshellCommandSet('/etc/init.d/sshd stop && sleep 2')
 
 class VerboseBootDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -1594,22 +1184,22 @@ class VerboseBootDialogue(Dialogue):
         handled = self.remoteShellMenu.HandleKey(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
                 
     def HandleChoice(self, inChoice):
         data = Data.Inst()
-        self.layout.PopDialogue()
-        self.layout.TransientBanner(Lang("Updating..."))
+        Layout.Inst().PopDialogue()
+        Layout.Inst().TransientBanner(Lang("Updating..."))
         
         try:
             data.SetVerboseBoot(inChoice)
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Failed: ")+Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
         else:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration Updated")))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration Updated")))
 
 class ResetDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -1664,7 +1254,7 @@ class ResetDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -1688,8 +1278,8 @@ class ResetDialogue(Dialogue):
         return handled
 
     def DoAction(self):
-        self.layout.ExitBannerSet(Lang("Resetting..."))
-        self.layout.SubshellCommandSet("/opt/xensource/libexec/revert-to-factory yesimeanit && sleep 2")
+        Layout.Inst().ExitBannerSet(Lang("Resetting..."))
+        Layout.Inst().SubshellCommandSet("/opt/xensource/libexec/revert-to-factory yesimeanit && sleep 2")
         Data.Inst().SetVerboseBoot(False)
         State.Inst().RebootMessageSet(Lang("This server must reboot to complete the reset process.  Reboot the server now?"))
 
@@ -1740,7 +1330,7 @@ class ValidateDialogue(Dialogue):
     def HandleKey(self, inKey):
         handled = False
         if inKey == 'KEY_ENTER' or inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -1797,7 +1387,7 @@ class SRDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -1808,7 +1398,7 @@ class SRDialogue(Dialogue):
         if not handled and inKey == 'KEY_F(5)':
             Data.Inst().Update()
             self.BuildPaneINITIAL() # Updates menu
-            self.layout.Refresh()
+            Layout.Inst().Refresh()
             handled = True
         
         return handled
@@ -1829,13 +1419,13 @@ class SuspendSRDialogue(SRDialogue):
     def DoAction(self, inSR):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         try:
             Data.Inst().SuspendSRSet(inSR)
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Configuration Successful'),
+            Layout.Inst().PushDialogue(InfoDialogue( Lang('Configuration Successful'),
                 Lang("Suspend SR set to '"+inSR['name_label']+"'")))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration failed: ")+str(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration failed: ")+str(e)))
         Data.Inst().Update()
 
 class CrashDumpSRDialogue(SRDialogue):
@@ -1851,274 +1441,15 @@ class CrashDumpSRDialogue(SRDialogue):
     def DoAction(self, inSR):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         try:
             Data.Inst().CrashDumpSRSet(inSR)
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang('Configuration Successful'),
+            Layout.Inst().PushDialogue(InfoDialogue( Lang('Configuration Successful'),
                 Lang("Crash Dump SR set to '"+inSR['name_label']+"'")))
         except Exception, e:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Configuration failed: ")+str(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration failed: ")+str(e)))
         Data.Inst().Update()
 
-class FileDialogue(Dialogue):
-    def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout, inParent)
-
-        self.vdiMount = None
-        self.ChangeState('INITIAL')
-    
-    def Custom(self, inKey):
-        return self.custom.get(inKey, None)
-    
-    def BuildPaneBase(self):
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.TitleSet(self.Custom('title'))
-        pane.AddBox()
-    
-    def BuildPaneINITIAL(self):
-        if self.Custom('mode') == 'rw':
-            self.deviceList = FileUtils.DeviceList(True) # Writable devices only
-        else:
-            self.deviceList = FileUtils.DeviceList(False) # Writable and read-only devices
-        
-        choiceDefs = []
-        for device in self.deviceList:
-            choiceDefs.append(ChoiceDef(device.name, lambda: self.HandleDeviceChoice(self.deviceMenu.ChoiceIndex()) ) )
-
-        if len(choiceDefs) == 0:
-            choiceDefs.append(ChoiceDef('<No devices available>', lambda: None)) # Avoid empty menu
-
-        self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
-
-        self.BuildPaneBase()
-        self.UpdateFields()
-    
-    def BuildPaneUSBNOTFORMATTED(self):
-        self.BuildPaneBase()
-        self.UpdateFields()
-        
-    def BuildPaneUSBNOTMOUNTABLE(self):
-        self.BuildPaneBase()
-        self.UpdateFields()
-    
-    def BuildPaneFILES(self):
-        self.BuildPaneBase()
-        
-        choiceDefs = []
-        for filename in self.fileList:
-            displayName = "%-60.60s%10.10s" % (filename, self.vdiMount.SizeString(filename))
-            choiceDefs.append(ChoiceDef(displayName, lambda: self.HandleFileChoice(self.fileMenu.ChoiceIndex()) ) )
-
-        choiceDefs.append(ChoiceDef(Lang('Enter Custom Filename'), lambda: self.HandleFileChoice(None)))
-        self.fileMenu = Menu(self, None, Lang("Select File"), choiceDefs)
-        self.UpdateFields()
-        
-    def BuildPaneCONFIRM(self):
-        self.BuildPaneBase()
-        self.UpdateFields()
-
-    def BuildPaneCUSTOM(self):
-        self.BuildPaneBase()
-        self.UpdateFields()
-    
-    def ChangeState(self, inState):
-        self.state = inState
-        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
-    
-    def UpdateFields(self):
-        self.Pane().ResetPosition()
-        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
-        
-    def UpdateFieldsINITIAL(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddTitleField(self.Custom('deviceprompt'))
-        pane.AddMenuField(self.deviceMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
-            "<F5>" : Lang("Rescan") } )
-
-    def UpdateFieldsUSBNOTFORMATTED(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddWrappedBoldTextField(Lang("This USB media is not formatted.  Would you like to format it now?"))
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format media"), Lang("<Esc>") : Lang("Exit") } )
-
-    def UpdateFieldsUSBNOTMOUNTABLE(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddWrappedBoldTextField(Lang("This USB media contains data but this application cannot mount it.  Would you like to format the media?  This will erase all data on the media."))
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Format Media"), Lang("<Esc>") : Lang("Exit") } )
-
-    def UpdateFieldsFILES(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddTitleField(self.Custom('fileprompt'))
-        pane.AddMenuField(self.fileMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
-
-    def UpdateFieldsCUSTOM(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddTitleField(Lang("Enter Filename"))
-        pane.AddInputField(Lang("Filename",  16), FirstValue(self.Custom('filename'), ''), 'filename')
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
-        if pane.CurrentInput() is None:
-            pane.InputIndexSet(0)
-
-    def UpdateFieldsCONFIRM(self):
-        pane = self.Pane()
-        pane.ResetFields()
-        
-        pane.AddTitleField(self.Custom('confirmprompt'))
-        pane.AddWrappedBoldTextField(Lang("Device"))
-        pane.AddWrappedTextField(self.deviceName)
-        pane.NewLine()
-        
-        if self.Custom('mode') == 'rw':
-            fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('New file'))+')'
-        else:
-            fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('File not found'))+')'
-        
-        pane.AddWrappedBoldTextField(Lang("File"))
-        pane.AddWrappedTextField(self.filename+fileSize)
-        
-        pane.NewLine()
-        
-        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
-
-    def HandleKey(self, inKey):
-        handled = False
-        if hasattr(self, 'HandleKey'+self.state):
-            handled = getattr(self, 'HandleKey'+self.state)(inKey)
-        
-        if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
-            self.PreExitActions()
-            handled = True
-
-        return handled
-        
-    def HandleKeyINITIAL(self, inKey):
-        handled = self.deviceMenu.HandleKey(inKey)
-        
-        if not handled and inKey == 'KEY_F(5)':
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Rescanning...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            self.layout.PopDialogue()
-            self.BuildPaneINITIAL() # Updates self.deviceList
-            time.sleep(0.5) # Display rescanning box for a reasonable time
-            self.layout.Refresh()
-            handled = True
-            
-        return handled
-    
-    def HandleKeyUSBNOTFORMATTED(self, inKey):
-        handled = False
-        if inKey == 'KEY_F(8)':
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Formatting...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            self.layout.PopDialogue()
-
-            try:
-                FileUtils.USBFormat(self.vdi)
-                self.HandleDevice()
-            except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Formatting Failed"), Lang(e)))
-
-            handled = True
-
-        return handled
-    
-    def HandleKeyUSBNOTMOUNTABLE(self, inKey):
-        return self.HandleKeyUSBNOTFORMATTED(inKey)
-    
-    def HandleKeyFILES(self, inKey):
-        return self.fileMenu.HandleKey(inKey)
-        
-    def HandleKeyCUSTOM(self, inKey):
-        handled = True
-        pane = self.Pane()
-        if pane.CurrentInput() is None:
-            pane.InputIndexSet(0)
-        if inKey == 'KEY_ENTER':
-            inputValues = pane.GetFieldValues()
-            self.filename = inputValues['filename']
-            self.ChangeState('CONFIRM')
-        elif pane.CurrentInput().HandleKey(inKey):
-            pass # Leave handled as True
-        else:
-            handled = False
-        return handled
-    
-    def HandleKeyCONFIRM(self, inKey):
-        handled = False
-        
-        if inKey == 'KEY_F(8)':
-            self.DoAction()
-            handled = True
-            
-        return handled
-    
-    def HandleDeviceChoice(self, inChoice):
-        self.deviceName = self.deviceList[inChoice].name
-        self.vdi = self.deviceList[inChoice].vdi
-        self.HandleDevice()
-        
-    def HandleDevice(self):
-        try:
-
-            self.vdiMount = None
-
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Mounting device...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-
-            self.vdiMount = MountVDI(self.vdi, self.Custom('mode'))
-
-            
-            self.layout.PopDialogue()
-            self.layout.PushDialogue(BannerDialogue(self.layout, self.parent, Lang("Scanning device...")))
-            self.layout.Refresh()
-            self.layout.DoUpdate()
-            
-            self.fileList = self.vdiMount.Scan(self.Custom('searchregexp'), 500) # Limit number of files to avoid colossal menu
-            
-            self.layout.PopDialogue()
-            
-            self.ChangeState('FILES')
-        
-        except USBNotFormatted:
-            self.layout.PopDialogue()
-            self.ChangeState('USBNOTFORMATTED')
-        except USBNotMountable:
-            self.layout.PopDialogue()
-            self.ChangeState('USBNOTMOUNTABLE')
-        except Exception, e:
-            try:
-                self.PreExitActions()
-            except Exception:
-                pass # Ignore failue
-            self.layout.PopDialogue()
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Operation Failed"), Lang(e)))
-
-    def HandleFileChoice(self, inChoice):
-        if inChoice is None:
-            self.ChangeState('CUSTOM')
-        else:
-            self.filename = self.fileList[inChoice]
-            self.ChangeState('CONFIRM')
-    
-    def PreExitActions(self):
-        if self.vdiMount is not None:
-            self.vdiMount.Unmount()
-            self.vdiMount = None
 
 class PatchDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
@@ -2136,15 +1467,15 @@ class PatchDialogue(FileDialogue):
     def DoAction(self):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+        Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Applying patch... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:
-                self.layout.Refresh()
-                self.layout.DoUpdate()
+                Layout.Inst().Refresh()
+                Layout.Inst().DoUpdate()
                 
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
@@ -2158,19 +1489,19 @@ class PatchDialogue(FileDialogue):
                 if status != 0:
                     raise Exception(output)
                 
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Patch Successful"), Lang("Please reboot to use the newly installed software.")))
 
             except Exception, e:
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Upgrade or Patch Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Upgrade or Patch Failed"), Lang(e)))
 
 class BackupDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
@@ -2189,7 +1520,7 @@ class BackupDialogue(FileDialogue):
     def DoAction(self):
         filename = self.vdiMount.MountedPath(self.filename)
         if os.path.isfile(filename):
-            self.layout.PushDialogue(QuestionDialogue(self.layout,  self.parent,
+            Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("File already exists.  Do you want to overwrite it?"), lambda x: self.DoOverwriteChoice(x)))
         else:
             self.DoCommit()
@@ -2205,15 +1536,15 @@ class BackupDialogue(FileDialogue):
     def DoCommit(self):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+        Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Saving to backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:
-                self.layout.Refresh()
-                self.layout.DoUpdate()
+                Layout.Inst().Refresh()
+                Layout.Inst().DoUpdate()
                 
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
@@ -2227,19 +1558,19 @@ class BackupDialogue(FileDialogue):
                 if status != 0:
                     raise Exception(output)
                 
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Backup Successful")))
 
             except Exception, e:
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Backup Failed"), Lang(e)))
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Backup Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Backup Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Backup Failed"), Lang(e)))
 
 class RestoreDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
@@ -2257,15 +1588,15 @@ class RestoreDialogue(FileDialogue):
     def DoAction(self):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+        Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Restoring from backup... This may take several minutes.")))
             
         try:
             try:
-                self.layout.Refresh()
-                self.layout.DoUpdate()
+                Layout.Inst().Refresh()
+                Layout.Inst().DoUpdate()
                 
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
@@ -2279,19 +1610,19 @@ class RestoreDialogue(FileDialogue):
                 if status != 0:
                     raise Exception(output)
                 
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Restore Successful"), Lang("Please reboot to use the new backup.")))
 
             except Exception, e:
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Restore Failed"), Lang(e)))
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Restore Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Restore Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Restore Failed"), Lang(e)))
 
 class LicenceDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
@@ -2309,15 +1640,15 @@ class LicenceDialogue(FileDialogue):
     def DoAction(self):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+        Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Installing License...")))
             
         try:
             try:
-                self.layout.Refresh()
-                self.layout.DoUpdate()
+                Layout.Inst().Refresh()
+                Layout.Inst().DoUpdate()
                 
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
@@ -2332,19 +1663,19 @@ class LicenceDialogue(FileDialogue):
                     raise Exception(output)
                 
                 Data.Inst().Update()
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("License Installed Successfully")))
 
             except Exception, e:
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("License Installation Failed"), Lang(e)))
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("License Installation Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("License Installation Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("License Installation Failed"), Lang(e)))
 
 class SaveBugReportDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
@@ -2362,15 +1693,15 @@ class SaveBugReportDialogue(FileDialogue):
     def DoAction(self):
         success = False
         
-        self.layout.PopDialogue()
+        Layout.Inst().PopDialogue()
         
-        self.layout.PushDialogue(BannerDialogue(self.layout, self.parent,
+        Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Saving Bug Report...")))
             
         try:
             try:
-                self.layout.Refresh()
-                self.layout.DoUpdate()
+                Layout.Inst().Refresh()
+                Layout.Inst().DoUpdate()
 
                 filename = self.vdiMount.MountedPath(self.filename)
                 FileUtils.AssertSafePath(filename)
@@ -2384,19 +1715,19 @@ class SaveBugReportDialogue(FileDialogue):
                 if status != 0:
                     raise Exception(output)
 
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent,
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Saved Bug Report")))
 
             except Exception, e:
-                self.layout.PopDialogue()
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Save Failed"), Lang(e)))
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Save Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Save Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Save Failed"), Lang(e)))
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -2449,7 +1780,7 @@ class TestNetworkDialogue(Dialogue):
             handled = getattr(self, 'HandleKey'+self.state)(inKey)
         
         if not handled and inKey == 'KEY_ESCAPE':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
 
         return handled
@@ -2457,7 +1788,7 @@ class TestNetworkDialogue(Dialogue):
     def HandleKeyINITIAL(self, inKey):
         handled = self.testMenu.HandleKey(inKey)
         if not handled and inKey == 'KEY_LEFT':
-            self.layout.PopDialogue()
+            Layout.Inst().PopDialogue()
             handled = True
         return handled
         
@@ -2508,7 +1839,7 @@ class TestNetworkDialogue(Dialogue):
                 output = Lang(e)
             
         if success:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping successful"), output))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Ping successful"), output))
         else:
-            self.layout.PushDialogue(InfoDialogue(self.layout, self.parent, Lang("Ping failed"), output))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Ping failed"), output))
         

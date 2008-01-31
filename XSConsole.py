@@ -14,6 +14,7 @@ from XSConsoleLang import *
 
 def main():
     app = App()
+    app.Build( ['plugins-base', 'plugins-oem', 'plugins-extras'] )
     app.Enter()
 
 if __name__ == "__main__":

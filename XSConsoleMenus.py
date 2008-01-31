@@ -15,8 +15,15 @@ from XSConsoleData import *
 from XSConsoleLang import *
 
 class ChoiceDef:
-    def __init__(self, name, onAction = None, onEnter = None):
+    def __init__(self, name, onAction = None, onEnter = None, priority = None):
         ParamsToAttr()
+        self.statusUpdateHandler = None
+        
+    def StatusUpdateHandler(self):
+        return self.statusUpdateHandler
+        
+    def StatusUpdateHandlerSet(self, inHandler):
+        self.statusUpdateHandler = inHandler
 
 class Menu:
     def __init__(self, inOwner, inParent, inTitle, inChoiceDefs):
@@ -25,6 +32,11 @@ class Menu:
         self.title = inTitle
         self.choiceDefs = inChoiceDefs
         self.choiceIndex = 0
+        self.defaultPriority=100
+        for choice in self.choiceDefs:
+            if choice.priority is None:
+                choice.priority = self.defaultPriority
+                self.defaultPriority += 100
 
     def Parent(self): return self.parent
     def Title(self): return self.title
@@ -33,6 +45,18 @@ class Menu:
 
     def AppendChoiceDef(self, inChoice):
         self.choiceDefs.append(inChoice)
+
+    def AddChoice(self, inChoiceDef, inPriority = None):
+        if inPriority is None:
+            priority = self.defaultPrority
+            self.defaultPrority += 100
+        else:
+            priority = inPriority
+        
+        inChoiceDef.priority = priority # FIXME
+        self.choiceDefs.append(inChoiceDef)
+        
+        self.choiceDefs.sort(lambda x, y : cmp(x.priority, y.priority))
 
     def CurrentChoiceSet(self,  inChoice):
         self.choiceIndex = inChoice
@@ -98,7 +122,7 @@ class RootMenu:
             ChoiceDef(Lang("System Properties"), 
                 lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
             ChoiceDef(Lang("Server Management"), 
-                lambda : inDialogue.ChangeMenu('MENU_INTERFACE'), lambda : inDialogue.ChangeStatus('INTERFACE')),
+                lambda : inDialogue.ChangeMenu('MENU_MANAGEMENT'), lambda : inDialogue.ChangeStatus('MANAGEMENT')),
             ChoiceDef(Lang("Remote Resource Configuration"), 
                 lambda : inDialogue.ChangeMenu('MENU_REMOTE'), lambda : inDialogue.ChangeStatus('REMOTE')),
             ChoiceDef(Lang("Backup, Restore and Update"), 
@@ -154,10 +178,8 @@ class RootMenu:
             
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), propertiesChoices),
 
-            'MENU_INTERFACE' : Menu(self, 'MENU_ROOT', Lang("Server Management"), [
+            'MENU_MANAGEMENT' : Menu(self, 'MENU_ROOT', Lang("Server Management"), [
                 ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
-                ChoiceDef(Lang("Select Management NIC"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_INTERFACE'), lambda : inDialogue.ChangeStatus('SELECTNIC')),
                 ChoiceDef(Lang("Add/Remove DNS Servers"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_DNS'), lambda : inDialogue.ChangeStatus('DNS')),
                 ChoiceDef(Lang("Set Hostname"),
@@ -239,3 +261,8 @@ class RootMenu:
             
         self.CurrentMenu().HandleEnter()
         
+    def AddChoice(self, inMenuName, inChoiceDef, inPriority = None):
+        if not self.menus.has_key(inMenuName):
+            raise Exception(Lang("Unknown menu '")+inMenuName+"'")
+        
+        self.menus[inMenuName].AddChoice(inChoiceDef, inPriority)
