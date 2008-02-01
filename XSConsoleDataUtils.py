@@ -71,7 +71,7 @@ class FileUtils:
         retVal= []
         status, output = commands.getstatusoutput("/opt/xensource/libexec/list_local_disks")
         if status == 0:
-            regExp = re.compile(r'([^,]*),([^,]*),([^,]*),([^,]*),"([^"]*)"')
+            regExp = re.compile(r"\s*\(\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)")
             for line in output.split("\n"):
                 match = regExp.match(line)
                 if match:
