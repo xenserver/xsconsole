@@ -766,6 +766,20 @@ class Data:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.Inst().CloseSession(self.session)
     
+    def DisableManagement(self):
+        # Double-check authentication
+        Auth.Inst().AssertAuthenticated()
+        try:
+            self.RequireSession()
+            # Disable management interfaces
+            self.session.xenapi.host.management_disable()
+            # Disable the PIF that the management interface was using
+            for pif in self.derived.managementpifs([]):
+                self.session.xenapi.PIF.reconfigure_ip(pif['opaqueref'], 'None','' ,'' ,'' ,'')
+        finally:
+            # Network reconfigured so this link is potentially no longer valid
+            self.session = Auth.Inst().CloseSession(self.session)
+    
     def ConfigureRemoteShell(self, inEnable):
         if inEnable:
             status, output = commands.getstatusoutput("/sbin/chkconfig sshd on")

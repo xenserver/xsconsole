@@ -545,7 +545,7 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Specify Crash Dump SR"))
     
-        inPane.AddWrappedTextField(Lang("This server can be configured to use Storage Repository to store Crash Dumps."))
+        inPane.AddWrappedTextField(Lang("This server can be configured to use a Storage Repository to store Crash Dumps."))
         inPane.NewLine()
     
         if not data.host.crash_dump_sr(False):

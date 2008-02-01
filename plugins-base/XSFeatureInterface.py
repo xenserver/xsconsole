@@ -17,7 +17,8 @@ class InterfaceDialogue(Dialogue):
         
         choiceDefs = []
 
-        self.nic=0
+        self.nic=None
+        self.converting = False
         currentPIF = None
         choiceArray = []
         for i in range(len(Data.Inst().host.PIFs([]))):
@@ -34,13 +35,20 @@ class InterfaceDialogue(Dialogue):
             choiceDefs.append(ChoiceDef(choiceName, lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
         
         if len(choiceDefs) == 0:
-            choiceDefs.append(ChoiceDef(Lang("None"), lambda: self.HandleNICChoice(None)))
+            choiceDefs.append(ChoiceDef(Lang("<No interfaces present>"), None))
+        else:
+            choiceDefs.append(ChoiceDef(Lang("Disable Management Interface"), lambda: self.HandleNICChoice(None)))
 
         self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
         
         self.modeMenu = Menu(self, None, Lang("Select IP Address Configuration Mode"), [
             ChoiceDef(Lang("DHCP"), lambda: self.HandleModeChoice('DHCP') ), 
             ChoiceDef(Lang("Static"), lambda: self.HandleModeChoice('Static') ), 
+            ])
+        
+        self.postDHCPMenu = Menu(self, None, Lang("Accept or Edit"), [
+            ChoiceDef(Lang("Continue With DHCP Enabled"), lambda: self.HandlePostDHCPChoice('CONTINUE') ), 
+            ChoiceDef(Lang("Convert to Static Addressing"), lambda: self.HandlePostDHCPChoice('CONVERT') ), 
             ])
         
         self.ChangeState('INITIAL')
@@ -77,7 +85,7 @@ class InterfaceDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select NIC for management interface"))
+        pane.AddTitleField(Lang("Select NIC for Management Interface"))
         pane.AddMenuField(self.nicMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
 
@@ -85,14 +93,17 @@ class InterfaceDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select DHCP or Static IP Address Configuration"))
+        pane.AddTitleField(Lang("Select DHCP or static IP address configuration"))
         pane.AddMenuField(self.modeMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
         
     def UpdateFieldsSTATICIP(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.AddTitleField(Lang("Enter Static IP Address Configuration"))
+        if self.converting:
+            pane.AddTitleField(Lang("Please confirm or edit the static IP configuration"))
+        else:
+            pane.AddTitleField(Lang("Enter static IP address configuration"))
         pane.AddInputField(Lang("IP Address",  14),  self.IP, 'IP')
         pane.AddInputField(Lang("Netmask",  14),  self.netmask, 'netmask')
         pane.AddInputField(Lang("Gateway",  14),  self.gateway, 'gateway')
@@ -102,8 +113,10 @@ class InterfaceDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
+        pane.AddTitleField(Lang("Press <Enter> to apply the following configuration"))
+        
         if self.nic is None:
-            pane.AddWrappedTextField(Lang("No management interface will be configured"))
+            pane.AddWrappedTextField(Lang("The Management Interface will be disabled"))
         else:
             pif = Data.Inst().host.PIFs()[self.nic]
             pane.AddStatusField(Lang("Device",  16),  pif['device'])
@@ -116,6 +129,26 @@ class InterfaceDialogue(Dialogue):
                 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         
+    def UpdateFieldsPOSTDHCP(self):
+        pane = self.Pane()
+        pane.ResetFields()
+   
+        pane.AddWrappedBoldTextField(Lang("The following addresses have been assigned by DHCP.  Would you like to accept them and continue with DHCP enabled, or convert to a static configuration?"))
+        pane.NewLine()
+        
+        if self.nic is None:
+            pane.AddWrappedTextField(Lang("<No interface configured>"))
+        else:
+            pif = Data.Inst().host.PIFs()[self.nic]
+            pane.AddStatusField(Lang("Device",  16),  pif['device'])
+            pane.AddStatusField(Lang("Name",  16),  pif['metrics']['device_name'])
+            pane.AddStatusField(Lang("IP Address",  16),  self.IP)
+            pane.AddStatusField(Lang("Netmask",  16),  self.netmask)
+            pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
+        pane.NewLine()
+        pane.AddMenuField(self.postDHCPMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        
     def UpdateFields(self):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
@@ -123,7 +156,8 @@ class InterfaceDialogue(Dialogue):
     def ChangeState(self, inState):
         self.state = inState
         self.BuildPane()
-        
+        self.UpdateFields()
+                            
     def HandleKeyINITIAL(self, inKey):
         return self.nicMenu.HandleKey(inKey)
 
@@ -157,14 +191,20 @@ class InterfaceDialogue(Dialogue):
         handled = True
         pane = self.Pane()
         if inKey == 'KEY_ENTER':
-            Layout.Inst().PopDialogue()
-            Layout.Inst().PushDialogue(BannerDialogue( Lang("Reconfiguring network...")))
-            Layout.Inst().Refresh()
-            Layout.Inst().DoUpdate()
+            Layout.Inst().TransientBanner( Lang("Reconfiguring network..."))
             try:
                 self.Commit()
-                Layout.Inst().PopDialogue()
-                Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration Successful")))
+                if self.mode == 'DHCP':
+                    data = Data.Inst()
+                    self.IP = data.ManagementIP()
+                    self.netmask = data.ManagementNetmask()
+                    self.gateway = data.ManagementGateway()
+                    self.ChangeState('POSTDHCP')
+
+                else:
+                    # Just report success for Static or None
+                    Layout.Inst().PopDialogue()
+                    Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration Successful")))
                 
             except Exception, e:
                 Layout.Inst().PopDialogue()
@@ -173,7 +213,10 @@ class InterfaceDialogue(Dialogue):
         else:
             handled = False
         return handled
-        
+    
+    def HandleKeyPOSTDHCP(self, inKey):
+        return self.postDHCPMenu.HandleKey(inKey)
+    
     def HandleKey(self,  inKey):
         handled = False
         if hasattr(self, 'HandleKey'+self.state):
@@ -191,23 +234,30 @@ class InterfaceDialogue(Dialogue):
             self.ChangeState('PRECOMMIT')
         else:
             self.ChangeState('MODE')
-        self.UpdateFields()
         
     def HandleModeChoice(self,  inChoice):
         self.mode = inChoice
         if self.mode == 'DHCP':
             self.ChangeState('PRECOMMIT')
-            self.UpdateFields()
         else:
             self.ChangeState('STATICIP')
-            self.UpdateFields() # Setup input fields first
-            self.Pane().InputIndexSet(0) # and then choose the first
+            self.Pane().InputIndexSet(0)
             
+    def HandlePostDHCPChoice(self,  inChoice):
+        if inChoice == 'CONTINUE':
+            Layout.Inst().PopDialogue() # We're done
+        elif inChoice == 'CONVERT':
+            self.converting = True
+            self.mode = 'Static'
+            self.ChangeState('STATICIP')
+            self.Pane().InputIndexSet(0)
+
     def Commit(self):
+        data = Data.Inst()
         if self.nic is None:
-            pass # TODO: Delete interfaces
+            self.mode = None
+            data.DisableManagement()
         else:
-            data = Data.Inst()
             pif = data.host.PIFs()[self.nic]
             if self.mode.lower().startswith('static'):
                 # Comma-separated list of nameserver IPs
@@ -215,7 +265,8 @@ class InterfaceDialogue(Dialogue):
             else:
                 dns = ''
             data.ReconfigureManagement(pif, self.mode, self.IP,  self.netmask, self.gateway, dns)
-            Data.Inst().Update()
+        
+        data.Update()
 
 class XSFeatureInterface(PlugIn):
     def __init__(self):
