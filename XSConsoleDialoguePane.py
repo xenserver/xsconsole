@@ -37,18 +37,20 @@ class PaneSizerFixed(PaneSizer):
         self.ySize = inYSize
 
 class PaneSizerCentre(PaneSizer):
+    SHRINKVALUE = 4
     def __init__(self, inParent):
         self.parent = inParent
-        self.xSize = self.parent.XSize()
-        self.ySize = self.parent.YSize()
+        self.xSize = self.parent.XSize() - self.SHRINKVALUE
+        self.ySize = self.parent.YSize() - self.SHRINKVALUE
         self.xPos = 0
         self.yPos = 0
     
     def Update(self, inArranger):
-        self.xSize = min(inArranger.XBounds(), self.parent.XSize() - 4)
-        self.ySize = min(inArranger.YBounds(), self.parent.YSize() - 4)
-        self.xPos = (self.parent.XSize() - self.xSize) / 2
-        self.yPos = (self.parent.YSize() - self.ySize) / 2
+        self.xSize = min(inArranger.XBounds(), self.parent.XSize() - self.SHRINKVALUE)
+        self.xSize = (self.xSize + 1) & ~1 # make xSize even
+        self.ySize = min(inArranger.YBounds(), self.parent.YSize() - self.SHRINKVALUE)
+        self.xPos = self.parent.XPos() + (self.parent.XSize() - self.xSize) / 2
+        self.yPos = self.parent.YPos() + (self.parent.YSize() - self.ySize) / 2
 
 class DialoguePane:    
     def __init__(self, inParent = None, inSizer = None):
@@ -113,7 +115,7 @@ class DialoguePane:
         self.title = inTitle
     
     def NeedsScroll(self):
-        return self.arranger.YSize() >= self.Win().YSize()
+        return self.arranger.YSize() + 2 >= self.Win().YSize()
 
     def ScrollPageUp(self):
         if self.yScrollPos > 0:
@@ -191,7 +193,7 @@ class DialoguePane:
     
     def AddMenuField(self, inMenu, inHeight = None):
         # Arbitrarily limit menu size to 10 lines
-        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.selectedColour, FirstValue(inHeight, 10), Field.FLOW_RETURN))
+        field = self.AddBodyFieldObj(MenuField(inMenu, self.baseColour, self.selectedColour, FirstValue(inHeight, 10), Field.FLOW_DOUBLERETURN))
     
     def AddKeyHelpField(self, inKeys):
         for name in sorted(inKeys):
@@ -203,8 +205,11 @@ class DialoguePane:
         win.DefaultColourSet(self.baseColour)
         win.Erase()
         
-        # Shrink the clip window to allow space for the static fields
-        ySize = win.YSize() - 1
+        if len(self.fieldGroup.StaticFields()) == 0:
+            ySize = win.YSize()
+        else:
+            # Shrink the clip window to allow space for the static fields
+            ySize = win.YSize() - 2
         win.YClipMaxSet(ySize)
         
         bodyLayout = self.arranger.BodyLayout()

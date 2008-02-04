@@ -101,6 +101,12 @@ class CursesPane:
     def YSize(self):
         return self.ySize
         
+    def XPos(self):
+        return self.xPos
+        
+    def YPos(self):
+        return self.yPos
+        
     def XOffset(self):
         return self.xOffset
         

@@ -31,7 +31,7 @@ class SeparatorField(Field):
         pass
 
     def Width(self):
-        return 1
+        return 0
 
     def Height(self):
         return 1
@@ -323,16 +323,20 @@ class FieldArranger:
         yPos = yStart
         
         xMax = xPos
+        yMax = yPos
         
         retVal = []
-        for field in inFields:
+        for field in inFields:            
             flow = field.Flow()
             
             retVal.append(Struct(xpos = xPos, ypos = yPos))
             
+            # UpdateWidth can rewrap text and change the field width and height 
             field.UpdateWidth((xSize - self.BORDER) - xPos)
             xMax = max(xMax, xPos + field.Width())
-            
+            if field.Width() > 0:
+                yMax = yPos + inYStep * field.Height() # Only advance yMax for non-blank lines
+                
             if flow == Field.FLOW_RIGHT:
                 xPos += field.Width() + 1
             elif flow == Field.FLOW_RETURN:
@@ -346,7 +350,7 @@ class FieldArranger:
             else:
                 raise Exception("Unknown flow type: "+str(flow))
         
-        retVal.append(Struct(xpos = xMax, ypos = yPos)) # End marker
+        retVal.append(Struct(xpos = xMax, ypos = yMax)) # End marker
 
         return retVal
 

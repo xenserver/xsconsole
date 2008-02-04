@@ -588,7 +588,6 @@ class KeyboardDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Please Select Your Keyboard Layout"))
         pane.AddMenuField(self.layoutMenu, 12) # There are a lot of names so make this menu high
-        pane.NewLine()
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
             
     def UpdateFieldsKEYMAP(self):
@@ -843,7 +842,7 @@ class RemoteDBDialogue(Dialogue):
             ChoiceDef(Lang("Format disk and create new database"), lambda: self.HandleUseChoice('FORMAT')),
             ChoiceDef(Lang("Cancel"), lambda: self.HandleUseChoice('CANCEL'))
         ] )            
-            
+
         self.ChangeState('INITIAL')
 
     def IQNString(self, inIQN, inLUN = None):
@@ -971,7 +970,6 @@ class RemoteDBDialogue(Dialogue):
         pane.AddWrappedTextField(self.IQNString(self.chosenIQN, self.chosenLUN))
         pane.NewLine()
         pane.AddMenuField(self.useMenu)
-        pane.NewLine()
         
         pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK") } )
 
