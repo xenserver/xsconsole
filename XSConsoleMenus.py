@@ -132,7 +132,7 @@ class RootMenu:
                 lambda : inDialogue.ChangeMenu('MENU_MANAGEMENT'), lambda : inDialogue.ChangeStatus('MANAGEMENT')),
             ChoiceDef(Lang("Disks and Storage Repositories"), 
                 lambda : inDialogue.ChangeMenu('MENU_DISK'), lambda : inDialogue.ChangeStatus('DISK')),
-            ChoiceDef(Lang("Remote Resource Configuration"), 
+            ChoiceDef(Lang("Remote Service Configuration"), 
                 lambda : inDialogue.ChangeMenu('MENU_REMOTE'), lambda : inDialogue.ChangeStatus('REMOTE')),
             ChoiceDef(Lang("Backup, Restore and Update"), 
                 lambda : inDialogue.ChangeMenu('MENU_BUR'), lambda : inDialogue.ChangeStatus('BUR')),
@@ -202,7 +202,9 @@ class RootMenu:
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TIMEZONE'), lambda : inDialogue.ChangeStatus('TIMEZONE'))
             ]),
 
-            'MENU_REMOTE' : Menu(self, 'MENU_ROOT', Lang("Remote Configuration"), [
+            'MENU_REMOTE' : Menu(self, 'MENU_ROOT', Lang("Remote Service Configuration"), [
+                ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
+                    lambda : inDialogue.ChangeStatus('REMOTESHELL')),
                 ChoiceDef(Lang("Remote Logging (syslog)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
                 ChoiceDef(Lang("Setup Remote Database"),
@@ -238,8 +240,6 @@ class RootMenu:
             'MENU_BUR' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Update"), burChoices),
                 
             'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
-                ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
-                    lambda : inDialogue.ChangeStatus('REMOTESHELL')),
                 ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
                     lambda : inDialogue.ChangeStatus('VALIDATE')),
                 # Upload bug report removed (CA-13345)

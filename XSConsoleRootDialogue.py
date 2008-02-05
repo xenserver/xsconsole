@@ -557,9 +557,36 @@ class RootDialogue(Dialogue):
             Lang("<F5>") : Lang("Refresh")
         })
 
+    def UpdateFieldsDISK(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Disks and Storage Repositories"))
+    
+        inPane.AddWrappedTextField(Lang("Press <Enter> to select local disks to use as storage repositories, "
+            "and specify destinations for Suspend and Crash Dump images."))
+        inPane.NewLine()
+    
+    
+        inPane.AddWrappedBoldTextField(Lang('Suspend Image SR'))
+        if data.host.suspend_image_sr(False):
+            inPane.AddWrappedTextField(data.host.suspend_image_sr.name_label())
+        else:
+            inPane.AddWrappedTextField(Lang('<Not Configured>'))
+            
+        inPane.NewLine()
+            
+        inPane.AddWrappedBoldTextField(Lang('Crash Dump SR'))
+        if data.host.crash_dump_sr(False):
+            inPane.AddWrappedTextField(data.host.crash_dump_sr.name_label())
+        else:
+            inPane.AddWrappedTextField(Lang('<Not Configured>'))
+            
+        inPane.AddKeyHelpField( {
+            Lang("<F5>") : Lang("Refresh")
+        })
+
     def UpdateFieldsCLAIMSR(self, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Claim Disk as Storage Repository"))
+        inPane.AddTitleField(Lang("Claim Local Disk as SR"))
     
         inPane.AddWrappedTextField(Lang("Local disks can be configured as Storage Repositories "
             "for use by virtual machines.  Press <Enter> to list the disks available."))
@@ -570,9 +597,9 @@ class RootDialogue(Dialogue):
 
     def UpdateFieldsREMOTE(self, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Remote Resource Configuration"))
+        inPane.AddTitleField(Lang("Remote Service Configuration"))
     
-        inPane.AddWrappedTextField(Lang("This menu configures remote databases and "
+        inPane.AddWrappedTextField(Lang("This menu configures remote databases, access by remote shell (ssh) and "
             "remote logging (syslog) to other servers."))
 
     def UpdateFieldsREMOTEDB(self, inPane):
