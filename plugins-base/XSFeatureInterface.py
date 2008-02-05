@@ -87,7 +87,7 @@ class InterfaceDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Select NIC for Management Interface"))
         pane.AddMenuField(self.nicMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsMODE(self):
         pane = self.Pane()
@@ -95,7 +95,7 @@ class InterfaceDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Select DHCP or static IP address configuration"))
         pane.AddMenuField(self.modeMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         
     def UpdateFieldsSTATICIP(self):
         pane = self.Pane()
@@ -107,7 +107,7 @@ class InterfaceDialogue(Dialogue):
         pane.AddInputField(Lang("IP Address",  14),  self.IP, 'IP')
         pane.AddInputField(Lang("Netmask",  14),  self.netmask, 'netmask')
         pane.AddInputField(Lang("Gateway",  14),  self.gateway, 'gateway')
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         
     def UpdateFieldsPRECOMMIT(self):
         pane = self.Pane()
@@ -312,7 +312,7 @@ class XSFeatureInterface(PlugIn):
             'SELECT_MANAGEMENT_INTERFACE', # Key of this plugin for replacement, etc.
             {
                 'title' : Lang('Select Management NIC'), # Name of this plugin for plugin list
-                'menuname' : 'MENU_MANAGEMENT',
+                'menuname' : 'MENU_NETWORK',
                 'menupriority' : 150,
                 'menutext' : Lang('Select Management NIC') ,
                 'needsauth' : True,

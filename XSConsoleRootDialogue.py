@@ -55,10 +55,9 @@ class RootDialogue(Dialogue):
         
     def UpdateFieldsPROPERTIES(self, inPane):
 
-        inPane.AddTitleField(Lang("System Properties"))
+        inPane.AddTitleField(Lang("Hardware and BIOS Information"))
     
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to view the properties of this system."))
+        inPane.AddWrappedTextField(Lang("Press <Enter> to view processor, memory, disk controller and BIOS details for this system."))
     
     def UpdateFieldsAUTH(self, inPane):
 
@@ -79,7 +78,8 @@ class RootDialogue(Dialogue):
             inPane.AddWrappedTextField(Lang("You are currently not logged in."))
 
         inPane.NewLine()
-        inPane.AddWrappedTextField(Lang("Only logged in users can reconfigure and control this server."))
+        inPane.AddWrappedTextField(Lang("Only logged in users can reconfigure and control this server.  "
+            "Press <Enter> to change the login password and auto-logout timeout."))
         
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -98,7 +98,7 @@ class RootDialogue(Dialogue):
     
         inPane.AddWrappedTextField(Lang("Press <Enter> to change the password for user 'root'.  "
         "This will also change the password for local and remote login shells.  "
-        "If this host is in a pool, it will also change the password of the pool master."))
+        "If this host is in a pool, it will change the password for the pool."))
         
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Password") })
 
@@ -118,11 +118,10 @@ class RootDialogue(Dialogue):
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Timeout") })
 
     def UpdateFieldsMANAGEMENT(self, inPane):
-        inPane.AddTitleField(Lang("Server Management"))
+        inPane.AddTitleField(Lang("Keyboard and Timezone"))
     
         inPane.AddWrappedTextField(Lang(
-            "This menu configures general server operation, including the management network, "
-            "hostname, remote logging (syslog), licensing, and local storage repositories."))
+            "This menu configures keyboard language and timezone."))
         
     def UpdateFieldsXENSERVER(self, inPane):
         data = Data.Inst()
@@ -156,6 +155,30 @@ class RootDialogue(Dialogue):
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
+    def UpdateFieldsXENDETAILS(self, inPane):
+        data = Data.Inst()
+
+        inPane.AddTitleField(Lang("XenServer Product Information"))
+        inPane.AddStatusField(Lang("Name", 16), Language.Inst().Branding((data.host.software_version.product_brand())))
+        inPane.AddStatusField(Lang("Version", 16), str(data.derived.fullversion()))
+        inPane.AddStatusField(Lang("Xen Version", 16), str(data.host.software_version.xen()))
+        inPane.AddStatusField(Lang("Kernel Version",16), str(data.host.software_version.linux()))
+        inPane.NewLine()
+        
+        expiryStr = data.host.license_params.expiry()
+        if (re.match('\d{8}', expiryStr)):
+            # Convert ISO date to more readable form
+            expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
+        
+        inPane.AddTitleField(Lang("License"))
+        inPane.AddStatusField(Lang("Product SKU", 16), str(Language.Inst().Branding(data.host.license_params.sku_type())))
+        inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
+        inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
+        inPane.NewLine()
+        inPane.AddWrappedTextField(Lang("Press <Enter> to view further details or install a new license."))
+        
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsHOST(self, inPane):
         data = Data.Inst()
 
@@ -176,11 +199,17 @@ class RootDialogue(Dialogue):
         inPane.NewLine()
         
         inPane.AddTitleField(data.host.software_version.machine_serial_name(Lang("Serial Number")))
-        inPane.AddWrappedTextField(data.host.software_version.machine_serial_number())
+        serialNumber = data.host.software_version.machine_serial_number('')
+        if serialNumber == '':
+            serialNumber = Lang("<Not Set>")
+        inPane.AddWrappedTextField(serialNumber)
         inPane.NewLine()
         
         inPane.AddTitleField(Lang("Asset Tag"))
-        inPane.AddWrappedTextField(data.dmi.asset_tag(Lang("None"))) # FIXME: Get from XenAPI
+        assetTag = data.dmi.asset_tag('') # FIXME: Get from XAPI when available
+        if assetTag == '':
+            assetTag = Lang("<Not Set>")
+        inPane.AddWrappedTextField(assetTag) 
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -197,7 +226,10 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Description"))
         
         for name, value in data.derived.cpu_name_summary().iteritems():
-            inPane.AddWrappedTextField(str(value)+" x "+name)
+            # Use DMI number for populated sockets, not xapi-reported number of logical cores 
+            inPane.AddWrappedTextField(str(data.dmi.cpu_populated_sockets())+" x "+name)
+            
+            # inPane.AddWrappedTextField(str(value)+" x "+name) #Alternative - number of logical cores
     
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
     
@@ -223,6 +255,35 @@ class RootDialogue(Dialogue):
     
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
+    def UpdateFieldsNETWORK(self, inPane):
+        data = Data.Inst()
+        
+        inPane.AddTitleField(Lang("Network and Management Interface"))
+        
+        inPane.AddWrappedTextField(Lang("Press <Enter> to configure the management network connection, hostname, and network time (NTP) settings."))
+        inPane.NewLine()
+
+        if len(data.derived.managementpifs([])) == 0:
+            inPane.AddWrappedTextField(Lang("Currently, no management interface is configured."))
+        else:
+            inPane.AddTitleField(Lang("Current Management Interface"))
+            if data.chkconfig.ntpd(False):
+                ntpState = 'Enabled'
+            else:
+                ntpState = 'Disabled'
+            
+            for pif in data.derived.managementpifs([]):
+                inPane.AddStatusField(Lang('Device', 16), pif['device'])
+                inPane.AddStatusField(Lang('MAC Address', 16),  pif['MAC'])
+                inPane.AddStatusField(Lang('DHCP/Static IP', 16),  pif['ip_configuration_mode'])
+
+                inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
+                inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
+                inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
+                inPane.AddStatusField(Lang('NTP', 16),  ntpState)
+
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+            
     def UpdateFieldsPIF(self, inPane):
         data = Data.Inst()
         
@@ -247,13 +308,6 @@ class RootDialogue(Dialogue):
         inPane.AddStatusField(Lang("BMC Firmware Version",  22), data.bmc.version())
         
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
-
-    def UpdateFieldsCPLD(self, inPane):
-        data = Data.Inst()
-        
-        inPane.AddTitleField(Lang("CPLD Information"))
-
-        inPane.AddWrappedTextField(Lang("Not available"))
 
     def UpdateFieldsBIOS(self, inPane):
         data = Data.Inst()
@@ -312,12 +366,12 @@ class RootDialogue(Dialogue):
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to quit this console."))
  
-    def UpdateFieldsBURP(self, inPane):
+    def UpdateFieldsBUR(self, inPane):
         inPane.AddTitleField(Lang("Backup, Restore and Update"))
     
         inPane.AddWrappedTextField(Lang(
             "From this menu you can backup and restore the system database, and apply "
-            "software updates or patches to the system."))
+            "software updates to the system."))
         
     def UpdateFieldsTECHNICAL(self, inPane):
         inPane.AddTitleField(Lang("Technical Support"))
@@ -330,8 +384,27 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Install License File"))
 
+        data = Data.Inst()
+
+        expiryStr = data.host.license_params.expiry()
+        if (re.match('\d{8}', expiryStr)):
+            # Convert ISO date to more readable form
+            expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
+        
+                
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to install a license file from removable media."))
+        inPane.NewLine()
+        inPane.AddTitleField(Lang("Current License"))
+        inPane.AddStatusField(Lang("Product SKU", 16), str(Language.Inst().Branding(data.host.license_params.sku_type())))
+        inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
+        inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
+        inPane.NewLine()
+        inPane.AddWrappedBoldTextField(Lang("Product Code"))
+        inPane.AddWrappedTextField(str(data.host.license_params.productcode()))
+        inPane.NewLine()
+        inPane.AddWrappedBoldTextField(Lang("Serial Number"))
+        inPane.AddWrappedTextField(str(data.host.license_params.serialnumber()))
  
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Install License")
@@ -369,11 +442,11 @@ class RootDialogue(Dialogue):
         
     def UpdateFieldsPATCH(self, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Apply Upgrade or Patch"))
+        inPane.AddTitleField(Lang("Apply Upgrade"))
 
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to apply a software upgrade or patch."))
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upgrade or Patch") } )   
+            "Press <Enter> to apply a software upgrade."))
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upgrade") } )   
  
     def UpdateFieldsBACKUP(self, inPane):
         data = Data.Inst()
@@ -394,10 +467,10 @@ class RootDialogue(Dialogue):
  
     def UpdateFieldsREVERT(self, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Revert to a Pre-Patch Version"))
+        inPane.AddTitleField(Lang("Revert to a Pre-Upgrade Version"))
 
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to revert to a version prior to an applied patch."))
+            "Press <Enter> to revert to a version prior to an applied update."))
         inPane.NewLine()
         
         inPane.AddStatusField(Lang('Current Label', 16), data.backup.currentlabel(''))
@@ -449,7 +522,7 @@ class RootDialogue(Dialogue):
 
         inPane.AddWrappedTextField(Lang(
             "This option will reset all configuration information to default values, "
-            "delete all virtual machines and delete all storage repositories on local disks."))
+            "delete all virtual machines and delete all Storage Repositories on local disks."))
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset") } )  
     
@@ -484,22 +557,23 @@ class RootDialogue(Dialogue):
             Lang("<F5>") : Lang("Refresh")
         })
 
-    def UpdateFieldsSR(self, inPane):
+    def UpdateFieldsCLAIMSR(self, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Disks and Storage Repositories"))
+        inPane.AddTitleField(Lang("Claim Disk as Storage Repository"))
     
-        inPane.AddWrappedTextField(Lang("Local disks can be configured as storage repositories "
+        inPane.AddWrappedTextField(Lang("Local disks can be configured as Storage Repositories "
             "for use by virtual machines.  Press <Enter> to list the disks available."))
 
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Configure SRs")
+            Lang("<Enter>") : Lang("Claim Disk as SRs")
         })
 
     def UpdateFieldsREMOTE(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Remote Resource Configuration"))
     
-        inPane.AddWrappedTextField(Lang("This menu configures Storage Repositories for suspend images and crash dumps, and remote databases."))
+        inPane.AddWrappedTextField(Lang("This menu configures remote databases and "
+            "remote logging (syslog) to other servers."))
 
     def UpdateFieldsREMOTEDB(self, inPane):
         data = Data.Inst()
@@ -610,7 +684,11 @@ class RootDialogue(Dialogue):
             inPane.NewLine()
             inPane.AddWrappedTextField(data.timezones.current(Lang('<Unknown>')))
             inPane.NewLine()
-
+        
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Set Timezone")
+        })
+        
     def UpdateFieldsKEYBOARD(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Keyboard Language and Layout"))
@@ -620,9 +698,13 @@ class RootDialogue(Dialogue):
         if data.keyboard.currentname('') != '':
             inPane.AddWrappedTextField(Lang("The current keyboard type is"))
             inPane.NewLine()
-            inPane.AddWrappedTextField(data.keyboard.currentname(Lang('<Unknown>')))
+            inPane.AddWrappedTextField(data.keyboard.currentname(Lang('<Default>')))
             inPane.NewLine()
-            
+        
+        inPane.AddKeyHelpField( {
+            Lang("<Enter>") : Lang("Change Keyboard Type")
+        })
+        
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
         inPane.AddWrappedTextField(Lang("You may need to log in to view this information"))
@@ -636,8 +718,8 @@ class RootDialogue(Dialogue):
         menuPane.ResetFields()
         menuPane.ResetPosition()
         menuPane.AddTitleField(currentMenu.Title())
-        # Scrolling doesn't work well for this menu because it's recreated on update.  Preserving the
-        # scroll position would improve it if there are more than 15 entries
+        # Scrolling doesn't work well for this menu because it's field is recreated on update.
+        # Preserving the scroll position would improve it if there are more than 15 entries
         menuPane.AddMenuField(currentMenu, 15) # Allow extra height for this menu
         
         statusPane = self.Pane('status')
@@ -662,7 +744,8 @@ class RootDialogue(Dialogue):
         if self.menu.CurrentMenu().Parent() != None:
             keyHash[ Lang("<Esc/Left>") ] = Lang("Back")
         else:
-            keyHash[ Lang("<Enter>") ] = Lang("OK")
+            if currentChoiceDef.OnAction() is not None:
+                keyHash[ Lang("<Enter>") ] = Lang("OK")
 
         menuPane.AddKeyHelpField( keyHash )
         
@@ -737,7 +820,7 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(TimezoneDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_KEYBOARD':
             Layout.Inst().PushDialogue(KeyboardDialogue(self.layout,  self.parent))
-        elif inName == 'DIALOGUE_SR':
+        elif inName == 'DIALOGUE_CLAIMSR':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ClaimSRDialogue(self.layout,  self.parent)))
         elif inName == 'DIALOGUE_REMOTEDB':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
@@ -763,7 +846,7 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RestoreDialogue(self.layout,  self.parent))),
         elif inName == 'DIALOGUE_REVERT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
-                Lang("Do you want to revert this patch?"), lambda x: self.RevertDialogueHandler(x))))
+                Lang("Do you want to revert this upgrade?"), lambda x: self.RevertDialogueHandler(x))))
         elif inName == 'DIALOGUE_BUGREPORT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("This operation may upload sensitive data to the support server.  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))

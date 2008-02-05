@@ -732,7 +732,7 @@ class Data:
     
     def KeymapToName(self, inKeymap):
         # Derive a name to present to the user
-        mapName = inKeymap
+        mapName = FirstValue(inKeymap, Lang('<Default>'))
         for key, value in self.keyboard.namestomaps({}).iteritems():
             if value == inKeymap:
                 mapName = key

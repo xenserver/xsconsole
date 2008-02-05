@@ -115,7 +115,7 @@ class DialoguePane:
         self.title = inTitle
     
     def NeedsScroll(self):
-        return self.arranger.YSize() + 2 >= self.Win().YSize()
+        return self.arranger.YSize() + 1 >= self.Win().YSize()
 
     def ScrollPageUp(self):
         if self.yScrollPos > 0:

@@ -112,7 +112,7 @@ class DNSDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Add or Remove Nameserver Entries"))
         pane.AddMenuField(self.addRemoveMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") , Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsADD(self):
         pane = self.Pane()
@@ -720,7 +720,7 @@ class ClaimSRDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select a disk to erase and claim as a storage repository."))
+        pane.AddTitleField(Lang("Select a disk to erase and claim as a Storage Repository."))
         pane.AddMenuField(self.deviceMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
             "<F5>" : Lang("Rescan") } )
@@ -742,7 +742,7 @@ class ClaimSRDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddWrappedBoldTextField(Lang("Press <F8> to confirm that you want to erase all information on this disk and use it as a storage repository.  Data currently on this disk cannot be recovered after this step."))
+        pane.AddWrappedBoldTextField(Lang("Press <F8> to confirm that you want to erase all information on this disk and use it as a Storage Repository.  Data currently on this disk cannot be recovered after this step."))
         pane.NewLine()
         pane.AddWrappedBoldTextField(Lang("Device"))
         if isinstance(self.deviceToErase, Struct):
@@ -834,7 +834,7 @@ class ClaimSRDialogue(Dialogue):
         reformatFile.write(deviceName + "\n")
         reformatFile.close()
         Layout.Inst().SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
-        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new storage repository.  Reboot the server now?"))
+        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new Storage Repository.  Reboot the server now?"))
 
 class RemoteDBDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
@@ -1235,7 +1235,7 @@ class ResetDialogue(Dialogue):
         
         pane.AddWarningField(Lang("WARNING"))
         pane.AddWrappedTextField(Lang("This function will delete ALL configuration information, ALL virtual machines "
-            "and ALL information within storage repositories on local disks.  "
+            "and ALL information within Storage Repositories on local disks.  "
             "This operation cannot be undone.  Do you want to continue?"))
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
@@ -1244,7 +1244,7 @@ class ResetDialogue(Dialogue):
         pane.ResetFields()
         
         pane.AddWrappedBoldTextField(Lang("Press <Enter> to confirm that you want to reset configuration data and "
-            "erase all information in storage repositories on local disks.  "
+            "erase all information in Storage Repositories on local disks.  "
             "The data cannot be recovered after this step."))
 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset to Factory Defaults"), Lang("<Esc>") : Lang("Cancel") } )
@@ -1323,7 +1323,7 @@ class ValidateDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Validation Results"))
         pane.AddStatusField(Lang("VT enabled on CPU", 50), self.vtResult)
-        pane.AddStatusField(Lang("Local default storage repository", 50), self.srResult)
+        pane.AddStatusField(Lang("Local default Storage Repository", 50), self.srResult)
         pane.AddStatusField(Lang("Management network interface", 50), self.netResult)
         
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
@@ -1456,11 +1456,11 @@ class PatchDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
 
         self.custom = {
-            'title' : Lang("Apply Software Upgrade Or Patch"),
+            'title' : Lang("Apply Software Upgrade"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select The Device Containing The Patch"), 
-            'fileprompt' : Lang("Select The Patch File"),
-            'confirmprompt' : Lang("Press <F8> To Begin The Update/Patch Process"),
+            'deviceprompt' : Lang("Select the device containing the upgrade"), 
+            'fileprompt' : Lang("Select the upgrade file"),
+            'confirmprompt' : Lang("Press <F8> to begin the update process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
@@ -1471,7 +1471,7 @@ class PatchDialogue(FileDialogue):
         Layout.Inst().PopDialogue()
         
         Layout.Inst().PushDialogue(BannerDialogue(
-            Lang("Applying patch... This make take several minutes.  Press <Ctrl-C> to abort.")))
+            Lang("Applying upgrade... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:
@@ -1492,17 +1492,17 @@ class PatchDialogue(FileDialogue):
                 
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(
-                    Lang("Patch Successful"), Lang("Please reboot to use the newly installed software.")))
+                    Lang("Upgrade Successful"), Lang("Please reboot to use the newly installed software.")))
 
             except Exception, e:
                 Layout.Inst().PopDialogue()
-                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Upgrade Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Upgrade or Patch Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Upgrade Failed"), Lang(e)))
 
 class BackupDialogue(FileDialogue):
     def __init__(self, inLayout, inParent):
@@ -1510,10 +1510,10 @@ class BackupDialogue(FileDialogue):
         self.custom = {
             'title' : Lang("Backup Server State"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select The Device To Save To"), 
-            'fileprompt' : Lang("Choose The Backup Filename"),
+            'deviceprompt' : Lang("Select the backup device"), 
+            'fileprompt' : Lang("Choose the backup filename"),
             'filename' : 'backup.xbk',
-            'confirmprompt' : Lang("Press <F8> To Begin The Backup Process"),
+            'confirmprompt' : Lang("Press <F8> to begin the backup process"),
             'mode' : 'rw'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__

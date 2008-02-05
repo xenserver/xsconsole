@@ -24,6 +24,9 @@ class ChoiceDef:
         
     def StatusUpdateHandlerSet(self, inHandler):
         self.statusUpdateHandler = inHandler
+        
+    def OnAction(self):
+        return self.onAction
 
 class Menu:
     def __init__(self, inOwner, inParent, inTitle, inChoiceDefs):
@@ -119,14 +122,20 @@ class RootMenu:
                 None,  lambda : inDialogue.ChangeStatus('STATUS')),
             ChoiceDef(Lang("Authentication"), 
                 lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
-            ChoiceDef(Lang("System Properties"), 
+            ChoiceDef(Lang("XenServer Details and Licensing"), 
+                lambda : inDialogue.ChangeMenu('MENU_XENDETAILS'), lambda : inDialogue.ChangeStatus('XENDETAILS')),
+            ChoiceDef(Lang("Hardware and BIOS Information"), 
                 lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
-            ChoiceDef(Lang("Server Management"), 
+            ChoiceDef(Lang("Network and Management Interface"), 
+                lambda : inDialogue.ChangeMenu('MENU_NETWORK'), lambda : inDialogue.ChangeStatus('NETWORK')),            
+            ChoiceDef(Lang("Keyboard and Timezone"), 
                 lambda : inDialogue.ChangeMenu('MENU_MANAGEMENT'), lambda : inDialogue.ChangeStatus('MANAGEMENT')),
+            ChoiceDef(Lang("Disks and Storage Repositories"), 
+                lambda : inDialogue.ChangeMenu('MENU_DISK'), lambda : inDialogue.ChangeStatus('DISK')),
             ChoiceDef(Lang("Remote Resource Configuration"), 
                 lambda : inDialogue.ChangeMenu('MENU_REMOTE'), lambda : inDialogue.ChangeStatus('REMOTE')),
             ChoiceDef(Lang("Backup, Restore and Update"), 
-                lambda : inDialogue.ChangeMenu('MENU_BURP'), lambda : inDialogue.ChangeStatus('BURP')),
+                lambda : inDialogue.ChangeMenu('MENU_BUR'), lambda : inDialogue.ChangeStatus('BUR')),
             ChoiceDef(Lang("Technical Support"), 
                 lambda : inDialogue.ChangeMenu('MENU_TECHNICAL'), lambda : inDialogue.ChangeStatus('TECHNICAL')),
             ChoiceDef(Lang("Reboot or Shutdown"), 
@@ -143,14 +152,10 @@ class RootMenu:
         rebootText = Lang("Reboot Server")
         
         propertiesChoices = [
-                ChoiceDef(Lang("XenServer Product Information"), None, lambda : inDialogue.ChangeStatus('XENSERVER')),
-                ChoiceDef(Lang("License Details"), None, lambda : inDialogue.ChangeStatus('LICENCE')),
-                ChoiceDef(Lang("Hostname"), None, lambda : inDialogue.ChangeStatus('HOST')),
-                ChoiceDef(Lang("System Details"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
+                ChoiceDef(Lang("System Description"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
                 ChoiceDef(Lang("Processor"), None, lambda : inDialogue.ChangeStatus('PROCESSOR')),
                 ChoiceDef(Lang("System Memory"), None, lambda : inDialogue.ChangeStatus('MEMORY')),
                 ChoiceDef(Lang("Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
-                ChoiceDef(Lang("Network Interfaces"),  None, lambda : inDialogue.ChangeStatus('PIF')),
                 ChoiceDef(Lang("BIOS Information"), None, lambda : inDialogue.ChangeStatus('BIOS'))
             ]
 
@@ -160,8 +165,8 @@ class RootMenu:
         if Data.Inst().cpld.version('') != '':
             propertiesChoices.append(ChoiceDef(Lang("CPLD Version"), None, lambda : inDialogue.ChangeStatus('CPLD')))
         
-        burpChoices = [
-            ChoiceDef(Lang("Apply Patch or Update"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
+        burChoices = [
+            ChoiceDef(Lang("Apply Update"), lambda: inDialogue.ActivateDialogue('DIALOGUE_PATCH'),
                 lambda : inDialogue.ChangeStatus('PATCH')),
             ChoiceDef(Lang("Backup Server State"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BACKUP'),
                 lambda : inDialogue.ChangeStatus('BACKUP')),
@@ -170,43 +175,38 @@ class RootMenu:
         ]
             
         if Data.Inst().backup.canrevert(False):
-            burpChoices.append(ChoiceDef(Lang("Revert to Pre-Patch Version"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REVERT'),
+            burChoices.append(ChoiceDef(Lang("Revert to Pre-Upgrade Version"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REVERT'),
                 lambda : inDialogue.ChangeStatus('REVERT')))
         
         self.menus = {
             'MENU_ROOT' : rootMenu,
             
-            'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("System Properties"), propertiesChoices),
+            'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("Hardware and BIOS Information"), propertiesChoices),
 
-            'MENU_MANAGEMENT' : Menu(self, 'MENU_ROOT', Lang("Server Management"), [
+            'MENU_NETWORK' : Menu(self, 'MENU_ROOT', Lang("Network and Management Interface"), [
                 ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
                 ChoiceDef(Lang("Add/Remove DNS Servers"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_DNS'), lambda : inDialogue.ChangeStatus('DNS')),
                 ChoiceDef(Lang("Set Hostname"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_HOSTNAME'), lambda : inDialogue.ChangeStatus('HOSTNAME')),
-                ChoiceDef(Lang("Remote Logging (syslog)"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
                 ChoiceDef(Lang("Network Time (NTP)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_NTP'), lambda : inDialogue.ChangeStatus('NTP')),
-                ChoiceDef(Lang("Set Timezone"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TIMEZONE'), lambda : inDialogue.ChangeStatus('TIMEZONE')),
-                ChoiceDef(Lang("Disks and Storage Repositories"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_SR'), lambda : inDialogue.ChangeStatus('SR')),
-                ChoiceDef(Lang("Install License File"), lambda: inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'),
-                    lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
-                ChoiceDef(Lang("Keyboard Language and Layout"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_KEYBOARD'), lambda : inDialogue.ChangeStatus('KEYBOARD')),
                 ChoiceDef(Lang("Test Network"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
             ]),
+ 
+            'MENU_MANAGEMENT' : Menu(self, 'MENU_ROOT', Lang("Keyboard Langauge and Timezone"), [
+                ChoiceDef(Lang("Keyboard Language and Layout"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_KEYBOARD'), lambda : inDialogue.ChangeStatus('KEYBOARD')),
+                ChoiceDef(Lang("Set Timezone"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TIMEZONE'), lambda : inDialogue.ChangeStatus('TIMEZONE'))
+            ]),
 
             'MENU_REMOTE' : Menu(self, 'MENU_ROOT', Lang("Remote Configuration"), [
+                ChoiceDef(Lang("Remote Logging (syslog)"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_SYSLOG'), lambda : inDialogue.ChangeStatus('SYSLOG')),
                 ChoiceDef(Lang("Setup Remote Database"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTEDB'), lambda : inDialogue.ChangeStatus('REMOTEDB')),
-                ChoiceDef(Lang("Specify Suspend SR"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SUSPENDSR'),
-                    lambda : inDialogue.ChangeStatus('SUSPENDSR')),
-                ChoiceDef(Lang("Specify Crash Dump SR"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CRASHDUMPSR'), lambda : inDialogue.ChangeStatus('CRASHDUMPSR'))
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTEDB'), lambda : inDialogue.ChangeStatus('REMOTEDB'))
             ]),
 
             'MENU_AUTH' : Menu(self, 'MENU_ROOT', Lang("Authentication"), [
@@ -219,28 +219,45 @@ class RootMenu:
                     lambda : inDialogue.ChangeStatus('CHANGETIMEOUT'))
             ]), 
  
-        'MENU_BURP' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Patch"), burpChoices),
+            'MENU_XENDETAILS' : Menu(self, 'MENU_ROOT', Lang("XenServer Details"), [
+                ChoiceDef(Lang("Install XenServer License"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_INSTALLLICENCE'), lambda : inDialogue.ChangeStatus('INSTALLLICENCE')),
+            ]),
+
+            'MENU_DISK' : Menu(self, 'MENU_ROOT', Lang("Disks and Storage Repositories"), [
+                ChoiceDef(Lang("Claim Local Disk as SR"), 
+                    lambda : inDialogue.ActivateDialogue('DIALOGUE_CLAIMSR'), lambda : inDialogue.ChangeStatus('CLAIMSR')),
+                ChoiceDef(Lang("Specify Suspend SR"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SUSPENDSR'),
+                    lambda : inDialogue.ChangeStatus('SUSPENDSR')),
+                ChoiceDef(Lang("Specify Crash Dump SR"),
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_CRASHDUMPSR'), lambda : inDialogue.ChangeStatus('CRASHDUMPSR')),
+                    
+                ChoiceDef(Lang("View Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
+            ]),
             
-        'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
-            ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
-                lambda : inDialogue.ChangeStatus('REMOTESHELL')),
-            ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
-                lambda : inDialogue.ChangeStatus('VALIDATE')),
-            ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
-                lambda : inDialogue.ChangeStatus('BUGREPORT')) ,
-            ChoiceDef(Lang("Save Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SAVEBUGREPORT'),
-                lambda : inDialogue.ChangeStatus('SAVEBUGREPORT')),
-            ChoiceDef(Lang("Enable/Disable Verbose Boot Mode"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VERBOSEBOOT'),
-                lambda : inDialogue.ChangeStatus('VERBOSEBOOT')),
-            ChoiceDef(Lang("Reset to Factory Defaults"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESET'),
-                lambda : inDialogue.ChangeStatus('RESET'))
-        ]), 
- 
-        'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [
-                ChoiceDef(rebootText, 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
-                ChoiceDef(Lang("Shutdown Server"), 
-                    lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
+            'MENU_BUR' : Menu(self, 'MENU_ROOT', Lang("Backup, Restore and Update"), burChoices),
+                
+            'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
+                ChoiceDef(Lang("Enable/Disable Remote Shell"), lambda: inDialogue.ActivateDialogue('DIALOGUE_REMOTESHELL'),
+                    lambda : inDialogue.ChangeStatus('REMOTESHELL')),
+                ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
+                    lambda : inDialogue.ChangeStatus('VALIDATE')),
+                # Upload bug report removed (CA-13345)
+                # ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
+                #    lambda : inDialogue.ChangeStatus('BUGREPORT')) ,
+                ChoiceDef(Lang("Save Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SAVEBUGREPORT'),
+                    lambda : inDialogue.ChangeStatus('SAVEBUGREPORT')),
+                ChoiceDef(Lang("Enable/Disable Verbose Boot Mode"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VERBOSEBOOT'),
+                    lambda : inDialogue.ChangeStatus('VERBOSEBOOT')),
+                ChoiceDef(Lang("Reset to Factory Defaults"), lambda: inDialogue.ActivateDialogue('DIALOGUE_RESET'),
+                    lambda : inDialogue.ChangeStatus('RESET'))
+            ]), 
+     
+            'MENU_REBOOT' : Menu(self, 'MENU_ROOT', Lang("Reboot"), [
+                    ChoiceDef(rebootText, 
+                        lambda : inDialogue.ActivateDialogue('DIALOGUE_REBOOT'), lambda : inDialogue.ChangeStatus('REBOOT')), 
+                    ChoiceDef(Lang("Shutdown Server"), 
+                        lambda : inDialogue.ActivateDialogue('DIALOGUE_SHUTDOWN'), lambda : inDialogue.ChangeStatus('SHUTDOWN')), 
             ])
         }
         

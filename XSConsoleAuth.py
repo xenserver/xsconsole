@@ -191,7 +191,6 @@ class Auth:
         return retVal
     
     def ChangePassword(self, inOldPassword, inNewPassword):
-
         if not self.IsPasswordSet():
             # Write password directly
             pipe = os.popen("/usr/bin/passwd --stdin root > /dev/null", "w")
@@ -205,11 +204,7 @@ class Auth:
         else:
             session, isSlave = Auth.Inst().TCPSession(inOldPassword)
             session.xenapi.session.change_password(inOldPassword, inNewPassword)
-            if isSlave:
-                # Write local password as well
-                pipe = os.popen("/usr/bin/passwd --stdin root > /dev/null", "w")
-                pipe.write(inNewPassword+"\n")
-                pipe.close()
+            # Allow xapi to take care of password changes for pools
             
         # Caller handles exceptions
         
