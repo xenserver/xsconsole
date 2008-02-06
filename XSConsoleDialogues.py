@@ -830,11 +830,8 @@ class ClaimSRDialogue(Dialogue):
             deviceName = str(self.deviceToErase)
         
         Layout.Inst().ExitBannerSet(Lang("Configuring Storage Repository"))
-        reformatFile = open("/var/xen/disks_to_reformat_at_boot", "a")
-        reformatFile.write(deviceName + "\n")
-        reformatFile.close()
-        Layout.Inst().SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
-        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new Storage Repository.  Reboot the server now?"))
+        Layout.Inst().SubshellCommandSet("/opt/xensource/libexec/delete-partitions-and-claim-disk "+deviceName +" && sleep 4")
+        State.Inst().RebootMessageSet(Lang("Server reboot is recommended before use of the new Storage Repository.  Reboot the server now?"))
 
 class RemoteDBDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
