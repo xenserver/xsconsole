@@ -824,17 +824,21 @@ class ClaimSRDialogue(Dialogue):
             self.ChangeState('CONFIRM')
 
     def DoAction(self):
+        Layout.Inst().PopDialogue()
+        Layout.Inst().TransientBanner(Lang("Claiming and Configuring Disk..."))
+                
         if isinstance(self.deviceToErase, Struct):
             deviceName = self.deviceToErase.device
         else:
             deviceName = str(self.deviceToErase)
-        
-        Layout.Inst().ExitBannerSet(Lang("Configuring Storage Repository"))
-        reformatFile = open("/var/xen/disks_to_reformat_at_boot", "a")
-        reformatFile.write(deviceName + "\n")
-        reformatFile.close()
-        Layout.Inst().SubshellCommandSet("/opt/xensource/bin/diskprep -f "+deviceName +" && sleep 4")
-        State.Inst().RebootMessageSet(Lang("This server must reboot to use the new Storage Repository.  Reboot the server now?"))
+
+        status, output = commands.getstatusoutput(
+            "/opt/xensource/libexec/delete-partitions-and-claim-disk "+deviceName+" 2>&1")
+            
+        if status != 0:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
+        else:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claimed Successfully")))
 
 class RemoteDBDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
