@@ -200,6 +200,7 @@ class DNSDialogue(Dialogue):
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Update failed: ")+Lang(e)))
 
+# Hostname dialogue no longer used
 class HostnameDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
         self.custom = {

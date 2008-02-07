@@ -118,11 +118,25 @@ class RootDialogue(Dialogue):
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Timeout") })
 
     def UpdateFieldsMANAGEMENT(self, inPane):
+        data = Data.Inst()
+                
         inPane.AddTitleField(Lang("Keyboard and Timezone"))
     
         inPane.AddWrappedTextField(Lang(
             "This menu configures keyboard language and timezone."))
         
+        inPane.NewLine()
+        if data.timezones.current('') != '':
+            inPane.AddWrappedTextField(Lang("The current timezone is"))
+            inPane.NewLine()
+            inPane.AddWrappedTextField(data.timezones.current(Lang('<Unknown>')))
+            inPane.NewLine()
+            
+        if data.keyboard.currentname('') != '':
+            inPane.AddWrappedTextField(Lang("The current keyboard type is"))
+            inPane.NewLine()
+            inPane.AddWrappedTextField(data.keyboard.currentname(Lang('<Default>')))
+
     def UpdateFieldsXENSERVER(self, inPane):
         data = Data.Inst()
 
@@ -176,14 +190,6 @@ class RootDialogue(Dialogue):
         inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
         inPane.NewLine()
         inPane.AddWrappedTextField(Lang("Press <Enter> to view further details or install a new license."))
-        
-        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
-
-    def UpdateFieldsHOST(self, inPane):
-        data = Data.Inst()
-
-        inPane.AddTitleField(Lang("Hostname"))
-        inPane.AddWrappedTextField(data.host.name_label())
         
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -280,6 +286,7 @@ class RootDialogue(Dialogue):
                 inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
                 inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
                 inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
+                inPane.AddStatusField(Lang('Hostname', 16),  data.host.hostname(''))
                 inPane.AddStatusField(Lang('NTP', 16),  ntpState)
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
@@ -547,11 +554,11 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Set Hostname"))
     
-        inPane.AddWrappedTextField(Lang("The name of this host is"))
+        inPane.AddWrappedTextField(Lang("The hostname of this host is"))
         inPane.NewLine()
-        inPane.AddWrappedTextField(data.host.name_label())
+        inPane.AddWrappedTextField(data.host.hostname())
         inPane.NewLine()
-        inPane.AddWrappedTextField(Lang("Press <Enter> to change the name of this host."))
+        inPane.AddWrappedTextField(Lang("Press <Enter> to change the hostname of this host."))
         inPane.AddKeyHelpField( {
             Lang("<Enter>") : Lang("Set Hostname"),
             Lang("<F5>") : Lang("Refresh")

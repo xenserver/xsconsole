@@ -257,6 +257,8 @@ class Data:
     def DeriveData(self):
         self.data.update({
             'derived' : {
+                'app_name' : Lang("XenCenter"),
+                'full_app_name' : Lang("Citrix XenCenter"),
                 'cpu_name_summary' : {}
             }
         })
@@ -307,7 +309,8 @@ class Data:
         
         self.RequireSession()
         
-        self.session.xenapi.host.set_name_label(self.host.opaqueref(), inHostname)
+        # Don't treat name-label as hostname
+        # self.session.xenapi.host.set_name_label(self.host.opaqueref(), inHostname)
         
         self.data['sysconfig']['network']['hostname'] = inHostname
         self.SaveToSysconfig()
@@ -315,6 +318,10 @@ class Data:
         status, output = commands.getstatusoutput("/bin/hostname '"+inHostname+"'")
         if status != 0:
             raise Exception(output)
+
+    def NameLabelSet(self, inNameLabel):
+        self.RequireSession()
+        self.session.xenapi.host.set_name_label(self.host.opaqueref(), inNameLabel)
 
     def NameserversSet(self, inServers):
         self.data['dns']['nameservers'] = inServers
@@ -762,9 +769,13 @@ class Data:
             self.RequireSession()
             self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway, FirstValue(inDNS, ''))
             self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'])
+            status, output = commands.getstatusoutput('/opt/xensource/bin/xe host-signal-networking-change')
+            if status != 0:
+                raise Exception(output)
         finally:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.Inst().CloseSession(self.session)
+
     
     def DisableManagement(self):
         # Double-check authentication

@@ -161,7 +161,7 @@ class FileUtils:
 
     @classmethod
     def BugReportFilename(cls):
-        return Data.Inst().host.name_label('bugreport')+'-'+time.strftime("%Y%m%d%H%M%S", time.gmtime())+'Z.bugrpt'
+        return Data.Inst().host.hostname('bugreport')+'-'+time.strftime("%Y%m%d%H%M%S", time.gmtime())+'Z.bugrpt'
 
 class MountVDI:
     def __init__(self, inVDI, inMode = None):

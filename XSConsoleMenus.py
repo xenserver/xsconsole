@@ -184,15 +184,15 @@ class RootMenu:
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("Hardware and BIOS Information"), propertiesChoices),
 
             'MENU_NETWORK' : Menu(self, 'MENU_ROOT', Lang("Network and Management Interface"), [
-                ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF')),
+                # Select Management NICs is in a plugin
                 ChoiceDef(Lang("Add/Remove DNS Servers"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_DNS'), lambda : inDialogue.ChangeStatus('DNS')),
-                ChoiceDef(Lang("Set Hostname"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_HOSTNAME'), lambda : inDialogue.ChangeStatus('HOSTNAME')),
+                #Hostname option removed - now subsumed into Select Management NIC
                 ChoiceDef(Lang("Network Time (NTP)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_NTP'), lambda : inDialogue.ChangeStatus('NTP')),
                 ChoiceDef(Lang("Test Network"),
-                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK'))
+                    lambda: inDialogue.ActivateDialogue('DIALOGUE_TESTNETWORK'), lambda : inDialogue.ChangeStatus('TESTNETWORK')),
+                ChoiceDef(Lang("Display NICs"), None, lambda : inDialogue.ChangeStatus('PIF'))
             ]),
  
             'MENU_MANAGEMENT' : Menu(self, 'MENU_ROOT', Lang("Keyboard Langauge and Timezone"), [

@@ -198,9 +198,9 @@ class App:
             bannerStr = Language.Inst().Branding(data.host.software_version.product_brand('')) + ' ' + data.host.software_version.product_version('')
             
             if Auth.Inst().IsAuthenticated():
-                hostStr = Auth.Inst().LoggedInUsername()+'@'+data.host.name_label('')
+                hostStr = Auth.Inst().LoggedInUsername()+'@'+data.host.hostname('')
             else:
-                hostStr = data.host.name_label('')
+                hostStr = data.host.hostname('')
                 
             # Testing
             # if gotKey is not None:
