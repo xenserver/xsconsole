@@ -264,9 +264,11 @@ class InterfaceDialogue(Dialogue):
                     self.netmask = data.ManagementNetmask()
                     self.gateway = data.ManagementGateway()
                     self.ChangeState('POSTDHCP')
-
-                else:
+                elif self.nic != None:
+                    # Not disabling, so show post-hostname dialogue
                     self.ChangeState('POSTHOSTNAME')
+                else:
+                    self.Complete() # Disabled management interface
                 
             except Exception, e:
                 self.Complete(Lang("Configuration Failed: "+Lang(e)))
