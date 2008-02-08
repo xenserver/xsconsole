@@ -37,12 +37,16 @@ class SeparatorField(Field):
         return 1
 
 class InputField(Field):
+    MIN_WIDTH = 40 # Minimum width for input fields
+    
     def __init__(self, text, colour, selectedColour, flow):
         ParamsToAttr()
         self.activated = False
         self.cursorPos = len(self.text)
         self.hideText = False
         self.selected = True
+        self.scrollPos = 0
+        self.width = self.MIN_WIDTH
         
     def HideText(self):
         self.hideText = True
@@ -58,6 +62,9 @@ class InputField(Field):
     def Content(self):
         return self.text
     
+    def UpdateWidth(self, inWidth):
+        self.width = max(self.MIN_WIDTH, inWidth)
+        
     def Render(self, inPane, inX, inY):
         colour = self.colour
         suffix = ' '
@@ -65,19 +72,30 @@ class InputField(Field):
             colour = self.selectedColour
             suffix = ''
         
+        # Adjust scroll point so that the cursor is within the field area
+        self.scrollPos = min(self.scrollPos, self.cursorPos) # Move if cursor is outside of field to left
+        self.scrollPos = max(self.scrollPos, self.cursorPos - self.width + 1) # Move if cursor is outside of field to right
+        
+        clippedStr = self.text
+        # Move according to scrollPos
+        clippedStr = clippedStr[self.scrollPos:]
+        # Clip on right edge
+        clippedStr = clippedStr[:self.width]
+        
+        
         if self.hideText:
-            inPane.AddWrappedText("*" * len(self.text)+suffix, inX, inY, colour)
+            inPane.AddText("*" * len(clippedStr)+suffix, inX, inY, colour)
         else:
-            inPane.AddWrappedText(self.text+suffix, inX, inY, colour)
+            inPane.AddText(clippedStr+suffix, inX, inY, colour)
         if self.selected:
             # Make cursor the right colour
-            inPane.AddWrappedText(' ', inX+len(self.text), inY, self.colour)
+            inPane.AddText(' ', inX+len(clippedStr), inY, self.colour)
             
         if self.activated:
-            inPane.CursorOn(inX+self.cursorPos, inY)
+            inPane.CursorOn(inX+self.cursorPos-self.scrollPos, inY)
 
     def Width(self):
-        return max(40, len(self.text))
+        return max(self.MIN_WIDTH, len(self.text))
     
     def Height(self):
         return 1
@@ -86,9 +104,9 @@ class InputField(Field):
         handled = True
         
         if self.selected: # Handle keypress when the input text is selected
-            if inKey == 'KEY_LEFT':
+            if inKey == 'KEY_LEFT' or inKey == 'KEY_HOME':
                self.cursorPos = 0 # Move cursor to start
-            elif inKey == 'KEY_RIGHT':
+            elif inKey == 'KEY_RIGHT' or inKey == 'KEY_END':
                 pass # Leave cursor at end
             elif inKey == 'KEY_UP' or inKey == 'KEY_DOWN':
                 pass # Don't delete
@@ -103,6 +121,10 @@ class InputField(Field):
             self.cursorPos = max(0, self.cursorPos - 1) # Move cursor left
         elif inKey == 'KEY_RIGHT':
             self.cursorPos = min(len(self.text), self.cursorPos + 1) #Move cursor right
+        elif inKey == 'KEY_HOME':
+            self.cursorPos = 0 #Move cursor to home
+        elif inKey == 'KEY_END':
+            self.cursorPos = len(self.text) #Move cursor to end
         elif inKey == 'KEY_DC':
             self.text = self.text[:self.cursorPos] + self.text[self.cursorPos+1:] # Delete on right
         elif inKey == 'KEY_BACKSPACE':
