@@ -612,6 +612,10 @@ class RootDialogue(Dialogue):
     def UpdateFieldsREMOTEDB(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Setup Remote Database"))
+
+        description = "A remote database, if configured, is used to store configuration and other information related to the runtime state of the system.  It is particularly useful as a 'live backup' for diskless blades."
+        inPane.AddWrappedTextField(Lang(description))
+        inPane.NewLine()
     
         if not data.remotedb.is_on_remote_storage(False):
             inPane.AddWrappedTextField(Lang("A remote database is not configured on this server."))
