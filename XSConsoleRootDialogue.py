@@ -613,7 +613,7 @@ class RootDialogue(Dialogue):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Setup Remote Database"))
 
-        description = "A remote database, if configured, is used to store configuration and other information related to the runtime state of the system.  It is particularly useful as a 'live backup' for diskless blades."
+        description = "A remote database, if configured, is used to store xapi configuration settings that are written frequently.  The copy of the xapi database on the flash media is updated less frequently as it is rate-limited to reduce the writes to the device.  This setting is particularly useful for diskless blades."
         inPane.AddWrappedTextField(Lang(description))
         inPane.NewLine()
     
