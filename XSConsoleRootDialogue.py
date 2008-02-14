@@ -840,8 +840,7 @@ class RootDialogue(Dialogue):
         if inName == 'DIALOGUE_MANAGEMENT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(InterfaceDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGEPASSWORD':
-            # Allow password change when not authenticated, to mitigate problems in pools
-            Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent))
+            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGETIMEOUT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_TESTNETWORK':
