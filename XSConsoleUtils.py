@@ -17,3 +17,15 @@ class ShellUtils:
         if not re.match(r'[-A-Za-z0-9/._~:@]*$', inParam):
             raise Exception("Invalid characters in parameter '"+inParam+"'")
         return inParam
+
+    @classmethod
+    def WaitOnPipe(cls, inPipe):
+        # Wait on a popen2 pipe, handling Interrupted System Call exceptions
+        while True:
+            try:
+                inPipe.wait() # Must wait for completion before mkfs
+                break
+            except IOError, e:
+                if e.errno != errno.EINTR: # Loop if EINTR
+                    raise
+    

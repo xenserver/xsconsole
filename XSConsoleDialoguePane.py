@@ -78,6 +78,7 @@ class DialoguePane:
     def ActivatePreviousInput(self): return self.inputTracker.ActivatePreviousInput()
     def IsLastInput(self): return self.inputTracker.IsLastInput()
     def CurrentInput(self): return self.inputTracker.CurrentInput()
+    def InputIndex(self): return self.inputTracker.InputIndex()
     def InputIndexSet(self, inIndex): return self.inputTracker.InputIndexSet(inIndex)
     def NeedsCursor(self): return self.inputTracker.NeedsCursor()
 

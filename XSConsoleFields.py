@@ -404,6 +404,9 @@ class FieldInputTracker:
             retVal = None
         return retVal
 
+    def InputIndex(self):
+        return self.inputIndex
+
     def InputIndexSet(self, inIndex):
         if self.inputIndex is not None:
             self.CurrentInput().Deactivate()

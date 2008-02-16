@@ -5,12 +5,13 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import os, pwd, re, sys, time
+import os, popen2, pwd, re, sys, time
 import PAM # From PyPAM module
 
 from XSConsoleBases import *
 from XSConsoleLang import *
 from XSConsoleState import *
+from XSConsoleUtils import *
 
 import XenAPI
 
@@ -193,10 +194,14 @@ class Auth:
     def ChangePassword(self, inOldPassword, inNewPassword):
         if not self.IsPasswordSet():
             # Write password directly
-            pipe = os.popen("/usr/bin/passwd --stdin root > /dev/null", "w")
-            pipe.write(inNewPassword+"\n")
-            pipe.close()
-            
+            popenObj = popen2.Popen4("/usr/bin/passwd --stdin root")
+            popenObj.tochild.write(inNewPassword+"\n")
+            popenObj.tochild.close()
+            ShellUtils.WaitOnPipe(popenObj)
+                    
+            if popenObj.poll() != 0:
+                raise Exception('Invalid password')
+                
             # xlock won't have started if there's no password, so start it now
             if os.path.isfile("/usr/bin/xautolock"):
                 commands.getstatusoutput("/usr/bin/xautolock -time 10 -locker '/usr/bin/xlock -mode blank' &")

@@ -18,7 +18,6 @@ class ChangePasswordDialogue(Dialogue):
         pane.TitleSet("Change Password")
         pane.AddBox()
         self.UpdateFields()
-        pane.InputIndexSet(0)
         
     def UpdateFields(self):
         pane = self.Pane()
@@ -35,6 +34,9 @@ class ChangePasswordDialogue(Dialogue):
             Lang("<Tab>") : Lang("Next")
         })
         
+        if pane.InputIndex() is None:
+            pane.InputIndexSet(0) # Activate first field for input
+        
     def HandleKey(self, inKey):
         handled = True
         pane = self.Pane()
@@ -45,7 +47,7 @@ class ChangePasswordDialogue(Dialogue):
                 pane.ActivateNextInput()
             else:
                 inputValues = pane.GetFieldValues()
-                Layout.Inst().PopDialogue()
+
                 successMessage = Lang('Password Change Successful')
                 try:
                     if not Auth.Inst().IsAuthenticated() and self.isPasswordSet:
@@ -59,10 +61,18 @@ class ChangePasswordDialogue(Dialogue):
                     Auth.Inst().ChangePassword(inputValues.get('oldpassword', ''), inputValues['newpassword1'])
                     
                 except Exception, e:
+                    if self.isPasswordSet:
+                        # Only remove the dialogue if this isn't the initial password set (which needs to succeed)
+                        Layout.Inst().PopDialogue()
+                    else:
+                        # Disable the input field so that it gets reactivated by UpdateFields  when the info box is dismissed
+                        pane.InputIndexSet(None)
+                        
                     Layout.Inst().PushDialogue(InfoDialogue(
                         Lang('Password Change Failed: ')+Lang(e)))
                     
                 else:
+                    Layout.Inst().PopDialogue()
                     Layout.Inst().PushDialogue(InfoDialogue( successMessage))
                     State.Inst().PasswordChangeRequiredSet(False)
                     
