@@ -193,7 +193,6 @@ class LoginDialogue(Dialogue):
             handled = False
         return handled
         
-        
 class FileDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
         Dialogue.__init__(self, inLayout = None, inParent = None)

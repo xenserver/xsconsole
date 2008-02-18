@@ -29,6 +29,7 @@ class DataMethod:
         return self.send(self.name,  inDefault)
 
 class Data:
+    DISK_TIMEOUT_SECONDS = 60
     instance = None
     
     def __init__(self):
@@ -902,8 +903,12 @@ class Data:
         return self.VBDGetRecord(newVBD)
     
     def PlugVBD(self, inVBD):
-        self.session.xenapi.VBD.plug(inVBD['opaqueref'])
-        # Must reread to get filled-in device field
+        def TimedOp():
+            self.session.xenapi.VBD.plug(inVBD['opaqueref'])
+            
+        TimeUtils.TimeoutWrapper(TimedOp, self.DISK_TIMEOUT_SECONDS)
+        
+        # Must reread to get filled-in device fieldcat 
         return self.VBDGetRecord(inVBD['opaqueref'])
         
     def UnplugVBD(self, inVBD):

@@ -5,7 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import re
+import re, signal
 
 # Utils that need to access Data must go in XSConsoleDataUtils,
 # and XSConsoleData can't use anything in XSConsoleDataUtils without creating
@@ -28,4 +28,22 @@ class ShellUtils:
             except IOError, e:
                 if e.errno != errno.EINTR: # Loop if EINTR
                     raise
-    
+
+class TimeException(Exception):
+    pass
+
+class TimeUtils:
+    @staticmethod
+    def AlarmHandler(inSigNum, inStackFrame):
+        raise TimeException("Operation timed out")
+        
+    @classmethod
+    def TimeoutWrapper(cls, inCallable, inTimeout):
+        oldHandler = signal.signal(signal.SIGALRM, TimeUtils.AlarmHandler)
+        signal.alarm(inTimeout)
+        try:
+            inCallable()
+        finally:
+            signal.alarm(0)
+            signal.signal(signal.SIGALRM, oldHandler)
+            
