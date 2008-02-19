@@ -239,12 +239,14 @@ class FileDialogue(Dialogue):
         
         choiceDefs = []
         
+        offset = 0
         if self.Custom('mode') == 'rw':
             choiceDefs.append(ChoiceDef(Lang('Enter New Filename'), lambda: self.HandleFileChoice(None)))
+            offset=1
             
         for filename in self.fileList:
             displayName = "%-60.60s%10.10s" % (filename, self.vdiMount.SizeString(filename))
-            choiceDefs.append(ChoiceDef(displayName, lambda: self.HandleFileChoice(self.fileMenu.ChoiceIndex()) ) )
+            choiceDefs.append(ChoiceDef(displayName, lambda: self.HandleFileChoice(self.fileMenu.ChoiceIndex() - offset) ) )
 
         if self.Custom('mode') != 'rw': # Read-only
             choiceDefs.append(ChoiceDef(Lang('Enter Custom Filename'), lambda: self.HandleFileChoice(None)))
