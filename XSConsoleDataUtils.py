@@ -314,6 +314,117 @@ class MountVDI:
     def SizeString(self, inFilename, inDefault = None):
         return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)
         
+        
+class MountVDIDirectly:
+    def __init__(self, inVDI, inMode = None):
+        self.vdi = inVDI
+        self.mountPoint = None
+        self.mode = FirstValue(inMode, 'ro')
+        self.mountedVDI = False
+    
+        data = Data.Inst()
+        data.Update() # Get current device list
+        
+        try:
+            self.mountDev = FileUtils.DeviceFromVDI(self.vdi)
+            
+            if os.path.exists(self.mountDev+'1'): # First partition
+                self.mountDev += '1'
+                
+            FileUtils.AssertSafePath(self.mountDev)
+            self.mountPoint = tempfile.mktemp(".xsconsole")
+            if not os.path.isdir(self.mountPoint):
+                os.mkdir(self.mountPoint, 0700)
+
+            status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
+            if status != 0:
+                try:
+                    self.Unmount()
+                except Exception:
+                    pass # Ignore unmount failure
+                output += '\n'+self.mountDev
+                self.HandleMountFailure(status, output.split("\n"))
+            
+            self.mountedVDI = True
+
+        except Exception, e:
+            try:
+                self.Unmount()
+            except Exception:
+                pass #  Report the original exception, not this one
+            raise e
+        
+    def HandleMountFailure(self, inStatus, inOutput):
+        # Entered after self.Unmount has run
+        if self.vdi['SR']['type'] != 'udev' or self.vdi['SR']['content_type'] != 'disk':
+            # Take special action for USB devices only, i.e. don't reformat SCSI disks, etc.
+            if inStatus == 8192: # Return code for empty CD drive
+                raise Exception(Lang("Drive is empty"))
+            raise Exception(inOutput)
+        
+        if self.mode != 'rw':
+            # Don't reformat media unless we're planning to write to it
+            raise Exception(Lang('This media is not readable.'))
+        
+        needsType = False
+        for line in inOutput:
+            if re.search(r'you must specify the filesystem type', line, re.IGNORECASE):
+                needsType = True
+    
+        if not needsType:
+            # Unrecognised failure
+            raise Exception(inOutput)
+        
+        realDevice = FileUtils.DeviceFromVDI(self.vdi)
+        status, output = commands.getstatusoutput("/sbin/fdisk -l '" +realDevice+"'")
+        if status != 0:
+            raise Exception(output)
+            
+        unformatted = False
+        for line in output.split("\n"):
+            if re.search(r"doesn't contain a valid partition table", line, re.IGNORECASE):
+                unformatted = True
+            if re.match(r'/dev/\w+\s+\*', line, re.IGNORECASE):
+                # Bootable partition - leave this media alone
+                raise Exception("This USB media is not mountable but has a bootable partition.  Please reformat it before use.")
+        
+        if unformatted:
+            # Not formatted
+            raise USBNotFormatted("USB media not formatted")
+        else:
+            # Formatted but doesn't mount
+            raise USBNotMountable("USB media not mountable")
+    
+    def Scan(self, inRegExp = None, inNumToReturn = None):
+        retVal = []
+        numToReturn = FirstValue(inNumToReturn, 10)
+        regExp = re.compile(FirstValue(inRegExp, r'.*'), re.IGNORECASE)
+        for root, dirs, files in os.walk(self.mountPoint):
+            if len(retVal) >= numToReturn:
+                break
+            for filename in files:
+                if regExp.match(filename):
+                    retVal.append(os.path.join(root, filename)[len(self.mountPoint)+1:])
+                    if len(retVal) >= numToReturn:
+                        break
+                        
+        return retVal
+        
+    def Unmount(self):
+        status = 0
+        if self.mountedVDI:
+            status, output = commands.getstatusoutput("/bin/umount '"+self.mountPoint +  "' 2>&1")
+            os.rmdir(self.mountPoint)
+            self.mountedVDI = False
+        if status != 0:
+            raise Exception(output)
+    
+    def MountedPath(self, inLeafname):
+        return self.mountPoint + '/' + inLeafname
+    
+    def SizeString(self, inFilename, inDefault = None):
+        return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)                
+        
 class SRUtils:
     @classmethod
     def SRList(cls, inMode = None):

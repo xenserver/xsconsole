@@ -48,6 +48,7 @@ class ChangePasswordDialogue(Dialogue):
             else:
                 inputValues = pane.GetFieldValues()
 
+                Layout.Inst().TransientBanner(Lang("Changing password..."))
                 successMessage = Lang('Password Change Successful')
                 try:
                     if not Auth.Inst().IsAuthenticated() and self.isPasswordSet:

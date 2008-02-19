@@ -419,7 +419,7 @@ class FileDialogue(Dialogue):
             Layout.Inst().Refresh()
             Layout.Inst().DoUpdate()
 
-            self.vdiMount = MountVDI(self.vdi, self.Custom('mode'))
+            self.vdiMount = MountVDIDirectly(self.vdi, self.Custom('mode'))
 
             
             Layout.Inst().PopDialogue()

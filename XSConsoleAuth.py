@@ -81,7 +81,7 @@ class Auth:
         password = inPassword
 
         # Create a local login if we can
-        session = XenAPI.Session("http://"+FirstValue(self.testingHost, "127.0.0.1"))
+        session = XenAPI.Session("https://"+FirstValue(self.testingHost, "127.0.0.1"))
         isSlave = False
         
         try:
@@ -90,7 +90,7 @@ class Auth:
         except XenAPI.Failure, e:
             if e.details[0] == 'HOST_IS_SLAVE': # This host is a slave so authenticate with the master
                 masterIP = e.details[1] # Master IP is returned in details[1]
-                session = XenAPI.Session("http://"+masterIP)
+                session = XenAPI.Session("https://"+masterIP)
                 session.login_with_password(username, password)
                 isSlave = True
             else:
@@ -164,7 +164,7 @@ class Auth:
             
         if session is None and self.testingHost is not None:
             # Local session couldn't connect, so try remote.
-            session = XenAPI.Session("http://"+self.testingHost)
+            session = XenAPI.Session("https://"+self.testingHost)
             try:
                 session.login_with_password(self.loggedInUsername, self.loggedInPassword)
                 
@@ -198,9 +198,10 @@ class Auth:
             popenObj.tochild.write(inNewPassword+"\n")
             popenObj.tochild.close()
             ShellUtils.WaitOnPipe(popenObj)
-                    
-            if popenObj.poll() != 0:
-                raise Exception('Invalid password')
+            
+            status = popenObj.poll()
+            if  status != 0:
+                raise Exception('Invalid password (error '+str(status)+')')
                 
             # xlock won't have started if there's no password, so start it now
             if os.path.isfile("/usr/bin/xautolock"):
