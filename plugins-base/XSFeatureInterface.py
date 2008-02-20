@@ -81,7 +81,7 @@ class InterfaceDialogue(Dialogue):
         if self.nic is not None:
             self.nicMenu.CurrentChoiceSet(self.nic)
         if self.mode.lower().startswith('static'):
-            self.modeMenu.CurrentChoiceSet(1)
+            self.modeMenu.CurrentChoiceSet(2)
         else:
             self.modeMenu.CurrentChoiceSet(0)
     
