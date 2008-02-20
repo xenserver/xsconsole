@@ -666,13 +666,16 @@ class ClaimSRDialogue(Dialogue):
         Dialogue.__init__(self, inLayout, inParent)
 
         self.deviceToErase = None
+        self.srName = None
+        self.srSize = None
+        
         self.ChangeState('INITIAL')
 
     def DeviceString(self, inDevice):
         retVal = "%-6.6s%-44.44s%-10.10s%10.10s" % (
-            FirstValue(inDevice.bus[:6], ''),
-            FirstValue(inDevice.name[:44], ''),
-            FirstValue(inDevice.device[:10], ''),
+            FirstValue(inDevice.bus, '')[:6],
+            FirstValue(inDevice.name, '')[:44],
+            FirstValue(inDevice.device, '')[:10],
             FirstValue(FileUtils.SizeString(inDevice.size), '')
         )
         return retVal
@@ -698,10 +701,14 @@ class ClaimSRDialogue(Dialogue):
         if len(choiceDefs) == 0:
             choiceDefs.append(ChoiceDef(Lang("<No devices available>", 70), None))
     
-        # Manual choice disabled    
+        # 'Custom' manual choice disabled    
         # choiceDefs.append(ChoiceDef(Lang("Specify a device manually", 70), lambda: self.HandleDeviceChoice(None) ) )
 
         self.deviceMenu = Menu(self, None, Lang("Select Device"), choiceDefs)
+        self.UpdateFields()
+
+    def BuildPaneALREADYTHERE(self):
+        self.BuildPaneBase()
         self.UpdateFields()
 
     def BuildPaneCUSTOM(self):
@@ -736,6 +743,20 @@ class ClaimSRDialogue(Dialogue):
         pane.AddMenuField(self.deviceMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
             "<F5>" : Lang("Rescan") } )
+
+    def UpdateFieldsALREADYTHERE(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddWarningField(Lang("WARNING"))
+        
+        pane.AddWrappedBoldTextField(Lang("A Storage Repository has already been created on this disk.  "
+            "Continuing will destroy all information in this Storage Repository.  Would you like to continue?"))
+        pane.NewLine()
+        pane.AddStatusField(Lang("Current SR Name", 20), str(self.srName))
+        pane.AddStatusField(Lang("Size", 20), FileUtils.SizeString(self.srSize))
+
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsCUSTOM(self):
         pane = self.Pane()
@@ -779,10 +800,8 @@ class ClaimSRDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
-            Layout.Inst().PushDialogue(BannerDialogue( Lang("Scanning...")))
-            Layout.Inst().Refresh()
-            Layout.Inst().DoUpdate()
-            Layout.Inst().PopDialogue()
+            Layout.Inst().TransientBanner(Lang("Scanning..."))
+            Data.Inst().Update() # Get current SR list
             self.ChangeState('DEVICE')
             handled = True
             
@@ -802,7 +821,16 @@ class ClaimSRDialogue(Dialogue):
             handled = True
             
         return handled
-    
+
+    def HandleKeyALREADYTHERE(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            self.ChangeState('CONFIRM')
+            handled = True
+            
+        return handled
+
     def HandleKeyCUSTOM(self, inKey):
         handled = True
         pane = self.Pane()
@@ -810,7 +838,7 @@ class ClaimSRDialogue(Dialogue):
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
-            self.deviceToErase = inputValues['device']
+            self.deviceToErase = Struct(device = inputValues['device'])
             self.ChangeState('CONFIRM')
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
@@ -832,20 +860,33 @@ class ClaimSRDialogue(Dialogue):
             self.ChangeState('CUSTOM')
         else:
             self.deviceToErase = self.deviceList[inChoice]
-    
-            self.ChangeState('CONFIRM')
+            if self.IsKnownSROnDisk(self.deviceToErase.device):
+                self.ChangeState('ALREADYTHERE')
+            else:
+                self.ChangeState('CONFIRM')
+
+    def IsKnownSROnDisk(self, inDevice):
+        retVal = False
+        for pbd in Data.Inst().host.PBDs([]):
+            device = pbd.get('device_config', {}).get('device', '')
+            match = re.match(r'([^0-9]+)[0-9]*$', device)
+            if match: # Remove trailing partition numbers
+                device = match.group(1)
+            if device == inDevice:
+                # This is the PBD we want to claim.  Does it have an SR?
+                srName = pbd.get('SR', {}).get('name_label', None)
+                if srName is not None:
+                    self.srName = srName
+                    self.srSize = int(pbd.get('SR', {}).get('physical_size', 0))
+                    retVal = True
+        return retVal
 
     def DoAction(self):
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang("Claiming and Configuring Disk..."))
-                
-        if isinstance(self.deviceToErase, Struct):
-            deviceName = self.deviceToErase.device
-        else:
-            deviceName = str(self.deviceToErase)
 
         status, output = commands.getstatusoutput(
-            "/opt/xensource/libexec/delete-partitions-and-claim-disk "+deviceName+" 2>&1")
+            "/opt/xensource/libexec/delete-partitions-and-claim-disk "+self.deviceToErase.device+" 2>&1")
             
         if status != 0:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
