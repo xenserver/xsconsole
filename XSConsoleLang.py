@@ -6,6 +6,7 @@
 # countries.
 
 from XSConsoleConfig import *
+from XSConsoleLangErrors import *
 
 import XenAPI # For XenAPI.Failure
 
@@ -39,10 +40,9 @@ class Language:
     @classmethod
     def ToString(cls, inLabel):
         if isinstance(inLabel, XenAPI.Failure):
-            if inLabel.details[0] == 'INTERNAL_ERROR':
-                retVal = str(inLabel) # Print everything for this one
-            else:
-                retVal = inLabel.details[0]
+            retVal = LangErrors.Translate(inLabel.details[0])
+            for i in range(0, len(inLabel.details)):
+                retVal = retVal.replace('{'+str(i-1)+'}', inLabel.details[i])
         elif isinstance(inLabel, Exception):
             retVal = str(inLabel)
         else:

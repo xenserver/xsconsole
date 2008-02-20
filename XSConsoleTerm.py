@@ -135,7 +135,7 @@ class App:
         
 
     def MainLoop(self):
-        
+
         doQuit= False
         startSeconds = time.time()
         lastDataUpdateSeconds = startSeconds
