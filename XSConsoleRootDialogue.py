@@ -836,14 +836,17 @@ class RootDialogue(Dialogue):
         else:
             inFunc()
         
+    def AuthenticatedOrPasswordUnsetOnly(self, inFunc):
+        if Auth.Inst().IsPasswordSet():
+            self.AuthenticatedOnly(inFunc)
+        else:
+            inFunc()
+            
     def ActivateDialogue(self, inName):
         if inName == 'DIALOGUE_MANAGEMENT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(InterfaceDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGEPASSWORD':
-            if Auth.Inst().IsPasswordSet():
-                self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
-            else:
-                Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent))
+            self.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_CHANGETIMEOUT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
         elif inName == 'DIALOGUE_TESTNETWORK':
@@ -894,10 +897,10 @@ class RootDialogue(Dialogue):
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("This operation may save sensitive data to removable media.  Do you want to continue?"), lambda x: self.SaveBugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_REBOOT':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
+            self.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
         elif inName == 'DIALOGUE_SHUTDOWN':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
+            self.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to shutdown this server?"), lambda x: self.ShutdownDialogueHandler(x))))
         elif inName == 'DIALOGUE_LOCALSHELL':
             self.AuthenticatedOnly(lambda: self.StartLocalShell())

@@ -112,7 +112,7 @@ class App:
                         doQuit = True
                     else:
                         # Double-check authentication
-                        Auth.Inst().AssertAuthenticated()
+                        Auth.Inst().AssertAuthenticatedOrPasswordUnset()
                         if self.layout.ExitCommandIsExec():
                             os.execv(commandList[0], commandList)
                             # Does not return

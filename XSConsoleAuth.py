@@ -147,6 +147,10 @@ class Auth:
         if self.AuthAge() > State.Inst().AuthTimeoutSeconds():
             raise Exception("Session has timed out")
 
+    def AssertAuthenticatedOrPasswordUnset(self):
+        if self.IsPasswordSet():
+            self.AssertAuthenticated()
+
     def LogOut(self):
         self.isAuthenticated = False
         self.loggedInUsername = None
