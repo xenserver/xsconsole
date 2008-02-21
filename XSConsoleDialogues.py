@@ -229,12 +229,16 @@ class ChangeTimeoutDialogue(InputDialogue):
     def __init__(self, inLayout, inParent):
         self.custom = {
             'title' : Lang("Change Auto-Logout Timeout"),
-            'fields' : [ [Lang("Timeout (minutes)", 20), 5, 'timeout'] ]
+            'fields' : [ [Lang("Timeout (minutes)", 20), FirstValue(State.Inst().AuthTimeoutMinutes(), 5), 'timeout'] ]
             }
         InputDialogue.__init__(self, inLayout, inParent)
 
     def HandleCommit(self, inValues):
-        timeoutMinutes = int(inValues['timeout'])
+        try:
+            timeoutMinutes = int(inValues['timeout'])
+        except Exception, e:
+            raise Exception("Invalid value - please supply a numeric value")
+        
         Auth.Inst().TimeoutSecondsSet(timeoutMinutes * 60)
         return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+Language.Quantity(" minute",  timeoutMinutes)+'.'
         
@@ -887,7 +891,9 @@ class ClaimSRDialogue(Dialogue):
 
         status, output = commands.getstatusoutput(
             "/opt/xensource/libexec/delete-partitions-and-claim-disk "+self.deviceToErase.device+" 2>&1")
-            
+        
+        Data.Inst().Update() # Read information about the new SR
+        
         if status != 0:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
         else:
@@ -1520,7 +1526,7 @@ class PatchDialogue(FileDialogue):
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
             'deviceprompt' : Lang("Select the device containing the upgrade"), 
             'fileprompt' : Lang("Select the upgrade file"),
-            'confirmprompt' : Lang("Press <F8> to begin the update process"),
+            'confirmprompt' : Lang("Press <F8> to begin the updgrade process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__

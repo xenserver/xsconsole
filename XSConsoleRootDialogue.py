@@ -98,7 +98,7 @@ class RootDialogue(Dialogue):
     
         inPane.AddWrappedTextField(Lang("Press <Enter> to change the password for user 'root'.  "
         "This will also change the password for local and remote login shells.  "
-        "If this host is in a pool, it will change the password for the pool."))
+        "If this host is in a Pool, it will change the password for the Pool."))
         
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Password") })
 

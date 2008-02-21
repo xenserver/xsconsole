@@ -123,9 +123,13 @@ class Auth:
         auth.set_item(PAM.PAM_USER, inUsername)
         auth.set_item(PAM.PAM_CONV, PAMConv)
         
-        auth.authenticate() 
-        auth.acct_mgmt()
-        # No exception implies a successful login
+        try:
+            auth.authenticate() 
+            auth.acct_mgmt()
+            # No exception implies a successful login
+        except Exception, e:
+            # Display a generic message for all failures
+            raise Exception(Lang("The system could not log you in.  Please check your access credentials and try again."))
 
         self.loggedInUsername = inUsername
         if self.testingHost is not None:

@@ -149,7 +149,10 @@ class FileUtils:
                 if e.errno != errno.EINTR: # Loop if EINTR
                     raise
                 
-        os.system('/bin/sync')
+        status, output = commands.getstatusoutput('/bin/sync')
+        
+        if status != 0:
+            raise Exception(output)
         
         # Format the new partition with VFAT
         status, output = commands.getstatusoutput("/sbin/mkfs.vfat -n 'XenServer Backup' -F 32 '" +partitionName + "' 2>&1")
@@ -157,7 +160,10 @@ class FileUtils:
         if status != 0:
             raise Exception(output)
             
-        os.system('/bin/sync')
+        status, output = commands.getstatusoutput('/bin/sync')
+        
+        if status != 0:
+            raise Exception(output)
 
     @classmethod
     def BugReportFilename(cls):
