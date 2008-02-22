@@ -758,7 +758,6 @@ class ClaimSRDialogue(Dialogue):
             "Continuing will destroy all information in this Storage Repository.  Would you like to continue?"))
         pane.NewLine()
         pane.AddStatusField(Lang("Current SR Name", 20), str(self.srName))
-        pane.AddStatusField(Lang("Size", 20), FileUtils.SizeString(self.srSize))
 
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
