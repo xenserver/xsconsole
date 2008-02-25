@@ -123,7 +123,7 @@ class DialoguePane:
             self.yScrollPos -= 1
         
     def ScrollPageDown(self):
-        if self.yScrollPos + self.Win().YSize() <= self.arranger.YSize():
+        if self.yScrollPos + self.Win().YSize() <= self.arranger.YSize() + 1:
             self.yScrollPos += 1
 
     def ResetScroll(self):

@@ -614,11 +614,14 @@ class RootDialogue(Dialogue):
         inPane.AddTitleField(Lang("Setup Remote Database"))
 
         description = "A remote database, if configured, is used to store xapi configuration settings that are written frequently.  The copy of the xapi database on the flash media is updated less frequently as it is rate-limited to reduce the writes to the device.  This setting is particularly useful for diskless blades."
-        inPane.AddWrappedTextField(Lang(description))
-        inPane.NewLine()
-    
+            
         if not data.remotedb.is_on_remote_storage(False):
+            inPane.AddWrappedTextField(Lang(description))
+            inPane.NewLine()
             inPane.AddWrappedTextField(Lang("A remote database is not configured on this server."))
+            inPane.AddKeyHelpField( {
+                Lang("<Enter>") : Lang("Configure Remote DB")
+            })
         else:
             inPane.AddWrappedTextField(Lang("A remote database is configured for this server on an iSCSI LUN."))
             inPane.NewLine()
@@ -632,10 +635,13 @@ class RootDialogue(Dialogue):
             inPane.NewLine()
             inPane.AddTitleField(Lang("Target IQN"))
             inPane.AddWrappedTextField(data.remotedb.remoteiqn())
+            inPane.NewLine()
+            inPane.AddWrappedTextField(Lang(description))
 
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Configure Remote DB")
-        })
+            inPane.AddKeyHelpField( {
+                Lang("<Enter>") : Lang("Reconfigure"), 
+                Lang("<PgUp/Dn>") : Lang("Scroll")
+            })
 
     def UpdateFieldsSUSPENDSR(self, inPane):
         data = Data.Inst()
