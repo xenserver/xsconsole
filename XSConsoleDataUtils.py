@@ -87,8 +87,16 @@ class FileUtils:
 
     @classmethod
     def AssertSafePath(cls, inPath):
-        if not re.match(r'[-A-Za-z0-9/._~]*$', inPath):
+        if not re.match(r'[-A-Za-z0-9/._~ ]*$', inPath):
             raise Exception("Invalid characters in path '"+inPath+"'")
+            
+    @classmethod
+    def AssertSafeLeafname(cls, inPath):
+        cls.AssertSafePath(inPath)
+        if re.match(r'\.\.', inPath) or re.search(r'/\.\.', inPath):
+            raise Exception(Lang("Filenames containing .. are not allowed"))
+        if re.match(r'\s*/', inPath):
+            raise Exception(Lang("Absolute paths are not allowed"))
 
     @classmethod
     def SizeString(cls, inSizeOrFilename, inDefault = None):

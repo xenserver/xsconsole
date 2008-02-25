@@ -186,7 +186,7 @@ class Auth:
         return session
         
     def CloseSession(self, inSession):
-        # inSession.logout()
+        inSession.logout()
         return None
 
     def IsPasswordSet(self):
@@ -216,8 +216,12 @@ class Auth:
                 commands.getstatusoutput("/usr/bin/xautolock -time 10 -locker '/usr/bin/xlock -mode blank' &")
                 # Ignore failures
         else:
-            session, isSlave = Auth.Inst().TCPSession(inOldPassword)
+            try:
+                session, isSlave = Auth.Inst().TCPSession(inOldPassword)
+            except Exception, e:
+                raise Exception(Lang("Old password not accepted.  Please check your access credentials and try again"))
             session.xenapi.session.change_password(inOldPassword, inNewPassword)
+            self.CloseSession(session)
             # Allow xapi to take care of password changes for pools
             
         # Caller handles exceptions

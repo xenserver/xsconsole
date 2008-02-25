@@ -390,8 +390,12 @@ class FileDialogue(Dialogue):
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
-            self.filename = inputValues['filename']
-            self.ChangeState('CONFIRM')
+            try:
+                FileUtils.AssertSafeLeafname(inputValues['filename'])
+                self.filename = inputValues['filename']
+                self.ChangeState('CONFIRM')
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang(e)))
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
@@ -453,6 +457,7 @@ class FileDialogue(Dialogue):
         if inChoice is None:
             self.ChangeState('CUSTOM')
         else:
+            FileUtils.AssertSafeLeafname(self.fileList[inChoice])
             self.filename = self.fileList[inChoice]
             self.ChangeState('CONFIRM')
     

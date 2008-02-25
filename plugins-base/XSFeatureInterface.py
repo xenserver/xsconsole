@@ -15,14 +15,15 @@ class InterfaceDialogue(Dialogue):
     def __init__(self):
         Dialogue.__init__(self)
         data = Data.Inst()
+        data.Update() # Pick up current 'connected' states
         choiceDefs = []
 
         self.nic=None
         self.converting = False
         currentPIF = None
         choiceArray = []
-        for i in range(len(Data.Inst().host.PIFs([]))):
-            pif = Data.Inst().host.PIFs([])[i]
+        for i in range(len(data.host.PIFs([]))):
+            pif = data.host.PIFs([])[i]
             if currentPIF is None and pif['management']:
                 self.nic = i # Record this as best guess of current NIC
                 currentPIF = pif
@@ -68,7 +69,7 @@ class InterfaceDialogue(Dialogue):
         self.IP = '0.0.0.0'
         self.netmask = '0.0.0.0'
         self.gateway = '0.0.0.0'
-        self.hostname = Data.Inst().host.hostname('')
+        self.hostname = data.host.hostname('')
         
         if currentPIF is not None:
             if 'ip_configuration_mode' in currentPIF: self.mode = currentPIF['ip_configuration_mode']
