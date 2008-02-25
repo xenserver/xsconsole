@@ -395,6 +395,7 @@ class FileDialogue(Dialogue):
                 self.filename = inputValues['filename']
                 self.ChangeState('CONFIRM')
             except Exception, e:
+                Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(Lang(e)))
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
