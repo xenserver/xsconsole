@@ -58,9 +58,6 @@ class ChangePasswordDialogue(Dialogue):
                         
                     if inputValues['newpassword1'] != inputValues['newpassword2']:
                         raise Exception(Lang('New passwords do not match'))
-                
-                    if inputValues['newpassword1'] == '':
-                        raise Exception(Lang('An empty password is not allowed'))
 
                     Auth.Inst().ChangePassword(inputValues.get('oldpassword', ''), inputValues['newpassword1'])
                     

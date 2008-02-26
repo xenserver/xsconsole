@@ -72,42 +72,30 @@ class Auth:
     
     def DefaultPassword(self):
         return self.defaultPassword
-    
-    def ErrorMessage(self):
-        return self.error
-    
-    def TCPSession(self, inPassword = None,  inUsername = None):
-        username = FirstValue(inUsername, self.loggedInUsername)
-        password = inPassword
 
-        # Create a local login if we can
-        session = XenAPI.Session("https://"+FirstValue(self.testingHost, "127.0.0.1"))
-        isSlave = False
-        
-        try:
-            session.login_with_password(username, password)
-
-        except XenAPI.Failure, e:
-            if e.details[0] == 'HOST_IS_SLAVE': # This host is a slave so authenticate with the master
-                masterIP = e.details[1] # Master IP is returned in details[1]
-                session = XenAPI.Session("https://"+masterIP)
-                session.login_with_password(username, password)
-                isSlave = True
-            else:
-                raise # If the exception is not HOST_IS_SLAVE, raise it again
-
-        return session, isSlave
+    #def TCPSession(self, inPassword = None,  inUsername = None):
+    #    username = FirstValue(inUsername, 'root')
+    #    password = inPassword
+    #
+    #    # Create a local login if we can
+    #    session = XenAPI.Session("https://"+FirstValue(self.testingHost, "127.0.0.1"))
+    #    isSlave = False
+    #    
+    #    try:
+    #        session.login_with_password(username, password)
+    #
+    #    except XenAPI.Failure, e:
+    #        if e.details[0] == 'HOST_IS_SLAVE': # This host is a slave so authenticate with the master
+    #            masterIP = e.details[1] # Master IP is returned in details[1]
+    #            session = XenAPI.Session("https://"+masterIP)
+    #            session.login_with_password(username, password)
+    #            isSlave = True
+    #        else:
+    #            raise # If the exception is not HOST_IS_SLAVE, raise it again
+    #
+    #    return session, isSlave
     
-    def ProcessLogin(self, inUsername, inPassword):
-        self.isAuthenticated = False
-        
-        if inUsername != 'root':
-            raise Exception(Lang("Only root can log in here"))
-        
-        # Old method - create a TCP session
-        # session= self.TCPSession(inPassword, inUsername)
-        # self.CloseSession(session)
-        # No exception implies a successful login
+    def PAMAuthenticate(self, inUsername, inPassword):
         
         def PAMConv(inAuth, inQueryList, *theRest):
             # *theRest consumes the userData argument from later versions of PyPAM
@@ -131,6 +119,15 @@ class Auth:
             # Display a generic message for all failures
             raise Exception(Lang("The system could not log you in.  Please check your access credentials and try again."))
 
+    def ProcessLogin(self, inUsername, inPassword):
+        self.isAuthenticated = False
+        
+        if inUsername != 'root':
+            raise Exception(Lang("Only root can log in here"))
+        
+        self.PAMAuthenticate(inUsername, inPassword)
+        # No exception implies a successful login
+        
         self.loggedInUsername = inUsername
         if self.testingHost is not None:
             # Store password when testing only
@@ -200,29 +197,25 @@ class Auth:
         return retVal
     
     def ChangePassword(self, inOldPassword, inNewPassword):
-        if not self.IsPasswordSet():
-            # Write password directly
-            popenObj = popen2.Popen4("/usr/bin/passwd --stdin root")
-            popenObj.tochild.write(inNewPassword+"\n")
-            popenObj.tochild.close()
-            ShellUtils.WaitOnPipe(popenObj)
+        
+        if inNewPassword == '':
+            raise Exception(Lang('An empty password is not allowed'))
+        if re.match(r'\s*$', inNewPassword):
+            raise Exception(Lang('Passwords containing only spaces are not allowed'))
             
-            status = popenObj.poll()
-            if  status != 0:
-                raise Exception('Invalid password (error '+str(status)+')')
-                
-            # xlock won't have started if there's no password, so start it now
-            if os.path.isfile("/usr/bin/xautolock"):
-                commands.getstatusoutput("/usr/bin/xautolock -time 10 -locker '/usr/bin/xlock -mode blank' &")
-                # Ignore failures
-        else:
+        if self.IsPasswordSet():
             try:
-                session, isSlave = Auth.Inst().TCPSession(inOldPassword)
+                self.PAMAuthenticate('root', inOldPassword)
             except Exception, e:
-                raise Exception(Lang("Old password not accepted.  Please check your access credentials and try again"))
+                raise Exception(Lang('Old password not accepted.  Please check your access credentials and try again.'))
+            self.AssertAuthenticated()
+            
+        session = self.OpenSession()
+        try:
             session.xenapi.session.change_password(inOldPassword, inNewPassword)
+        finally:
             self.CloseSession(session)
-            # Allow xapi to take care of password changes for pools
+        # Allow xapi to take care of password changes for pools
             
         # Caller handles exceptions
         
