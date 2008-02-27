@@ -120,14 +120,14 @@ class RootMenu:
         rootMenu = Menu(self, None, Lang("Customize System"), [
             ChoiceDef(Lang("Status Display"), 
                 None,  lambda : inDialogue.ChangeStatus('STATUS')),
+            ChoiceDef(Lang("Network and Management Interface"), 
+                lambda : inDialogue.ChangeMenu('MENU_NETWORK'), lambda : inDialogue.ChangeStatus('NETWORK')),
             ChoiceDef(Lang("Authentication"), 
                 lambda: inDialogue.ChangeMenu('MENU_AUTH'), lambda : inDialogue.ChangeStatus('AUTH')),
             ChoiceDef(Lang("XenServer Details and Licensing"), 
                 lambda : inDialogue.ChangeMenu('MENU_XENDETAILS'), lambda : inDialogue.ChangeStatus('XENDETAILS')),
             ChoiceDef(Lang("Hardware and BIOS Information"), 
-                lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),
-            ChoiceDef(Lang("Network and Management Interface"), 
-                lambda : inDialogue.ChangeMenu('MENU_NETWORK'), lambda : inDialogue.ChangeStatus('NETWORK')),            
+                lambda : inDialogue.ChangeMenu('MENU_PROPERTIES'), lambda : inDialogue.ChangeStatus('PROPERTIES')),          
             ChoiceDef(Lang("Keyboard and Timezone"), 
                 lambda : inDialogue.ChangeMenu('MENU_MANAGEMENT'), lambda : inDialogue.ChangeStatus('MANAGEMENT')),
             ChoiceDef(Lang("Disks and Storage Repositories"), 
@@ -147,7 +147,7 @@ class RootMenu:
          # When started from inittab, mingetty adds -f root to the command, so use this to suppress the Quit choice
         if not '-f' in sys.argv:
             rootMenu.AppendChoiceDef(ChoiceDef(Lang("Quit"), 
-                lambda : inDialogue.ActivateDialogue('DIALOGUE_QUIT'), lambda : inDialogue.ChangeStatus('QUIT')))
+                lambda : inDialogue.ActivateDialogue('DIALOGUE_QUIT'), lambda : inDialogue.ChangeStatus('QUIT'), 10000))
         
         rebootText = Lang("Reboot Server")
         
@@ -184,10 +184,10 @@ class RootMenu:
             'MENU_PROPERTIES' : Menu(self, 'MENU_ROOT', Lang("Hardware and BIOS Information"), propertiesChoices),
 
             'MENU_NETWORK' : Menu(self, 'MENU_ROOT', Lang("Network and Management Interface"), [
-                # Select Management NICs is in a plugin
+                # Configure Management Interface is in a plugin
                 ChoiceDef(Lang("Add/Remove DNS Servers"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_DNS'), lambda : inDialogue.ChangeStatus('DNS')),
-                #Hostname option removed - now subsumed into Select Management NIC
+                # Hostname option removed - now subsumed into Configure Management Interface
                 ChoiceDef(Lang("Network Time (NTP)"),
                     lambda: inDialogue.ActivateDialogue('DIALOGUE_NTP'), lambda : inDialogue.ChangeStatus('NTP')),
                 ChoiceDef(Lang("Test Network"),

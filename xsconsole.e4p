@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2008-02-20, 19:31:46 -->
+<!-- Saved: 2008-02-27, 16:45:41 -->
 <!-- Copyright (C) 2008 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -86,6 +86,10 @@
     </Source>
     <Source>
       <Name>XSConsoleLangErrors.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureManagementHelp.py</Name>
     </Source>
   </Sources>
   <Forms>

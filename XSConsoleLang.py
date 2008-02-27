@@ -70,7 +70,7 @@ class Language:
             thisLine = thisLine.replace("\t", " ") # Tab is used as a non-breaking space
             thisLine = thisLine.replace("\r", "RET") # Debugging
             thisLine = thisLine.strip() # Remove leading whitespace (generally the second space in a double space)
-            if len(thisLine) > 0:
+            if len(thisLine) > 0 or retPos != -1: # Only add blank lines if they follow a return
                 retArray.append(thisLine)
             
             if spacePos == -1:

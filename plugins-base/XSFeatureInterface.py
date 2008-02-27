@@ -40,7 +40,7 @@ class InterfaceDialogue(Dialogue):
         else:
             choiceDefs.append(ChoiceDef(Lang("Disable Management Interface"), lambda: self.HandleNICChoice(None)))
 
-        self.nicMenu = Menu(self, None, "Select Management NIC", choiceDefs)
+        self.nicMenu = Menu(self, None, "Configure Management Interface", choiceDefs)
         
         self.modeMenu = Menu(self, None, Lang("Select IP Address Configuration Mode"), [
             ChoiceDef(Lang("DHCP"), lambda: self.HandleModeChoice('DHCP2') ), 
@@ -393,7 +393,7 @@ class XSFeatureInterface(PlugIn):
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
         
-        inPane.AddTitleField(Lang("Select Management Interface"))
+        inPane.AddTitleField(Lang("Configure Management Interface"))
         
         if len(data.derived.managementpifs([])) == 0:
             inPane.AddWrappedTextField(Lang("<No interface configured>"))
@@ -429,10 +429,10 @@ class XSFeatureInterface(PlugIn):
             self,
             'SELECT_MANAGEMENT_INTERFACE', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Select Management NIC'), # Name of this plugin for plugin list
+                'title' : Lang('Configure Management Interface'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_NETWORK',
                 'menupriority' : 50,
-                'menutext' : Lang('Select Management NIC') ,
+                'menutext' : Lang('Configure Management Interface') ,
                 'needsauth' : True,
                 'statusupdatehandler' : XSFeatureInterface.StatusUpdateHandler,
                 'activatehandler' : XSFeatureInterface.ActivateHandler

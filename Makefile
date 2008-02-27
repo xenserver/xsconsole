@@ -42,6 +42,7 @@ SCRIPTS += XSConsoleUtils.py
 
 PLUGINS_BASE :=
 PLUGINS_BASE += XSFeatureInterface.py
+PLUGINS_BASE += XSFeatureManagementHelp.py
 
 PLUGINS_OEM :=
 
