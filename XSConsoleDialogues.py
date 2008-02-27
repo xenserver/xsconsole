@@ -1418,13 +1418,13 @@ class SRDialogue(Dialogue):
     def BuildPaneINITIAL(self):
         data = Data.Inst()
 
-        self.choices = SRUtils.SRList(self.Custom('mode'))
+        self.choices = SRUtils.SRList(self.Custom('mode'), self.Custom('capabilities'))
         choiceDefs = []
         for choice in self.choices:
             choiceDefs.append(ChoiceDef(choice.name, lambda: self.HandleSRChoice(self.srMenu.ChoiceIndex()) ) )
 
         if len(choiceDefs) == 0:
-            choiceDefs.append(ChoiceDef('<No SRs available>', lambda: None)) # Avoid empty menu
+            choiceDefs.append(ChoiceDef(Lang('<No suitable SRs available>'), lambda: None)) # Avoid empty menu
 
         self.srMenu = Menu(self, None, Lang("Select SR"), choiceDefs)
 
@@ -1478,7 +1478,8 @@ class SuspendSRDialogue(SRDialogue):
         self.custom = {
             'title' : Lang("Select Storage Repository for Suspend"),
             'prompt' : Lang("Please select a Storage Repository"),
-            'mode' : 'rw'
+            'mode' : 'rw',
+            'capabilities' : 'vdi_create'
         }
         SRDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
         
@@ -1500,7 +1501,8 @@ class CrashDumpSRDialogue(SRDialogue):
         self.custom = {
             'title' : Lang("Select Storage Repository for Crash Dumps"),
             'prompt' : Lang("Please select a Storage Repository"),
-            'mode' : 'rw'
+            'mode' : 'rw',
+            'capabilities' : 'vdi_create'
         }
         SRDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
         

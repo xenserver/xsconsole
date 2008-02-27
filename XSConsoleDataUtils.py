@@ -441,7 +441,7 @@ class MountVDIDirectly:
         
 class SRUtils:
     @classmethod
-    def SRList(cls, inMode = None):
+    def SRList(cls, inMode = None, inCapabilities = None):
         
         retVal = []
         for sr in Data.Inst().sr([]):
@@ -454,7 +454,8 @@ class SRUtils:
             name += sr['name_label']
             
             if inMode != 'rw' or sr['content_type'] not in ['iso']:
-                retVal.append( Struct(name = name, sr = sr) )
+                if inCapabilities is None or inCapabilities in sr.get('allowed_operations', []):
+                    retVal.append( Struct(name = name, sr = sr) )
             
         retVal.sort(lambda x, y : cmp(x.name, y.name))
 
