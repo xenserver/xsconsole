@@ -891,6 +891,7 @@ class ClaimSRDialogue(Dialogue):
         status, output = commands.getstatusoutput(
             "/opt/xensource/libexec/delete-partitions-and-claim-disk "+self.deviceToErase.device+" 2>&1")
         
+        time.sleep(4) # Allow xapi to pick up the new SR
         Data.Inst().Update() # Read information about the new SR
         
         if status != 0:
@@ -1417,7 +1418,7 @@ class SRDialogue(Dialogue):
     
     def BuildPaneINITIAL(self):
         data = Data.Inst()
-
+        
         self.choices = SRUtils.SRList(self.Custom('mode'), self.Custom('capabilities'))
         choiceDefs = []
         for choice in self.choices:
@@ -1527,7 +1528,7 @@ class PatchDialogue(FileDialogue):
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
             'deviceprompt' : Lang("Select the device containing the upgrade"), 
             'fileprompt' : Lang("Select the upgrade file"),
-            'confirmprompt' : Lang("Press <F8> to begin the updgrade process"),
+            'confirmprompt' : Lang("Press <F8> to begin the upgrade process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self, inLayout, inParent) # Must fill in self.custom before calling __init__
