@@ -91,9 +91,9 @@ class Data:
         if status == 0:
             self.ScanDmiDecode(output.split("\n"))
      
-        (status, output) = commands.getstatusoutput("/sbin/lspci")
+        (status, output) = commands.getstatusoutput("/sbin/lspci -m")
         if status != 0:
-            (status, output) = commands.getstatusoutput("/usr/bin/lspci")
+            (status, output) = commands.getstatusoutput("/usr/bin/lspci -m")
 
         if status == 0:
             self.ScanLspci(output.split("\n"))
@@ -566,17 +566,35 @@ class Data:
             'storage_controllers' : []
         }
         # Spot storage controllers by looking for keywords or the phrase 'storage controller' in the lspci output
-        keywords = "IDE|PATA|SATA|SCSI|SAS|RAID|Fiber Channel"
+        classExp = re.compile(r'([Ss]torage|IDE|PATA|SATA|SCSI|SAS|RAID|[Ff]iber [Cc]hannel)\s+[Cc]ontroller')
+        nameExp = re.compile(r'IDE|PATA|SATA|SCSI|SAS|RAID|Fiber Channel')
+        unknownExp = re.compile(r'[Uu]nknown [Dd]evice')
+        regExp = re.compile(
+            r'[^"]*' + # Bus position, etc.
+            r'"([^"]*)"[^"]+' + # Class 
+            r'"([^"]*)"[^"]+' + # Vendor 
+            r'"([^"]*)"[^"]+' + # Device 
+            r'"([^"]*)"[^"]+' + # SVendor 
+            r'"([^"]*)"') # SDevice 
+            
         for line in inLines:
-            if not re.search(r'[Uu]nknown [Dd]evice', line): # Skip unknown devices
-                match = re.match(r'[0-9a-f:.]+\s+(.*)', line)
-                if match:
-                    name = match.group(1)
-                    match1 = re.match(r'('+keywords+')', name)
-                    match2 = re.search(r'[Ss]torage [Cc]ontroller', name)
-                    
-                    if match1 or match2:
-                        self.data['lspci']['storage_controllers'].append(name)
+            match = regExp.match(line)
+            if match:
+                devClass = match.group(1)
+                devName = match.group(3)
+                devSVendor = match.group(4)
+                devSName = match.group(5)
+
+                # Determine whether this device is a storage controller
+                if (classExp.search(devClass) or
+                    nameExp.search(devName) or
+                    nameExp.search(devSName)):
+                    # Device is a candidate for the list.  Do we have a useful name for it?  
+                    if not unknownExp.search(devSName) and devSName != '':
+                        self.data['lspci']['storage_controllers'].append((devClass, devSVendor+' '+devSName)) # Tuple so double brackets
+                    elif not unknownExp.search(devName):
+                        self.data['lspci']['storage_controllers'].append((devClass, devName)) # Tuple so double brackets
+                    # otherwise don't add it at all
             
     def ScanIpmiMcInfo(self, inLines):
         self.data['bmc'] = {}

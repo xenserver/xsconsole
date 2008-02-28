@@ -255,7 +255,8 @@ class RootDialogue(Dialogue):
         
         inPane.AddTitleField(Lang("Local Storage Controllers"))
         
-        for name in data.lspci.storage_controllers([]):
+        for devClass, name in data.lspci.storage_controllers([]):
+            inPane.AddWrappedBoldTextField(devClass)
             inPane.AddWrappedTextField(name)
             inPane.NewLine()
     
