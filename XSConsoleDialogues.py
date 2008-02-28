@@ -723,6 +723,10 @@ class ClaimSRDialogue(Dialogue):
         self.BuildPaneBase()
         self.UpdateFields()
     
+    def BuildPaneREBOOT(self):
+        self.BuildPaneBase()
+        self.UpdateFields()
+    
     def ChangeState(self, inState):
         self.state = inState
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
@@ -787,6 +791,14 @@ class ClaimSRDialogue(Dialogue):
             pane.AddWrappedTextField(str(self.deviceToErase))
 
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Erase and Claim"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def UpdateFieldsREBOOT(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddWrappedBoldTextField(Lang("This server needs to reboot to use the new Storage Repository.  Press <F8> to reboot now."))
+
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Reboot"), Lang("<Esc>") : Lang("Cancel") } )
 
     def HandleKey(self, inKey):
         handled = False
@@ -858,6 +870,16 @@ class ClaimSRDialogue(Dialogue):
             
         return handled
     
+    def HandleKeyREBOOT(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
+            Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
+            handled = True
+            
+        return handled
+    
     def HandleDeviceChoice(self, inChoice):
         if inChoice is None:
             self.ChangeState('CUSTOM')
@@ -885,7 +907,6 @@ class ClaimSRDialogue(Dialogue):
         return retVal
 
     def DoAction(self):
-        Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang("Claiming and Configuring Disk..."))
 
         status, output = commands.getstatusoutput(
@@ -895,9 +916,10 @@ class ClaimSRDialogue(Dialogue):
         Data.Inst().Update() # Read information about the new SR
         
         if status != 0:
+            Layout.Inst().PopDialogue()
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
         else:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claimed Successfully")))
+            self.ChangeState('REBOOT')
 
 class RemoteDBDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
