@@ -7,6 +7,17 @@
 
 from XSConsoleStandard import *
 
+def ValidateIP(text):
+    rc = re.match("^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$", text)
+    if not rc: return False
+    ints = map(int, rc.groups())
+    largest = 0
+    for i in ints:
+        if i > 255: return False
+        largest = max(largest, i)
+    if largest is 0: return False
+    return True
+        
 class ChangePasswordDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
         Dialogue.__init__(self, inLayout, inParent)
@@ -159,10 +170,15 @@ class DNSDialogue(Dialogue):
             inputValues = pane.GetFieldValues()
             Layout.Inst().PopDialogue()
             data=Data.Inst()
-            servers = data.dns.nameservers([])
-            servers.append(inputValues['address'])
-            data.NameserversSet(servers)
-            self.Commit(Lang("Nameserver")+" "+inputValues['address']+" "+Lang("added"))
+            ipaddr = inputValues['address']
+            if not ValidateIP(ipaddr):
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Configuration Failed: ")+ Lang('INVALID_IP_ADDRESS_SPECIFIED')))
+            else:
+                servers = data.dns.nameservers([])
+                servers.append(ipaddr)
+                data.NameserversSet(servers)
+                self.Commit(Lang("Nameserver")+" "+ ipaddr +" "+Lang("added"))
+
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
