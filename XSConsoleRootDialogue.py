@@ -492,8 +492,7 @@ class RootDialogue(Dialogue):
 
         inPane.AddWrappedTextField(Lang(
             "This option will upload a bug report file, containing information about "
-            "the state of this machine, to the support server at ")+
-            Config.Inst().FTPServer()+Lang(".  This file may contain sensitive data."))
+            "the state of this machine to the support ftp server.  This file may contain sensitive data."))
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upload Bug Report") } )  
         

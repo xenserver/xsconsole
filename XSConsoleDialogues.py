@@ -6,17 +6,6 @@
 # countries.
 
 from XSConsoleStandard import *
-
-def ValidateIP(text):
-    rc = re.match("^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$", text)
-    if not rc: return False
-    ints = map(int, rc.groups())
-    largest = 0
-    for i in ints:
-        if i > 255: return False
-        largest = max(largest, i)
-    if largest is 0: return False
-    return True
         
 class ChangePasswordDialogue(Dialogue):
     def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
@@ -171,8 +160,8 @@ class DNSDialogue(Dialogue):
             Layout.Inst().PopDialogue()
             data=Data.Inst()
             ipaddr = inputValues['address']
-            if not ValidateIP(ipaddr):
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Configuration Failed: ")+ Lang('INVALID_IP_ADDRESS_SPECIFIED')))
+            if not IPUtils.ValidateIP(ipaddr):
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Configuration Failed: Invalid IP address')))
             else:
                 servers = data.dns.nameservers([])
                 servers.append(ipaddr)

@@ -47,3 +47,16 @@ class TimeUtils:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, oldHandler)
             
+class IPUtils:
+    @classmethod
+    def ValidateIP(cls, text):
+        rc = re.match("^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$", text)
+        if not rc: return False
+        ints = map(int, rc.groups())
+        largest = 0
+        for i in ints:
+            if i > 255: return False
+            largest = max(largest, i)
+        if largest is 0: return False
+        return True
+    
