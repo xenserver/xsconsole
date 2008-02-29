@@ -242,9 +242,8 @@ class RootMenu:
             'MENU_TECHNICAL' : Menu(self, 'MENU_ROOT', Lang("Technical Support"), [
                 ChoiceDef(Lang("Validate Server Configuration"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VALIDATE'),
                     lambda : inDialogue.ChangeStatus('VALIDATE')),
-                # Upload bug report removed (CA-13345)
-                # ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
-                #    lambda : inDialogue.ChangeStatus('BUGREPORT')) ,
+                ChoiceDef(Lang("Upload Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_BUGREPORT'),
+                    lambda : inDialogue.ChangeStatus('BUGREPORT')) ,
                 ChoiceDef(Lang("Save Bug Report"), lambda: inDialogue.ActivateDialogue('DIALOGUE_SAVEBUGREPORT'),
                     lambda : inDialogue.ChangeStatus('SAVEBUGREPORT')),
                 ChoiceDef(Lang("Enable/Disable Verbose Boot Mode"), lambda: inDialogue.ActivateDialogue('DIALOGUE_VERBOSEBOOT'),
