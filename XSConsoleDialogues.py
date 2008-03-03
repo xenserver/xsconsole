@@ -1237,17 +1237,22 @@ class RemoteShellDialogue(Dialogue):
         
         try:
             data.ConfigureRemoteShell(inChoice)
+            message = Lang("Configuration Successful")
+            if inChoice:
+                ShellPipe(['/etc/init.d/sshd', 'start']).Call()
+            else:
+                ShellPipe(['/etc/init.d/sshd', 'stop']).Call()
+                
+                if ShellPipe(['/sbin/pidof', 'sshd']).Call() == 0: # If PIDs are available
+                    message = Lang("New connections via the remote shell are now disabled, but there are "
+                        "ssh connections still ongoing.  If necessary, use 'killall sshd' from the Local "
+                        "Command Shell to terminate them.")
+
+            Layout.Inst().PushDialogue(InfoDialogue(message))
+
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
-        else:
-            Layout.Inst().PushDialogue(BannerDialogue( Lang("Configuration Updated.  Resetting the sshd process...")))
-            Layout.Inst().Refresh()
-            Layout.Inst().DoUpdate()
-            time.sleep(2)
-            if inChoice:
-                Layout.Inst().SubshellCommandSet('/etc/init.d/sshd start && sleep 2')
-            else:
-                Layout.Inst().SubshellCommandSet('/etc/init.d/sshd stop && sleep 2')
+
 
 class VerboseBootDialogue(Dialogue):
     def __init__(self, inLayout, inParent):
