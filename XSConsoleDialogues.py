@@ -1243,7 +1243,7 @@ class RemoteShellDialogue(Dialogue):
             else:
                 ShellPipe(['/etc/init.d/sshd', 'stop']).Call()
                 
-                if ShellPipe(['/sbin/pidof', 'sshd']).Call() == 0: # If PIDs are available
+                if ShellPipe(['/sbin/pidof', 'sshd']).CallRC() == 0: # If PIDs are available
                     message = Lang("New connections via the remote shell are now disabled, but there are "
                         "ssh connections still ongoing.  If necessary, use 'killall sshd' from the Local "
                         "Command Shell to terminate them.")

@@ -5,11 +5,117 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import re, signal, subprocess
+import re, signal, string, subprocess, types
 
 # Utils that need to access Data must go in XSConsoleDataUtils,
 # and XSConsoleData can't use anything in XSConsoleDataUtils without creating
 # circular import problems
+
+
+# Using ShellPipe:
+# ShellPipe("/etc/init.d/xapi", "start").Call()
+# if ShellPipe("/etc/init.d/ntp", "status").CallRC() != 0:
+# message = ShellPipe("/bin/ping","-c", "1", "citrix.com").Stdout()
+# message = ShellPipe("/bin/ping -c 1 -n citrix.com".split()).Stdout()
+#
+# pipe = ShellPipe("/bin/ping","-c", "10", "citrix.com").Stdout() # Ping starts immediately
+#   ... do something else for 10 seconds ...
+# message = pipe.Stdout() # Collect output (will return quickly)
+
+# Experimental features:
+# Chain: Run one after the other whilst commands succeed, and collect all output (like bash && )
+# ShellPipe("nslookup", "citrix.com").Chain("nslookup", "citrixxenserver.com").Stdout())
+#
+# Pipe: Feed the output from one command into the input of the other (like bash | )
+# ShellPipe("cat", "/etc/passwd").Pipe("grep", "root").Stdout()
+#
+# Note: ShellPipe does not use /bin/sh so sh-like features are not available
+
+class ShellPipe:
+    def __init__(self, *inParams):
+        self._NewPipe(*inParams)
+        self.stdout = []
+        self.stderr = []
+        self.called = False
+        
+    def _NewPipe(self, *inParams):
+        if len(inParams) == 1 and isinstance(inParams, (types.ListType, types.TupleType)):
+                params = inParams[0]
+        else:
+            params = inParams
+            
+        self.pipe = subprocess.Popen(params,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            close_fds=True)
+        self.called = False
+    
+    def Stdout(self):
+        if not self.called:
+            self.Call()
+        return self.stdout
+        
+    def Stderr(self):
+        if not self.called:
+            self.Call()
+        return self.stderr
+    
+    def AllOutput(self):
+        if not self.called:
+            self.Call()
+        return self.stdout + self.stderr
+    
+    def Communicate(self, inInput = None):
+        if self.called:
+            raise Exception("ShellPipe called more than once")
+        self.called = True
+        while True:
+            try:
+                if isinstance(inInput, (types.ListType, types.TupleType)):
+                    stdout, stderr = self.pipe.communicate("\n".join(inInput))
+                else:
+                    stdout, stderr = self.pipe.communicate(inInput)
+                    
+                self.stdout += stdout.splitlines()
+                self.stderr += stderr.splitlines()
+                break
+            except IOError, e:
+                if e.errno != errno.EINTR: # Loop if EINTR
+                    raise
+            # Other exceptions propagate to the caller
+        
+    def CallRC(self, inInput = None): # Raise exception or return the return code
+        self.Communicate(inInput)
+        return self.pipe.returncode
+    
+    def Call(self, inInput = None): # Raise exception on failure
+        self.Communicate(inInput)
+        if self.pipe.returncode != 0:
+            if len(self.stderr) > 0:
+                raise Exception("\n".join(self.stderr))
+            if len(self.stdout) > 0:
+                raise Exception("\n".join(self.stdout))
+            else:
+                raise Exception("Unknown failure")
+        return self
+    
+    def Chain(self, *inParams):
+        if not self.called:
+            self.Call()
+        self._NewPipe(*inParams)
+        self.Call()
+        return self
+    
+    def Pipe(self, *inParams):
+        if not self.called:
+            self.Call()
+        newInput = self.stdout
+        self._NewPipe(*inParams)
+        self.stdout = []
+        self.Call(newInput)
+        return self
+
 
 class ShellUtils:
     @classmethod
@@ -29,31 +135,6 @@ class ShellUtils:
                 if e.errno != errno.EINTR: # Loop if EINTR
                     raise
 
-class ShellPipe:
-    def __init__(self, inParams, inTainted = True):
-        self.pipe = subprocess.Popen(inParams,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            close_fds=True)
-        self.stdout = []
-        self.stderr = []
-    
-    def Communicate(self):
-        while True:
-            try:
-                stdout, stderr = self.pipe.communicate()
-                self.stdout.append(stdout) # Format needs verifying
-                self.stderr.append(stderr) # Format needs verifying
-                break
-            except IOError, e:
-                if e.errno != errno.EINTR: # Loop if EINTR
-                    raise
-                    
-    def Call(self):
-        self.Communicate()
-        return self.pipe.returncode
-    
 class TimeException(Exception):
     pass
 
