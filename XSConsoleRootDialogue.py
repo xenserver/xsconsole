@@ -148,27 +148,6 @@ class RootDialogue(Dialogue):
     
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
-    def UpdateFieldsLICENCE(self, inPane):
-        data = Data.Inst()
-
-        expiryStr = data.host.license_params.expiry()
-        if (re.match('\d{8}', expiryStr)):
-            # Convert ISO date to more readable form
-            expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
-        
-        inPane.AddTitleField(Lang("License"))
-        inPane.AddStatusField(Lang("Product SKU", 16), str(Language.Inst().Branding(data.host.license_params.sku_type())))
-        inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
-        inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
-        inPane.NewLine()
-        inPane.AddTitleField(Lang("Product Code"))
-        inPane.AddWrappedTextField(str(data.host.license_params.productcode()))
-        inPane.NewLine()
-        inPane.AddTitleField(Lang("Serial Number"))
-        inPane.AddWrappedTextField(str(data.host.license_params.serialnumber()))
-
-        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
-
     def UpdateFieldsXENDETAILS(self, inPane):
         data = Data.Inst()
 
@@ -185,7 +164,7 @@ class RootDialogue(Dialogue):
             expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
         
         inPane.AddTitleField(Lang("License"))
-        inPane.AddStatusField(Lang("Product SKU", 16), str(Language.Inst().Branding(data.host.license_params.sku_type())))
+        inPane.AddStatusField(Lang("Product SKU", 16), data.host.license_params.sku_marketing_name())
         inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
         inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
         inPane.NewLine()
@@ -404,7 +383,7 @@ class RootDialogue(Dialogue):
             "Press <Enter> to install a license file from removable media."))
         inPane.NewLine()
         inPane.AddTitleField(Lang("Current License"))
-        inPane.AddStatusField(Lang("Product SKU", 16), str(Language.Inst().Branding(data.host.license_params.sku_type())))
+        inPane.AddStatusField(Lang("Product SKU", 16), data.host.license_params.sku_marketing_name())
         inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
         inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
         inPane.NewLine()
