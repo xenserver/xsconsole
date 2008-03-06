@@ -1146,8 +1146,11 @@ class RemoteDBDialogue(Dialogue):
         else:
             Layout.Inst().TransientBanner(Lang("Probing for LUNs..."))
             self.chosenIQN = self.probedIQNs[inChoice]
-            self.probedLUNs = RemoteDB.Inst().ProbeLUNs(self.newConf, self.chosenIQN)
-            
+            try:
+                self.probedLUNs = RemoteDB.Inst().ProbeLUNs(self.newConf, self.chosenIQN)
+            except Exception, e:
+                self.probedLUNs = []
+        
             self.ChangeState('CHOOSELUN')
 
     def HandleLUNChoice(self, inChoice):
