@@ -216,7 +216,39 @@ class Data:
                         vmList[i] = self.session.xenapi.VM.get_record(vm)
                         vmList[i]['allowed_VBD_devices'] = self.session.xenapi.VM.get_allowed_VBD_devices(vm)
                         vmList[i]['opaqueref'] = vm
-                            
+                
+                pools = self.session.xenapi.pool.get_all_records()
+                
+                def convertPool(inID, inPool):
+                    retPool = inPool
+                    retPool['opaqueref'] = inID
+                    try:
+                        retPool['master_uuid'] = self.session.xenapi.host.get_uuid(inPool['master'])
+                    except:
+                        retPool['master_uuid'] = None
+
+                    # SRs in the pool record are often apparently valid but dangling references.
+                    # We fetch the uuid to determine whether the SRs are real.
+                    try:
+                        retPool['default_SR_uuid'] = self.session.xenapi.SR.get_uuid(inPool['default_SR'])
+                    except:
+                        retPool['default_SR_uuid'] = None
+
+                    try:
+                        retPool['suspend_image_SR_uuid'] = self.session.xenapi.SR.get_uuid(inPool['suspend_image_SR'])
+                    except:
+                        retPool['suspend_image_SR_uuid'] = None
+                        
+                    try:
+                        retPool['crash_dump_SR_uuid'] = self.session.xenapi.SR.get_uuid(inPool['crash_dump_SR'])
+                    except:
+                        retPool['crash_dump_SR_uuid'] = None
+                    return retPool
+                
+                self.data['pools'] = {}
+                for id, pool in pools.iteritems():
+                   self.data['pools'][id] = convertPool(id, pool)
+
             except Exception, e:
                 pass # Ignore failure - just leave data empty
 
@@ -780,6 +812,46 @@ class Data:
         Auth.Inst().AssertAuthenticated()
         self.RequireSession()
         self.session.xenapi.host.set_crash_dump_sr(self.host.opaqueref(None), inSR['opaqueref'])
+    
+    def GetSRFromDevice(self, inDevice):
+        retVal = None
+        for pbd in self.host.PBDs([]):
+            device = pbd.get('device_config', {}).get('device', '')
+            match = re.match(r'([^0-9]+)[0-9]*$', device)
+            if match: # Remove trailing partition numbers
+                device = match.group(1)
+            if device == inDevice:
+                # This is the PBD containing the device.  Does it have an SR?
+                sr = pbd.get('SR', None)
+                if sr.get('name_label', None) is not None:
+                    retVal = sr
+        return retVal
+    
+    def SetPoolSRsFromDeviceIfNotSet(self, inDevice):
+        Auth.Inst().AssertAuthenticated()
+        self.RequireSession()
+        pool = self.GetPoolForThisHost()
+        if pool is not None:
+            sr = self.GetSRFromDevice(inDevice)
+            if sr is None:
+                raise Exception(Lang("Device does not have an associated SR"))
+
+            if pool['default_SR_uuid'] is None:
+                self.session.xenapi.pool.set_default_SR(pool['opaqueref'], sr['uuid'])
+            if pool['suspend_image_SR_uuid'] is None:
+                self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], sr['uuid'])
+            if pool['crash_dump_SR_uuid'] is None:
+                self.session.xenapi.pool.set_crash_dump_SR(pool['opaqueref'], sr['uuid'])
+
+    def GetPoolForThisHost(self):
+        self.RequireSession()
+        hostUuid = self.host.uuid(None)
+        retVal = None
+        for pool in self.pools({}).values():
+            if hostUuid == pool.get('master_uuid', None):
+                retVal = pool
+                
+        return retVal
     
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway, inDNS = None):
         # Double-check authentication

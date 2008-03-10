@@ -924,6 +924,11 @@ class ClaimSRDialogue(Dialogue):
             Layout.Inst().PopDialogue()
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
         else:
+            try:
+                Data.Inst().SetPoolSRsFromDeviceIfNotSet(self.deviceToErase.device)
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claimed, but could not set as default SR: ") + Lang(e)))
+                # Continue to reboot dialogue
             self.ChangeState('REBOOT')
 
 class RemoteDBDialogue(Dialogue):
