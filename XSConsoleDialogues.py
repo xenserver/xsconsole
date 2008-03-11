@@ -936,7 +936,7 @@ class RemoteDBDialogue(Dialogue):
             ChoiceDef(Lang("Cancel"), lambda: self.HandleUseChoice('CANCEL'))
         ] )            
 
-        self.ChangeState('INITIAL')
+        self.ChangeState('WARNING')
 
     def IQNString(self, inIQN, inLUN = None):
         if inLUN is None or int(inLUN) > 999: # LUN not present or more than 3 characters
@@ -951,7 +951,15 @@ class RemoteDBDialogue(Dialogue):
         pane.TitleSet(Lang("Remote Database Configuration"))
         pane.AddBox()
     
+    def BuildPaneWARNING(self):
+        self.BuildPaneBase()
+        self.UpdateFields()
+    
     def BuildPaneINITIAL(self):
+        self.BuildPaneBase()
+        self.UpdateFields()
+    
+    def BuildPaneREMOVECURRENT(self):
         self.BuildPaneBase()
         self.UpdateFields()
     
@@ -997,6 +1005,19 @@ class RemoteDBDialogue(Dialogue):
         self.state = inState
         getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
         
+    def UpdateFieldsWARNING(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddWarningField(Lang("WARNING"))
+        pane.AddWrappedBoldTextField(Lang("Please ensure that no Virtual Machines are running on this host "
+            "before continuing.  If this host is in a Pool, the remote database should be configured "
+            "only on the Pool master.  The specified remote database iSCSI LUN must be configured on "
+            "no more than one host at all times, must not be used for any other purpose, and will not be "
+            "usable as a Storage Repository."
+            ))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )        
+
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         data = Data.Inst()
@@ -1019,7 +1040,15 @@ class RemoteDBDialogue(Dialogue):
 
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
-            
+    
+    def UpdateFieldsREMOVECURRENT(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddWrappedBoldTextField(Lang("The current remote database must be removed before a new configuration "
+            "can be entered.  Would you like to proceed?"))
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("Remove Current Remote Database"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFieldsCHOOSEIQN(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -1069,7 +1098,19 @@ class RemoteDBDialogue(Dialogue):
     def UpdateFields(self):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+    
+    def HandleKeyWARNING(self, inKey):
+        handled = False
         
+        if inKey == 'KEY_F(8)':
+            if Data.Inst().remotedb.is_on_remote_storage(False):
+                self.ChangeState('REMOVECURRENT')
+            else:
+                self.ChangeState('INITIAL')
+            handled = True
+            
+        return handled
+    
     def HandleKeyINITIAL(self, inKey):
         handled = True
         pane = self.Pane()
@@ -1097,6 +1138,26 @@ class RemoteDBDialogue(Dialogue):
             pass # Leave handled as True
         else:
             handled = False
+        return handled
+
+    def HandleKeyREMOVECURRENT(self, inKey):
+        handled = False
+        
+        if inKey == 'KEY_F(8)':
+            Layout.Inst().TransientBanner(Lang("Removing current database..."))
+            Data.Inst().StopXAPI()
+            try:
+                try:
+                    RemoteDB.Inst().ConfigureNoDB()
+                    self.ChangeState('INITIAL')
+                except Exception, e:
+                    Layout.Inst().PopDialogue()
+                    Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
+            finally:
+                Data.Inst().StartXAPI()
+                Data.Inst().Update()
+            handled = True
+            
         return handled
 
     def HandleKeyCHOOSEIQN(self, inKey):
