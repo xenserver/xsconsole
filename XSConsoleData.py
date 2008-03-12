@@ -200,7 +200,7 @@ class Data:
                         retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
                         for vdi in retPBD['SR']['VDIs']:
                             vdi['SR'] = retPBD['SR']
-                            retPBD['SR']['opaqueref'] = srRef
+                        retPBD['SR']['opaqueref'] = srRef
 
                     retPBD['opaqueref'] = inPBD
                     return retPBD
@@ -837,11 +837,11 @@ class Data:
                 raise Exception(Lang("Device does not have an associated SR"))
 
             if pool['default_SR_uuid'] is None:
-                self.session.xenapi.pool.set_default_SR(pool['opaqueref'], sr['uuid'])
+                self.session.xenapi.pool.set_default_SR(pool['opaqueref'], sr['opaqueref'])
             if pool['suspend_image_SR_uuid'] is None:
-                self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], sr['uuid'])
+                self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], sr['opaqueref'])
             if pool['crash_dump_SR_uuid'] is None:
-                self.session.xenapi.pool.set_crash_dump_SR(pool['opaqueref'], sr['uuid'])
+                self.session.xenapi.pool.set_crash_dump_SR(pool['opaqueref'], sr['opaqueref'])
 
     def GetPoolForThisHost(self):
         self.RequireSession()
