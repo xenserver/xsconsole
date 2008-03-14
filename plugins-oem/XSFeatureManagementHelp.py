@@ -63,7 +63,7 @@ class XSFeatureManagementHelp(PlugIn):
             {
                 'title' : Lang('Connect To This Server Using ')+appName, # Name of this plugin for plugin list
                 'menuname' : 'MENU_ROOT',
-                'menupriority' : 150,
+                'menupriority' : 1050,
                 'menutext' : Lang('Manage Server Using ')+appName ,
                 'statusupdatehandler' : XSFeatureManagementHelp.StatusUpdateHandler,
                 'activatehandler' : XSFeatureManagementHelp.ActivateHandler

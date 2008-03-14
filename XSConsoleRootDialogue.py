@@ -14,7 +14,6 @@ from XSConsoleCurses import *
 from XSConsoleData import *
 from XSConsoleDialoguePane import *
 from XSConsoleDialogueBases import *
-from XSConsoleDialogues import *
 from XSConsoleFields import *
 from XSConsoleImporter import *
 from XSConsoleLang import *
@@ -93,14 +92,7 @@ class RootDialogue(Dialogue):
             inPane.AddWrappedTextField(Lang("Press <Enter> to log in."))
             inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Log in") })
 
-    def UpdateFieldsCHANGEPASSWORD(self, inPane):
-        inPane.AddTitleField(Lang("Change Password"))
-    
-        inPane.AddWrappedTextField(Lang("Press <Enter> to change the password for user 'root'.  "
-        "This will also change the password for local and remote login shells.  "
-        "If this host is in a Pool, it will change the password for the Pool."))
-        
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Change Password") })
+
 
     def UpdateFieldsCHANGETIMEOUT(self, inPane):
         inPane.AddTitleField(Lang("Change Auto-Logout Time"))
@@ -305,14 +297,6 @@ class RootDialogue(Dialogue):
         inPane.AddStatusField(Lang("Version", 12), data.dmi.bios_version())
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
-
-    def UpdateFieldsTESTNETWORK(self, inPane):
-        inPane.AddTitleField(Lang("Test Network"))
-    
-        inPane.AddWrappedTextField(Lang(
-            "This option will test the configured network using ping."))
-        
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Test Network") })
         
     def UpdateFieldsREBOOTSHUTDOWN(self, inPane):
         inPane.AddTitleField(Lang("Reboot/Shutdown"))
@@ -367,82 +351,13 @@ class RootDialogue(Dialogue):
             "From this menu you can enable remote shells (ssh), "
             "validate the configuration of this server and upload or save bug reports."))
     
-    def UpdateFieldsINSTALLLICENCE(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Install License File"))
 
-        data = Data.Inst()
 
-        expiryStr = data.host.license_params.expiry()
-        if (re.match('\d{8}', expiryStr)):
-            # Convert ISO date to more readable form
-            expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
+
         
-                
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to install a license file from removable media."))
-        inPane.NewLine()
-        inPane.AddTitleField(Lang("Current License"))
-        inPane.AddStatusField(Lang("Product SKU", 16), data.host.license_params.sku_marketing_name())
-        inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
-        inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
-        inPane.NewLine()
-        inPane.AddWrappedBoldTextField(Lang("Product Code"))
-        inPane.AddWrappedTextField(str(data.host.license_params.productcode()))
-        inPane.NewLine()
-        inPane.AddWrappedBoldTextField(Lang("Serial Number"))
-        inPane.AddWrappedTextField(str(data.host.license_params.serialnumber()))
  
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Install License")
-        } )
-    
-    def UpdateFieldsREMOTESHELL(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Remote Shell (ssh)"))
-    
-        if data.chkconfig.sshd() is None:
-            message = Lang('unknown.  To enable or disable')
-        elif data.chkconfig.sshd():
-            message = Lang('enabled.  To disable')
-        else:
-            message = Lang('disabled.  To enable')
-            
-        inPane.AddWrappedTextField(Lang(
-            "This server can accept a remote login via ssh.  Currently remote login is ") +
-            message + Lang(" this feature, press <Enter>."))
  
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Configure Remote Shell")
-        } )
- 
-    def UpdateFieldsVALIDATE(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Validate Server Cnfigration"))
 
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to check the basic configuration of this server."))
- 
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Validate")
-        } )
-        
-    def UpdateFieldsPATCH(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Apply Upgrade"))
-
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to apply a software upgrade."))
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upgrade") } )   
- 
-    def UpdateFieldsBACKUP(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Backup Server State"))
-
-        inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to backup the server state to removable media."))
-            
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Backup") } ) 
  
     def UpdateFieldsRESTORE(self, inPane):
         data = Data.Inst()
@@ -465,84 +380,6 @@ class RootDialogue(Dialogue):
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Revert") } ) 
  
-    def UpdateFieldsBUGREPORT(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Upload Bug Report"))
-
-        inPane.AddWrappedTextField(Lang(
-            "This option will upload a bug report file, containing information about "
-            "the state of this machine to the support ftp server.  This file may contain sensitive data."))
-            
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Upload Bug Report") } )  
-        
-    def UpdateFieldsSAVEBUGREPORT(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Save Bug Report"))
-
-        inPane.AddWrappedTextField(Lang(
-            "This option will save a bug report file, containing information about "
-            "the state of this machine, to removable media.  This file may contain sensitive data."))
-            
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Save Bug Report") } )  
-        
-    def UpdateFieldsVERBOSEBOOT(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Enable/Disable Verbose Boot Mode"))
-
-        if State.Inst().VerboseBoot() is None:
-            message = Lang('unknown.  To enable or disable')
-        elif State.Inst().VerboseBoot():
-            message = Lang('enabled.  To disable')
-        else:
-            message = Lang('disabled.  To enable')
-
-        inPane.AddWrappedTextField(Lang(
-            "This option will control the level of information displayed as this server boots.  "
-            "The current state of verbose boot mode is ")+message+Lang(" press <Enter>."))
-            
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Configure") } )  
-    
-    def UpdateFieldsRESET(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Reset to Factory Defaults"))
-
-        inPane.AddWrappedTextField(Lang(
-            "This option will reset all configuration information to default values, "
-            "delete all virtual machines and delete all Storage Repositories on local disks."))
-            
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset") } )  
-    
-    def UpdateFieldsDNS(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("DNS Servers"))
-    
-        inPane.AddTitleField(Lang("Current Nameservers"))
-        if len(data.dns.nameservers([])) == 0:
-            inPane.AddWrappedTextField(Lang("<No nameservers are configured>"))
-        for dns in data.dns.nameservers([]):
-            inPane.AddWrappedTextField(str(dns))
-        inPane.NewLine()
-        inPane.AddWrappedTextField(Lang("Changes to this configuration may be overwritten if any "
-                                        "interfaces are configured to use DHCP."))
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure DNS"),
-            Lang("<F5>") : Lang("Refresh")
-        })
-
-    def UpdateFieldsHOSTNAME(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Set Hostname"))
-    
-        inPane.AddWrappedTextField(Lang("The hostname of this host is"))
-        inPane.NewLine()
-        inPane.AddWrappedTextField(data.host.hostname())
-        inPane.NewLine()
-        inPane.AddWrappedTextField(Lang("Press <Enter> to change the hostname of this host."))
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Set Hostname"),
-            Lang("<F5>") : Lang("Refresh")
-        })
-
     def UpdateFieldsDISK(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Disks and Storage Repositories"))
@@ -570,163 +407,16 @@ class RootDialogue(Dialogue):
             Lang("<F5>") : Lang("Refresh")
         })
 
-    def UpdateFieldsCLAIMSR(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Claim Local Disk as SR"))
-    
-        inPane.AddWrappedTextField(Lang("Local disks can be configured as Storage Repositories "
-            "for use by virtual machines.  Press <Enter> to list the disks available."))
-
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Claim Disk as SRs")
-        })
-
     def UpdateFieldsREMOTE(self, inPane):
         data = Data.Inst()
         inPane.AddTitleField(Lang("Remote Service Configuration"))
     
         inPane.AddWrappedTextField(Lang("This menu configures remote databases, access by remote shell (ssh) and "
             "remote logging (syslog) to other servers."))
-
-    def UpdateFieldsREMOTEDB(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Setup Remote Database"))
-
-        description = "A remote database, if configured, is used to store xapi configuration settings that are written frequently.  The copy of the xapi database on the flash media is updated less frequently as it is rate-limited to reduce the writes to the device.  This setting is particularly useful for diskless blades."
             
-        if not data.remotedb.is_on_remote_storage(False):
-            inPane.AddWrappedTextField(Lang(description))
-            inPane.NewLine()
-            inPane.AddWrappedTextField(Lang("A remote database is not configured on this server."))
-            inPane.AddKeyHelpField( {
-                Lang("<Enter>") : Lang("Configure Remote DB")
-            })
-        else:
-            inPane.AddWrappedTextField(Lang("A remote database is configured for this server on an iSCSI LUN."))
-            inPane.NewLine()
-            inPane.AddStatusField(Lang('Server', 10), data.remotedb.target()+":"+data.remotedb.port())
-            inPane.AddStatusField(Lang('LUN',10), data.remotedb.lun())
-            if data.remotedb.username('') != '':
-                inPane.AddStatusField(Lang('Username', 10), data.remotedb.username())
-            inPane.NewLine()
-            inPane.AddTitleField(Lang("Initiator IQN"))
-            inPane.AddWrappedTextField(data.remotedb.localiqn())
-            inPane.NewLine()
-            inPane.AddTitleField(Lang("Target IQN"))
-            inPane.AddWrappedTextField(data.remotedb.remoteiqn())
-            inPane.NewLine()
-            inPane.AddWrappedTextField(Lang(description))
 
-            inPane.AddKeyHelpField( {
-                Lang("<Enter>") : Lang("Reconfigure"), 
-                Lang("<PgUp/Dn>") : Lang("Scroll")
-            })
 
-    def UpdateFieldsSUSPENDSR(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Specify Suspend SR"))
-    
-        inPane.AddWrappedTextField(Lang("This server can be configured to use a Storage Repository for suspend images."))
-        inPane.NewLine()
-    
-        if not data.host.suspend_image_sr(False):
-            inPane.AddWrappedTextField(Lang("A Suspend Image SR is not configured on this server."))
-        else:
-            inPane.AddWrappedTextField(Lang("The SR named '")+data.host.suspend_image_sr.name_label()+Lang("' is configured as the Suspend Image SR for this server."))
-            
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Specify Suspend SR")
-        })
 
-    def UpdateFieldsCRASHDUMPSR(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Specify Crash Dump SR"))
-    
-        inPane.AddWrappedTextField(Lang("This server can be configured to use a Storage Repository to store Crash Dumps."))
-        inPane.NewLine()
-    
-        if not data.host.crash_dump_sr(False):
-            inPane.AddWrappedTextField(Lang("A Crash Dump SR is not configured on this server."))
-        else:
-            inPane.AddWrappedTextField(Lang("The SR named '")+data.host.crash_dump_sr.name_label()+Lang("' is configured as the Crash Dump SR for this server."))
-            
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Specify Crash Dump SR")
-        })
-
-    def UpdateFieldsSYSLOG(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Remote Logging (syslog)"))
-    
-        if data.host.logging.syslog_destination('') == '':
-            inPane.AddWrappedTextField(Lang("Remote logging is not configured on this host.  Press <Enter> to activate and set a destination address."))
-        else:
-            inPane.AddWrappedTextField(Lang("The remote logging destination for this host is"))
-            inPane.NewLine()
-            inPane.AddWrappedTextField(data.host.logging.syslog_destination())
-        
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure"),
-            Lang("<F5>") : Lang("Refresh")
-        })
-
-    def UpdateFieldsNTP(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Network Time (NTP)"))
-        
-        inPane.AddWrappedTextField(Lang("One or more network time servers can be configured to synchronize time between servers.  This is especially important for pooled servers."))
-        inPane.NewLine()
-        
-        if not data.chkconfig.ntpd(False):
-            inPane.AddWrappedTextField(Lang("Currently NTP is disabled, and the following servers are configured."))
-        else:
-            inPane.AddWrappedTextField(Lang("Currently NTP is enabled, and the following servers are configured."))
-        
-        inPane.NewLine()
-        
-        servers = data.ntp.servers([])        
-        if len(servers) == 0:
-            inPane.AddWrappedTextField(Lang("<No servers configured>"))
-        else:
-            for server in servers:
-                inPane.AddWrappedTextField(server)
-        
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure"),
-            Lang("<F5>") : Lang("Refresh")
-        })
-
-    def UpdateFieldsTIMEZONE(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Set Timezone"))
-        
-        inPane.AddWrappedTextField(Lang("Use this option to set the timezone for this server."))
-        inPane.NewLine()
-        if data.timezones.current('') != '':
-            inPane.AddWrappedTextField(Lang("The current timezone is"))
-            inPane.NewLine()
-            inPane.AddWrappedTextField(data.timezones.current(Lang('<Unknown>')))
-            inPane.NewLine()
-        
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Set Timezone")
-        })
-        
-    def UpdateFieldsKEYBOARD(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Keyboard Language and Layout"))
-        
-        inPane.AddWrappedTextField(Lang("Use this option to select the correct language and layout for your keyboard."))
-        inPane.NewLine()
-        if data.keyboard.currentname('') != '':
-            inPane.AddWrappedTextField(Lang("The current keyboard type is"))
-            inPane.NewLine()
-            inPane.AddWrappedTextField(data.keyboard.currentname(Lang('<Default>')))
-            inPane.NewLine()
-        
-        inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Change Keyboard Type")
-        })
         
     def UpdateFieldsEXCEPTION(self, inPane,  inException):
         inPane.AddTitleField(Lang("Information not available"))
@@ -830,57 +520,9 @@ class RootDialogue(Dialogue):
     def ActivateDialogue(self, inName):
         if inName == 'DIALOGUE_MANAGEMENT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(InterfaceDialogue(self.layout, self.parent)))
-        elif inName == 'DIALOGUE_CHANGEPASSWORD':
-            self.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(ChangePasswordDialogue(self.layout, self.parent)))
-        elif inName == 'DIALOGUE_CHANGETIMEOUT':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangeTimeoutDialogue(self.layout, self.parent)))
-        elif inName == 'DIALOGUE_TESTNETWORK':
-            Layout.Inst().PushDialogue(TestNetworkDialogue(self.layout,  self.parent))
-        elif inName == 'DIALOGUE_DNS':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DNSDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_HOSTNAME':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(HostnameDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_SYSLOG':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SyslogDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_NTP':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(NTPDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_TIMEZONE':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(TimezoneDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_KEYBOARD':
-            Layout.Inst().PushDialogue(KeyboardDialogue(self.layout,  self.parent))
-        elif inName == 'DIALOGUE_CLAIMSR':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ClaimSRDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_REMOTEDB':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteDBDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_SUSPENDSR':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SuspendSRDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_CRASHDUMPSR':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(CrashDumpSRDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_INSTALLLICENCE':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(LicenceDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_REMOTESHELL':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteShellDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_VALIDATE':
-            Layout.Inst().PushDialogue(ValidateDialogue(self.layout,  self.parent))
-        elif inName == 'DIALOGUE_VERBOSEBOOT':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(VerboseBootDialogue(self.layout, self.parent)))
-        elif inName == 'DIALOGUE_RESET':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ResetDialogue(self.layout, self.parent)))
-        elif inName == 'DIALOGUE_PATCH':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PatchDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_BACKUP':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(BackupDialogue(self.layout,  self.parent)))
-        elif inName == 'DIALOGUE_RESTORE':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RestoreDialogue(self.layout,  self.parent))),
         elif inName == 'DIALOGUE_REVERT':
             self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to revert this upgrade?"), lambda x: self.RevertDialogueHandler(x))))
-        elif inName == 'DIALOGUE_BUGREPORT':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
-                Lang("This operation may upload sensitive data to the support server.  Do you want to continue?"), lambda x: self.BugReportDialogueHandler(x))))
-        elif inName == 'DIALOGUE_SAVEBUGREPORT':
-            self.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
-                Lang("This operation may save sensitive data to removable media.  Do you want to continue?"), lambda x: self.SaveBugReportDialogueHandler(x))))
         elif inName == 'DIALOGUE_REBOOT':
             self.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 Lang("Do you want to reboot this server?"), lambda x: self.RebootDialogueHandler(x))))
@@ -923,14 +565,6 @@ class RootDialogue(Dialogue):
                 ))
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Revert Failed"), Lang(e)))
-
-    def BugReportDialogueHandler(self, inYesNo):
-        if inYesNo == 'y':
-            Layout.Inst().PushDialogue(BugReportDialogue(self.layout, self.parent))
-
-    def SaveBugReportDialogueHandler(self, inYesNo):
-        if inYesNo == 'y':
-            Layout.Inst().PushDialogue(SaveBugReportDialogue(self.layout, self.parent))
 
     def HandleLogInOut(self):
         if Auth.Inst().IsAuthenticated():

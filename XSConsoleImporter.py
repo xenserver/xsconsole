@@ -46,6 +46,18 @@ class Importer:
         # Store inObj only when we need to reregister plugins
         
     @classmethod
+    def ActivateNamedPlugIn(cls, inName, *inParams):
+        plugIn = cls.plugIns.get(inName, None)
+        if plugIn is None:
+            raise Exception(Lang("PlugIn (for activation) named '")+inName+Lang("' does not exist"))
+        handler = plugIn.get('activatehandler', None)
+        
+        if handler is None:
+            raise Exception(Lang("PlugIn (for activation) named '")+inName+Lang("' has no activation handler"))
+        
+        handler(*inParams)
+        
+    @classmethod
     def BuildRootMenu(cls, inParent):
         retVal = RootMenu(inParent)
         for entry in cls.plugIns.values():

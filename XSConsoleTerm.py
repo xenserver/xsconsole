@@ -12,7 +12,6 @@ from XSConsoleAuth import *
 from XSConsoleBases import *
 from XSConsoleCurses import *
 from XSConsoleData import *
-from XSConsoleDialogues import *
 from XSConsoleImporter import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
@@ -78,11 +77,9 @@ class App:
 
                     # Request password change on first boot, or if it isn't set
                     if not Auth.Inst().IsPasswordSet() :
-                        self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
-                            self.layout.Window(Layout.WIN_MAIN), Lang("Please specify a password for user 'root' before continuing")))
+                        self.importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please specify a password for user 'root' before continuing"))
                     elif State.Inst().PasswordChangeRequired():
-                        self.layout.PushDialogue(ChangePasswordDialogue(self.layout,
-                            self.layout.Window(Layout.WIN_MAIN), Lang("Please change the password for user 'root' before continuing")))
+                        self.importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please change the password for user 'root' before continuing"))
                     elif State.Inst().RebootMessage() is not None:
                         self.layout.PushDialogue(QuestionDialogue(
                             State.Inst().RebootMessage(), lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)

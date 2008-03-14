@@ -194,8 +194,8 @@ class LoginDialogue(Dialogue):
         return handled
         
 class FileDialogue(Dialogue):
-    def __init__(self, inLayout, inParent):
-        Dialogue.__init__(self, inLayout = None, inParent = None)
+    def __init__(self):
+        Dialogue.__init__(self)
 
         self.vdiMount = None
         self.ChangeState('INITIAL')
@@ -523,6 +523,78 @@ class InputDialogue(Dialogue):
             handled = False
         return True
         
+class SRDialogue(Dialogue):
+    def __init__(self):
+        Dialogue.__init__(self)
+
+        self.ChangeState('INITIAL')
+    
+    def Custom(self, inKey):
+        return self.custom.get(inKey, None)
+    
+    def BuildPaneBase(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(self.Custom('title'))
+        pane.AddBox()
+    
+    def BuildPaneINITIAL(self):
+        data = Data.Inst()
+        
+        self.choices = SRUtils.SRList(self.Custom('mode'), self.Custom('capabilities'))
+        choiceDefs = []
+        for choice in self.choices:
+            choiceDefs.append(ChoiceDef(choice.name, lambda: self.HandleSRChoice(self.srMenu.ChoiceIndex()) ) )
+
+        if len(choiceDefs) == 0:
+            choiceDefs.append(ChoiceDef(Lang('<No suitable SRs available>'), lambda: None)) # Avoid empty menu
+
+        self.srMenu = Menu(self, None, Lang("Select SR"), choiceDefs)
+
+        self.BuildPaneBase()
+        self.UpdateFields()
+
+    def ChangeState(self, inState):
+        self.state = inState
+        getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+    
+    def UpdateFields(self):
+        self.Pane().ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
+        
+    def UpdateFieldsINITIAL(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddTitleField(self.Custom('prompt'))
+        pane.AddMenuField(self.srMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+
+    def HandleKey(self, inKey):
+        handled = False
+        if hasattr(self, 'HandleKey'+self.state):
+            handled = getattr(self, 'HandleKey'+self.state)(inKey)
+        
+        if not handled and inKey == 'KEY_ESCAPE':
+            Layout.Inst().PopDialogue()
+            handled = True
+
+        return handled
+        
+    def HandleKeyINITIAL(self, inKey):
+        handled = self.srMenu.HandleKey(inKey)
+        
+        if not handled and inKey == 'KEY_F(5)':
+            Data.Inst().Update()
+            self.BuildPaneINITIAL() # Updates menu
+            Layout.Inst().Refresh()
+            handled = True
+        
+        return handled
+
+    def HandleSRChoice(self, inChoice):
+        self.DoAction(self.choices[inChoice].sr)
+        
+
 class DialogueUtils:
     # Helper for activate
     @classmethod
@@ -530,5 +602,12 @@ class DialogueUtils:
         if not Auth.Inst().IsAuthenticated():
             Layout.Inst().PushDialogue(LoginDialogue(Layout.Inst(), Layout.Inst().Parent(),
                 Lang('Please log in to perform this function'), inFunc))
+        else:
+            inFunc()
+            
+    @classmethod
+    def AuthenticatedOrPasswordUnsetOnly(cls, inFunc):
+        if Auth.Inst().IsPasswordSet():
+            cls.AuthenticatedOnly(inFunc)
         else:
             inFunc()
