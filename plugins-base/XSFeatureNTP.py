@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class NTPDialogue(Dialogue):
     def __init__(self):
@@ -173,10 +172,7 @@ class NTPDialogue(Dialogue):
 
         data.Update()
 
-class XSFeatureNTP(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureNTP:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -209,12 +205,10 @@ class XSFeatureNTP(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(NTPDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'NTP', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Network Time (NTP)'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_NETWORK',
                 'menupriority' : 300,
                 'menutext' : Lang('Network Time (NTP)') ,

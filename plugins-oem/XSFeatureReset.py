@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class ResetDialogue(Dialogue):
     def __init__(self):
@@ -94,10 +93,7 @@ class ResetDialogue(Dialogue):
         State.Inst().RebootMessageSet(Lang("This server must reboot to complete the reset process.  Reboot the server now?"))
 
 
-class XSFeatureReset(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureReset:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -114,14 +110,10 @@ class XSFeatureReset(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ResetDialogue()))
         
     def Register(self):
-        data = Data.Inst()
-        appName = data.derived.app_name('')
-        fullAppName = data.derived.full_app_name('')
         Importer.RegisterNamedPlugIn(
             self,
             'RESET', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Reset To Factory Defaults'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_TECHNICAL',
                 'menupriority' : 500,
                 'menutext' : Lang('Reset To Factory Defaults') ,

@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class RemoteShellDialogue(Dialogue):
     def __init__(self):
@@ -66,10 +65,7 @@ class RemoteShellDialogue(Dialogue):
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
 
 
-class XSFeatureRemoteShell(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureRemoteShell:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -95,12 +91,10 @@ class XSFeatureRemoteShell(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteShellDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'REMOTE_SHELL', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Enable/Disable Remote Shell'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_REMOTE',
                 'menupriority' : 100,
                 'menutext' : Lang('Enable/Disable Remote Shell') ,

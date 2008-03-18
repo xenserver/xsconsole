@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class ValidateDialogue(Dialogue):
     def __init__(self):
@@ -67,10 +66,7 @@ class ValidateDialogue(Dialogue):
         return handled
 
 
-class XSFeatureValidate(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureValidate:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -88,12 +84,10 @@ class XSFeatureValidate(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ValidateDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'VALIDATE', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Validate Server Configuration'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_TECHNICAL',
                 'menupriority' : 100,
                 'menutext' : Lang('Validate Server Configuration') ,

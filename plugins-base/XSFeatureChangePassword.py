@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class ChangePasswordDialogue(Dialogue):
     def __init__(self, inText = None,  inSuccessFunc = None):
@@ -93,10 +92,7 @@ class ChangePasswordDialogue(Dialogue):
             handled = False
         return True
 
-class XSFeatureChangePassword(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureChangePassword:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Change Password"))
@@ -112,14 +108,12 @@ class XSFeatureChangePassword(PlugIn):
             DialogueUtils.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(ChangePasswordDialogue(*inParams)))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'CHANGE_PASSWORD', # This key is referred to by name in XSConsoleTerm.py
             {
-                'title' : Lang('Change Password'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_AUTH',
-                'menupriority' : 1200,
+                'menupriority' : 200,
                 'menutext' : Lang('Change Password') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler

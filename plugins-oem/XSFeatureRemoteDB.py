@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class RemoteDBDialogue(Dialogue):
     def __init__(self):
@@ -349,10 +348,7 @@ class RemoteDBDialogue(Dialogue):
             self.PopDialogue()
 
 
-class XSFeatureRemoteDB(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureRemoteDB:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -395,12 +391,10 @@ class XSFeatureRemoteDB(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(RemoteDBDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'REMOTE_DB', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Setup Remote Database'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_REMOTE',
                 'menupriority' : 300,
                 'menutext' : Lang('Setup Remote Database') ,

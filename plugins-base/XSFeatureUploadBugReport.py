@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class UploadBugReportDialogue(InputDialogue):
     def __init__(self):
@@ -47,10 +46,7 @@ class UploadBugReportDialogue(InputDialogue):
         return (Lang("Bug Report Uploaded Sucessfully"), None)
         
 
-class XSFeatureUploadBugReport(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureUploadBugReport:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -73,14 +69,10 @@ class XSFeatureUploadBugReport(PlugIn):
             DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(UploadBugReportDialogue()))
 
     def Register(self):
-        data = Data.Inst()
-        appName = data.derived.app_name('')
-        fullAppName = data.derived.full_app_name('')
         Importer.RegisterNamedPlugIn(
             self,
             'UPLOAD_BUG_REPORT', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Upload Bug Report'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_TECHNICAL',
                 'menupriority' : 200,
                 'menutext' : Lang('Upload Bug Report') ,

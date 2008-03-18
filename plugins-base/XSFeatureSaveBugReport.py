@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class SaveBugReportDialogue(FileDialogue):
     def __init__(self):
@@ -63,10 +62,7 @@ class SaveBugReportDialogue(FileDialogue):
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Save Failed"), Lang(e)))
 
-class XSFeatureSaveBugReport(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureSaveBugReport:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -89,12 +85,10 @@ class XSFeatureSaveBugReport(PlugIn):
             DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SaveBugReportDialogue()))
 
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'SAVE_BUG_REPORT', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Save Bug Report'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_TECHNICAL',
                 'menupriority' : 300,
                 'menutext' : Lang('Save Bug Report') ,

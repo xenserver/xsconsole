@@ -135,8 +135,8 @@ class QuestionDialogue(Dialogue):
         return handled
 
 class LoginDialogue(Dialogue):
-    def __init__(self, inLayout, inParent,  inText = None,  inSuccessFunc = None):
-        Dialogue.__init__(self, inLayout, inParent)
+    def __init__(self, inText = None,  inSuccessFunc = None):
+        Dialogue.__init__(self)
         self.text = inText
         self.successFunc = inSuccessFunc
         pane = self.NewPane(DialoguePane(self.parent))
@@ -593,15 +593,13 @@ class SRDialogue(Dialogue):
 
     def HandleSRChoice(self, inChoice):
         self.DoAction(self.choices[inChoice].sr)
-        
 
 class DialogueUtils:
     # Helper for activate
     @classmethod
     def AuthenticatedOnly(cls, inFunc):
         if not Auth.Inst().IsAuthenticated():
-            Layout.Inst().PushDialogue(LoginDialogue(Layout.Inst(), Layout.Inst().Parent(),
-                Lang('Please log in to perform this function'), inFunc))
+            Layout.Inst().PushDialogue(LoginDialogue(Lang('Please log in to perform this function'), inFunc))
         else:
             inFunc()
             

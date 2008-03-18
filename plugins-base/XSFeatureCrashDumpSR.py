@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class CrashDumpSRDialogue(SRDialogue):
     def __init__(self):
@@ -34,10 +33,7 @@ class CrashDumpSRDialogue(SRDialogue):
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration failed: ")+str(e)))
         Data.Inst().Update()
 
-class XSFeatureCrashDumpSR(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureCrashDumpSR:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -60,12 +56,10 @@ class XSFeatureCrashDumpSR(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(CrashDumpSRDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'CRASH_DUMP_SR', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Specify Crash Dump SR'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_DISK',
                 'menupriority' : 300,
                 'menutext' : Lang('Specify Crash Dump SR') ,

@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class KeyboardDialogue(Dialogue):
     def __init__(self):
@@ -114,10 +113,7 @@ class KeyboardDialogue(Dialogue):
         data.Update()
 
 
-class XSFeatureKeyboard(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureKeyboard: 
     @classmethod
     def StatusUpdateHandler(cls, inPane):        
         data = Data.Inst()
@@ -141,12 +137,10 @@ class XSFeatureKeyboard(PlugIn):
         Layout.Inst().PushDialogue(KeyboardDialogue())
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'KEYBOARD', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Keyboard Language and Layout'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_MANAGEMENT',
                 'menupriority' : 100,
                 'menutext' : Lang('Keyboard Language and Layout') ,

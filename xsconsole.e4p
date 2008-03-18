@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2008-03-13, 19:27:54 -->
+<!-- Saved: 2008-03-18, 16:14:42 -->
 <!-- Copyright (C) 2008 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -72,9 +72,6 @@
       <Name>XSConsoleImporter.py</Name>
     </Source>
     <Source>
-      <Name>XSConsolePlugIn.py</Name>
-    </Source>
-    <Source>
       <Name>XSConsoleLayout.py</Name>
     </Source>
     <Source>
@@ -119,10 +116,6 @@
     <Source>
       <Dir>plugins-base</Dir>
       <Name>XSFeatureClaimSR.py</Name>
-    </Source>
-    <Source>
-      <Dir>plugins-base</Dir>
-      <Name>XSFeaturePatch.py</Name>
     </Source>
     <Source>
       <Dir>plugins-base</Dir>
@@ -175,6 +168,50 @@
     <Source>
       <Dir>plugins-base</Dir>
       <Name>XSFeatureChangeTimeout.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSMenuLayout.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureLocalShell.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureQuit.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureUpdate.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureSystem.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureDisplayNICs.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureReboot.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureShutdown.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureStatus.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-oem</Dir>
+      <Name>XSFeatureOEMRevert.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeatureLogInOut.py</Name>
     </Source>
   </Sources>
   <Forms>

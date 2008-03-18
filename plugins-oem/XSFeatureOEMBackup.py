@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class OEMBackupDialogue(FileDialogue):
     def __init__(self):
@@ -81,10 +80,7 @@ class OEMBackupDialogue(FileDialogue):
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Backup Failed"), Lang(e)))
 
 
-class XSFeatureOEMBackup(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureOEMBackup:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -100,12 +96,10 @@ class XSFeatureOEMBackup(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(OEMBackupDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'BACKUP', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Backup Server State'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_BUR',
                 'menupriority' : 200,
                 'menutext' : Lang('Backup Server State') ,

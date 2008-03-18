@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class InstallLicenceDialogue(FileDialogue):
     def __init__(self):
@@ -64,10 +63,7 @@ class InstallLicenceDialogue(FileDialogue):
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("License Installation Failed"), Lang(e)))
 
-class XSFeatureInstallLicence(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureInstallLicence:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -104,12 +100,10 @@ class XSFeatureInstallLicence(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(InstallLicenceDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'INSTALL_LICENCE', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Install XenServer License'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_XENDETAILS',
                 'menupriority' : 100,
                 'menutext' : Lang('Install XenServer License') ,

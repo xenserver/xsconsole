@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class InterfaceDialogue(Dialogue):
     def __init__(self):
@@ -385,10 +384,7 @@ class InterfaceDialogue(Dialogue):
         Layout.Inst().PopDialogue()
         Layout.Inst().PushDialogue(InfoDialogue(FirstValue(inMessage, Lang("Network Configuration Successful"))))
 
-class XSFeatureInterface(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureInterface:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -429,7 +425,6 @@ class XSFeatureInterface(PlugIn):
             self,
             'SELECT_MANAGEMENT_INTERFACE', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Configure Management Interface'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_NETWORK',
                 'menupriority' : 50,
                 'menutext' : Lang('Configure Management Interface') ,

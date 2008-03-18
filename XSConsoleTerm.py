@@ -16,7 +16,6 @@ from XSConsoleImporter import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
 from XSConsoleLayout import *
-from XSConsolePlugIn import *
 from XSConsoleRootDialogue import *
 from XSConsoleState import *
 
@@ -26,9 +25,9 @@ class App:
     
     def Build(self, inDirs = None):
         # Search for the app plugins and include them
-        self.importer = Importer()
+        Importer.Reset()
         for dir in inDirs:
-            self.importer.ImportRelativeDir(dir)
+            Importer.ImportRelativeDir(dir)
     
     def Enter(self):
         doQuit = False
@@ -77,14 +76,11 @@ class App:
 
                     # Request password change on first boot, or if it isn't set
                     if not Auth.Inst().IsPasswordSet() :
-                        self.importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please specify a password for user 'root' before continuing"))
+                        Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please specify a password for user 'root' before continuing"))
                     elif State.Inst().PasswordChangeRequired():
-                        self.importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please change the password for user 'root' before continuing"))
+                        Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please change the password for user 'root' before continuing"))
                     elif State.Inst().RebootMessage() is not None:
-                        self.layout.PushDialogue(QuestionDialogue(
-                            State.Inst().RebootMessage(), lambda x: self.layout.TopDialogue().RebootDialogueHandler(x)
-                            )
-                        )
+                        Importer.ActivateNamedPlugIn('REBOOT', State.Inst().RebootMessage())
                         State.Inst().RebootMessageSet(None)
                             
                     self.layout.Clear()

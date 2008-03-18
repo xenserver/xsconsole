@@ -74,7 +74,9 @@ class Data:
         return DataMethod(self.GetData, [inName])
     
     def RequireSession(self):
-        if self.session is None: self.session = Auth.Inst().OpenSession()
+        if self.session is None:
+            self.session = Auth.Inst().OpenSession()
+        return self.session
     
     def Create(self):
         # Create fills in data that never changes.  Update fills volatile data

@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class SuspendSRDialogue(SRDialogue):
     def __init__(self):
@@ -35,10 +34,7 @@ class SuspendSRDialogue(SRDialogue):
         Data.Inst().Update()
 
 
-class XSFeatureSuspendSR(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureSuspendSR:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -61,14 +57,10 @@ class XSFeatureSuspendSR(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SuspendSRDialogue()))
         
     def Register(self):
-        data = Data.Inst()
-        appName = data.derived.app_name('')
-        fullAppName = data.derived.full_app_name('')
         Importer.RegisterNamedPlugIn(
             self,
             'SUSPEND_SR', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Specify Suspend SR'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_DISK',
                 'menupriority' : 200,
                 'menutext' : Lang('Specify Suspend SR') ,

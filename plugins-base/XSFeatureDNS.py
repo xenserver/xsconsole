@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class DNSDialogue(Dialogue):
     def __init__(self):
@@ -139,10 +138,7 @@ class DNSDialogue(Dialogue):
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Update failed: ")+Lang(e)))
 
 
-class XSFeatureDNS(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureDNS:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -166,12 +162,10 @@ class XSFeatureDNS(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DNSDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'DNS', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Add/Remove DNS Servers'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_NETWORK',
                 'menupriority' : 200,
                 'menutext' : Lang('Add/Remove DNS Servers') ,

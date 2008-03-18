@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class ClaimSRDialogue(Dialogue):
     def __init__(self):
@@ -272,10 +271,7 @@ class ClaimSRDialogue(Dialogue):
                 # Continue to reboot dialogue
             self.ChangeState('REBOOT')
 
-class XSFeatureClaimSR(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureClaimSR:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -293,12 +289,10 @@ class XSFeatureClaimSR(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ClaimSRDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'CLAIM_SR', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Claim Local Disk as SR'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_DISK',
                 'menupriority' : 100,
                 'menutext' : Lang('Claim Local Disk as SR') ,

@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class TestNetworkDialogue(Dialogue):
     def __init__(self):
@@ -127,10 +126,7 @@ class TestNetworkDialogue(Dialogue):
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Ping failed"), output))
         
 
-class XSFeatureTestNetwork(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureTestNetwork:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Test Network"))
@@ -145,12 +141,10 @@ class XSFeatureTestNetwork(PlugIn):
         Layout.Inst().PushDialogue(TestNetworkDialogue())
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'TEST_NETWORK', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Test Network'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_NETWORK',
                 'menupriority' : 400,
                 'menutext' : Lang('Test Network') ,

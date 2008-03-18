@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class ChangeTimeoutDialogue(InputDialogue):
     def __init__(self):
@@ -28,10 +27,7 @@ class ChangeTimeoutDialogue(InputDialogue):
         Auth.Inst().TimeoutSecondsSet(timeoutMinutes * 60)
         return Lang('Timeout Change Successful'), Lang("Timeout changed to ")+inValues['timeout']+Language.Quantity(" minute",  timeoutMinutes)+'.'
         
-class XSFeatureChangeTimeout(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureChangeTimeout:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Change Auto-Logout Time"))
@@ -53,14 +49,12 @@ class XSFeatureChangeTimeout(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(ChangeTimeoutDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'CHANGE_TIMEOUT', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Change Auto-Logout Time'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_AUTH',
-                'menupriority' : 1300,
+                'menupriority' : 300,
                 'menutext' : Lang('Change Auto-Logout Time') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler

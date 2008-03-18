@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class VerboseBootDialogue(Dialogue):
     def __init__(self):
@@ -55,10 +54,7 @@ class VerboseBootDialogue(Dialogue):
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration Updated")))
 
 
-class XSFeatureVerboseBoot(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureVerboseBoot:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -87,7 +83,6 @@ class XSFeatureVerboseBoot(PlugIn):
             self,
             'VERBOSE_BOOT', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Enable/Disable Verbose Boot Mode'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_TECHNICAL',
                 'menupriority' : 400,
                 'menutext' : Lang('Enable/Disable Verbose Boot Mode') ,

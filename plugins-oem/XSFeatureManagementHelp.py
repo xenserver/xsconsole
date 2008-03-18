@@ -9,12 +9,8 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
-class XSFeatureManagementHelp(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureManagementHelp:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -61,9 +57,8 @@ class XSFeatureManagementHelp(PlugIn):
             self,
             'MANAGEMENT_HELP', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Connect To This Server Using ')+appName, # Name of this plugin for plugin list
                 'menuname' : 'MENU_ROOT',
-                'menupriority' : 1050,
+                'menupriority' : 75,
                 'menutext' : Lang('Manage Server Using ')+appName ,
                 'statusupdatehandler' : XSFeatureManagementHelp.StatusUpdateHandler,
                 'activatehandler' : XSFeatureManagementHelp.ActivateHandler

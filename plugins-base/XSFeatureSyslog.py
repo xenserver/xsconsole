@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class SyslogDialogue(InputDialogue):
     def __init__(self):
@@ -37,10 +36,7 @@ class SyslogDialogue(InputDialogue):
         return Lang('Logging Destination Change Successful'), message        
 
 
-class XSFeatureSyslog(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureSyslog:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -63,12 +59,10 @@ class XSFeatureSyslog(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SyslogDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'SYSLOG', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Remote Logging (syslog)'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_REMOTE',
                 'menupriority' : 100,
                 'menutext' : Lang('Remote Logging (syslog)') ,

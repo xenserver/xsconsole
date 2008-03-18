@@ -13,11 +13,15 @@ from XSConsoleMenus import *
 
 class Importer:
     plugIns = {}
+    menuEntries = {}
     
-    def __init__(self):
-        pass
-        
-    def ImportAbsDir(self, inDir):
+    @classmethod
+    def Reset(cls):
+        cls.plugIns = {}
+        cls.menuEntries = {}
+
+    @classmethod
+    def ImportAbsDir(cls, inDir):
         if os.path.isdir(inDir): # Ignore non-existent directories
             for root, dirs, files in os.walk(inDir):
                 for filename in files:
@@ -36,14 +40,30 @@ class Importer:
                             if fileObj is not None:
                                 fileObj.close()
                             
-                         
+    @classmethod
     def ImportRelativeDir(self, inDir):
         self.ImportAbsDir(sys.path[0]+'/'+inDir)
             
     @classmethod
+    def RegisterMenuEntry(cls, inObj, inName, inParams):
+        if inName not in cls.menuEntries:
+            cls.menuEntries[inName] = []
+            
+        cls.menuEntries[inName].append(inParams)
+        # Store inObj only when we need to reregister plugins
+        
+    @classmethod
+    def UnregisterMenuEntry(cls, inName):
+        del cls.menuEntries[inName]            
+    
+    @classmethod
     def RegisterNamedPlugIn(cls, inObj, inName, inParams):
         cls.plugIns[inName] = inParams
         # Store inObj only when we need to reregister plugins
+        
+    @classmethod
+    def UnegisterNamedPlugIn(cls, inName):
+        del cls.plugIns[inName]
         
     @classmethod
     def ActivateNamedPlugIn(cls, inName, *inParams):
@@ -60,6 +80,19 @@ class Importer:
     @classmethod
     def BuildRootMenu(cls, inParent):
         retVal = RootMenu(inParent)
+        
+        for name, entries in cls.menuEntries.iteritems():
+            for entry in entries:
+                # Create the menu that this item is in
+                retVal.CreateMenuIfNotPresent(name)
+                # Create the menu that this item leads to when you select it
+                if entry['menuname'] is not None:
+                    retVal.CreateMenuIfNotPresent(entry['menuname'], entry['menutext'], name)
+                
+                choiceDef = ChoiceDef(entry['menutext'], entry.get('activatehandler', None), entry.get('statushandler', None))
+                choiceDef.StatusUpdateHandlerSet(entry.get('statusupdatehandler', None))
+                retVal.AddChoice(name, choiceDef, entry.get('menupriority', None))
+        
         for entry in cls.plugIns.values():
             menuName = entry.get('menuname', None)
             if menuName is not None:
@@ -71,6 +104,8 @@ class Importer:
         
     @classmethod
     def Dump(cls):
-        print 'Contents of PlugIn registry:'
+        print "Contents of PlugIn registry:"
         pprint(cls.plugIns)
+        print "\nRegisterred menu entries:"
+        pprint(cls.menuEntries)
     

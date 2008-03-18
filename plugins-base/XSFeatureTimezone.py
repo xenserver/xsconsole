@@ -9,7 +9,6 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
-from XSConsolePlugIn import *
 
 class TimezoneDialogue(Dialogue):
     def __init__(self):
@@ -110,10 +109,7 @@ class TimezoneDialogue(Dialogue):
         data.Update()
 
 
-class XSFeatureTimezone(PlugIn):
-    def __init__(self):
-        PlugIn.__init__(self)
-        
+class XSFeatureTimezone:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
@@ -136,12 +132,10 @@ class XSFeatureTimezone(PlugIn):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(TimezoneDialogue()))
         
     def Register(self):
-        data = Data.Inst()
         Importer.RegisterNamedPlugIn(
             self,
             'TIMEZONE', # Key of this plugin for replacement, etc.
             {
-                'title' : Lang('Set Timezone'), # Name of this plugin for plugin list
                 'menuname' : 'MENU_MANAGEMENT',
                 'menupriority' : 200,
                 'menutext' : Lang('Set Timezone') ,

@@ -10,15 +10,15 @@ if __name__ == "__main__":
     
 from XSConsoleStandard import *
 
-class OEMRestoreDialogue(FileDialogue):
+class UpdateDialogue(FileDialogue):
     def __init__(self):
 
         self.custom = {
-            'title' : Lang("Restore Server State"),
+            'title' : Lang("Apply Software Update"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
-            'deviceprompt' : Lang("Select the device containing the backup file"), 
-            'fileprompt' : Lang("Select The Backup File"),
-            'confirmprompt' : Lang("Press <F8> To Begin The Restore Process"),
+            'deviceprompt' : Lang("Select the device containing the update"), 
+            'fileprompt' : Lang("Select the update file"),
+            'confirmprompt' : Lang("Press <F8> to begin the update process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self) # Must fill in self.custom before calling __init__
@@ -29,7 +29,7 @@ class OEMRestoreDialogue(FileDialogue):
         Layout.Inst().PopDialogue()
         
         Layout.Inst().PushDialogue(BannerDialogue(
-            Lang("Restoring from backup... This may take several minutes.")))
+            Lang("Applying update... This make take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:
@@ -42,7 +42,7 @@ class OEMRestoreDialogue(FileDialogue):
                     
                 filename = self.vdiMount.MountedPath(self.filename)
                 FileUtils.AssertSafePath(filename)
-                command = "/opt/xensource/bin/xe host-restore file-name='"+filename+"' host="+hostRef
+                command = "/opt/xensource/bin/xe update-upload file-name='"+filename+"' host-uuid="+hostRef
                 status, output = commands.getstatusoutput(command)
                 
                 if status != 0:
@@ -50,45 +50,44 @@ class OEMRestoreDialogue(FileDialogue):
                 
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(
-                    Lang("Restore Successful"), Lang("Please reboot to use the new backup.")))
+                    Lang("Update Successful"), Lang("Please reboot to use the newly installed software.")))
 
             except Exception, e:
                 Layout.Inst().PopDialogue()
-                Layout.Inst().PushDialogue(InfoDialogue( Lang("Restore Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Update Failed"), Lang(e)))
                 
         finally:
             try:
                 self.PreExitActions()
             except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue( Lang("Restore Failed"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Update Failed"), Lang(e)))
 
-
-class XSFeatureOEMRestore:
+class XSFeatureUpdate:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Restore Server State"))
+        inPane.AddTitleField(Lang("Apply Update"))
 
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to restore the server state from removable media."))
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Restore") } ) 
- 
+            "Press <Enter> to apply a software update."))
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Update") } )  
+        
     @classmethod
     def ActivateHandler(cls):
-        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(OEMRestoreDialogue()))
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(UpdateDialogue()))
         
     def Register(self):
         Importer.RegisterNamedPlugIn(
             self,
-            'RESTORE', # Key of this plugin for replacement, etc.
+            'Update', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_BUR',
-                'menupriority' : 300,
-                'menutext' : Lang('Restore Server State From Backup') ,
+                'menupriority' : 100,
+                'menutext' : Lang('Apply Update') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler
             }
         )
 
 # Register this plugin when module is imported
-XSFeatureOEMRestore().Register()
+XSFeatureUpdate().Register()
