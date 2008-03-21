@@ -25,6 +25,7 @@ SCRIPTS += XSConsoleDataUtils.py
 SCRIPTS += XSConsoleDialogueBases.py
 SCRIPTS += XSConsoleDialoguePane.py
 SCRIPTS += XSConsoleFields.py
+SCRIPTS += XSConsoleHotData.py
 SCRIPTS += XSConsoleImporter.py
 SCRIPTS += XSConsoleKeymaps.py
 SCRIPTS += XSConsoleLang.py

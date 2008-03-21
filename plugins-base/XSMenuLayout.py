@@ -92,6 +92,14 @@ class XSMenuLayout:
             inPane.NewLine()
             inPane.AddWrappedTextField(data.keyboard.currentname(Lang('<Default>')))
 
+    def UpdateFieldsVM(self, inPane):
+        hotData = HotData.Inst()
+
+        inPane.AddTitleField(Lang("Virtual Machines"))
+        inPane.AddStatusField(Lang("Number", 16), len(hotData.guest_vm({}).keys()))
+        
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+
     def UpdateFieldsXENDETAILS(self, inPane):
         data = Data.Inst()
 
@@ -180,6 +188,8 @@ class XSMenuLayout:
                 lambda: self.ActivateHandler('MENU_NETWORK'), self.UpdateFieldsNETWORK ],
             [ 'MENU_AUTH', Lang("Authentication"),
                 lambda: self.ActivateHandler('MENU_AUTH'), self.UpdateFieldsAUTH ],
+            [ 'MENU_VM', Lang("Virtual Machines"),
+                None, self.UpdateFieldsVM ], #lambda: self.ActivateHandler('MENU_VM')
             [ 'MENU_XENDETAILS', Lang("XenServer Details and Licensing"),
                 lambda: self.ActivateHandler('MENU_XENDETAILS'), self.UpdateFieldsXENDETAILS ],
             [ 'MENU_PROPERTIES', Lang("Hardware and BIOS Information"),

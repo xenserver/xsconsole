@@ -12,6 +12,7 @@ from XSConsoleAuth import *
 from XSConsoleBases import *
 from XSConsoleCurses import *
 from XSConsoleData import *
+from XSConsoleHotData import *
 from XSConsoleImporter import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
@@ -36,6 +37,8 @@ class App:
             # Testing - dump data and exit
             Data.Inst().Dump()
             Importer.Dump()
+            HotData.Inst().guest_vm()
+            HotData.Inst().Dump()
             doQuit = True
         
         # Purge leftover VBDs at startup

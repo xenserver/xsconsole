@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2008-03-18, 16:14:42 -->
+<!-- Saved: 2008-03-21, 17:02:35 -->
 <!-- Copyright (C) 2008 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -212,6 +212,9 @@
     <Source>
       <Dir>plugins-base</Dir>
       <Name>XSFeatureLogInOut.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleHotData.py</Name>
     </Source>
   </Sources>
   <Forms>
