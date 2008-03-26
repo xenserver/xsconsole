@@ -28,9 +28,13 @@ class Auth:
         
         self.testMode = False
         # The testing.txt file is used for testing only
-        if os.path.isfile(sys.path[0]+"/testing.txt"):
+        testFilename = sys.path[0]
+        if testFilename == '':
+            testFilename = '.'
+        testFilename += '/testing.txt'
+        if os.path.isfile(testFilename):
             self.testMode = True
-            testingFile = open(sys.path[0]+"/testing.txt")
+            testingFile = open(testFilename)
             for line in testingFile:
                 match = re.match(r'host=(\w+)', line)
                 if match:
@@ -73,28 +77,16 @@ class Auth:
     def DefaultPassword(self):
         return self.defaultPassword
 
-    #def TCPSession(self, inPassword = None,  inUsername = None):
-    #    username = FirstValue(inUsername, 'root')
-    #    password = inPassword
-    #
-    #    # Create a local login if we can
-    #    session = XenAPI.Session("https://"+FirstValue(self.testingHost, "127.0.0.1"))
-    #    isSlave = False
-    #    
-    #    try:
-    #        session.login_with_password(username, password)
-    #
-    #    except XenAPI.Failure, e:
-    #        if e.details[0] == 'HOST_IS_SLAVE': # This host is a slave so authenticate with the master
-    #            masterIP = e.details[1] # Master IP is returned in details[1]
-    #            session = XenAPI.Session("https://"+masterIP)
-    #            session.login_with_password(username, password)
-    #            isSlave = True
-    #        else:
-    #            raise # If the exception is not HOST_IS_SLAVE, raise it again
-    #
-    #    return session, isSlave
-    
+    def TCPAuthenticate(self, inUsername, inPassword):
+
+        session = XenAPI.Session("https://"+self.testingHost)
+        
+        try:
+            session.login_with_password(inUsername, inPassword)
+            session.logout()
+        finally:
+            session.close()    
+        
     def PAMAuthenticate(self, inUsername, inPassword):
         
         def PAMConv(inAuth, inQueryList, *theRest):
@@ -125,7 +117,10 @@ class Auth:
         if inUsername != 'root':
             raise Exception(Lang("Only root can log in here"))
         
-        self.PAMAuthenticate(inUsername, inPassword)
+        if self.testingHost is not None:
+            self.TCPAuthenticate(inUsername, inPassword)
+        else:
+            self.PAMAuthenticate(inUsername, inPassword)
         # No exception implies a successful login
         
         self.loggedInUsername = inUsername
@@ -171,7 +166,7 @@ class Auth:
             # Local session couldn't connect, so try remote.
             session = XenAPI.Session("https://"+self.testingHost)
             try:
-                session.login_with_password(self.loggedInUsername, self.loggedInPassword)
+                session.login_with_password('root', self.defaultPassword)
                 
             except XenAPI.Failure, e:
                 if e.details[0] != 'HOST_IS_SLAVE': # Ignore slave errors when testing

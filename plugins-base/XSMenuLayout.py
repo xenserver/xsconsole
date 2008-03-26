@@ -96,8 +96,15 @@ class XSMenuLayout:
         hotData = HotData.Inst()
 
         inPane.AddTitleField(Lang("Virtual Machines"))
-        inPane.AddStatusField(Lang("Number", 16), len(hotData.guest_vm({}).keys()))
         
+        inPane.AddWrappedTextField(Lang("Press <Enter> to access the Virtual Machines menu."))
+        inPane.NewLine()
+        inPane.AddStatusField(Lang("Running", 16), str(hotData.guest_vm_derived.num_running(Lang('<Unknown>'))))
+        inPane.AddStatusField(Lang("Suspended", 16), str(hotData.guest_vm_derived.num_suspended(Lang('<Unknown>'))))
+        inPane.AddStatusField(Lang("Halted", 16), str(hotData.guest_vm_derived.num_halted(Lang('<Unknown>'))))
+        if hotData.guest_vm_derived.num_paused(0) > 0:
+            inPane.AddStatusField(Lang("Paused", 16), str(hotData.guest_vm_derived.num_paused(Lang('<Unknown>'))))
+
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
     def UpdateFieldsXENDETAILS(self, inPane):
@@ -178,7 +185,7 @@ class XSMenuLayout:
             "remote logging (syslog) to other servers."))
 
     def ActivateHandler(self, inName):
-        Layout.Inst().TopDialogue().ChangeMenu(FirstValue(inName))
+        Layout.Inst().TopDialogue().ChangeMenu(inName)
 
     def Register(self):
         data = Data.Inst()
@@ -189,7 +196,7 @@ class XSMenuLayout:
             [ 'MENU_AUTH', Lang("Authentication"),
                 lambda: self.ActivateHandler('MENU_AUTH'), self.UpdateFieldsAUTH ],
             [ 'MENU_VM', Lang("Virtual Machines"),
-                None, self.UpdateFieldsVM ], #lambda: self.ActivateHandler('MENU_VM')
+                lambda: self.ActivateHandler('MENU_VM'), self.UpdateFieldsVM ],
             [ 'MENU_XENDETAILS', Lang("XenServer Details and Licensing"),
                 lambda: self.ActivateHandler('MENU_XENDETAILS'), self.UpdateFieldsXENDETAILS ],
             [ 'MENU_PROPERTIES', Lang("Hardware and BIOS Information"),
@@ -213,7 +220,7 @@ class XSMenuLayout:
 
             Importer.RegisterMenuEntry(
                 self,
-                'MENU_ROOT', # Name of the meu this item is part of
+                'MENU_ROOT', # Name of the menu this item is part of
                 {
                     'menuname' : menuDef[0], # Name of the menu this item leads to when selected
                     'menutext' : menuDef[1],

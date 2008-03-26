@@ -33,6 +33,7 @@ class HotData:
     
     def __init__(self):
         self.data = {}
+        self.timestamps = {}
         self.session = None
         self.fetchers = self.Fetchers()
 
@@ -54,18 +55,25 @@ class HotData:
     
     def GetData(self, inNames, inDefault = None):
         itemRef = self.data # Start at the top level
+        
         for name in inNames:
             if name is '__repr__':
                 raise Exception('HotData.' + '.'.join(inNames[:-1]) + ' must end with ()')
-            # Always refetch for now
-            #elif name in itemRef:
-            #    itemRef = itemRef[name]
-            else:
-                if name in self.fetchers:
-                    itemRef[name] = self.Fetch(itemRef, name)
+    
+            fetcher = self.fetchers.get(name, None)
+            if fetcher is None:
+                # No fetcher for this item, so return it if it's there or fail
+                if name in itemRef:
                     itemRef = itemRef[name]
                 else:
                     return FirstValue(inDefault, None)
+            else:
+                timeNow = time.time()
+                lastFetchTime = self.timestamps.get(id(itemRef), None)
+                if lastFetchTime is None or timeNow - lastFetchTime > fetcher[1]:
+                    itemRef[name] = self.Fetch(itemRef, name)
+                    self.timestamps[id(itemRef)] = timeNow
+                itemRef = itemRef[name]
         return itemRef
     
     def __getattr__(self, inName):
@@ -73,11 +81,12 @@ class HotData:
             # Don't expect elements to start with upper case, so probably an unknown method name
             raise Exception("Unknown method HotData."+inName)
         return HotDataMethod(self.GetData, [inName])
-    
+
     def Fetchers(self):
         retVal = {
-            'vm' : [ lambda x: self.Session().xenapi.VM.get_all_records(), 60 ],
-            'guest_vm' : [ lambda x: self.GuestVM(), 60 ]
+            'vm' : [ lambda x: self.Session().xenapi.VM.get_all_records(), 5, None ],
+            'guest_vm' : [ lambda x: self.GuestVM(), 5, None ],
+            'guest_vm_derived' : [ lambda x: self.GuestVMDerived(), 5, None ]
         }
         return retVal
     
@@ -87,7 +96,32 @@ class HotData:
             if not value.get('is_a_template', False) and not value.get('is_control_domain', False):
                 retVal[key] = value
         return retVal
-    
+
+    def GuestVMDerived(self):
+        retVal = {}
+        halted = 0
+        paused = 0
+        running = 0
+        suspended = 0
+
+        for key, vm in self.guest_vm().iteritems():
+            powerState = vm.get('power_state', '').lower()
+            if powerState.startswith('halted'):
+                halted += 1
+            elif powerState.startswith('paused'):
+                paused += 1
+            elif powerState.startswith('running'):
+                running += 1
+            elif powerState.startswith('suspended'):
+                suspended += 1
+            
+        retVal['num_halted'] = halted
+        retVal['num_paused'] = paused
+        retVal['num_running'] = running
+        retVal['num_suspended'] = suspended
+
+        return retVal
+
     def Session(self):
         if self.session is None:
             self.session = Auth.Inst().OpenSession()

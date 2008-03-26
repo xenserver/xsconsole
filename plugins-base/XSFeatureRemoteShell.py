@@ -63,6 +63,8 @@ class RemoteShellDialogue(Dialogue):
 
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
+            
+        data.Update()
 
 
 class XSFeatureRemoteShell:

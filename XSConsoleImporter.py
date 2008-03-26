@@ -14,11 +14,13 @@ from XSConsoleMenus import *
 class Importer:
     plugIns = {}
     menuEntries = {}
+    menuRegenerators = {}
     
     @classmethod
     def Reset(cls):
         cls.plugIns = {}
         cls.menuEntries = {}
+        cls.menuRegenerators = {}
 
     @classmethod
     def ImportAbsDir(cls, inDir):
@@ -50,6 +52,10 @@ class Importer:
             cls.menuEntries[inName] = []
             
         cls.menuEntries[inName].append(inParams)
+        menuName = inParams.get('menuname', None)
+        menuRegenerator = inParams.get('menuregenerator', None)
+        if menuName is not None and menuRegenerator is not None:
+            cls.menuRegenerators[menuName] = menuRegenerator
         # Store inObj only when we need to reregister plugins
         
     @classmethod
@@ -101,11 +107,19 @@ class Importer:
                 retVal.AddChoice(menuName, choiceDef, entry.get('menupriority', None))
         
         return retVal
-        
+    
+    @classmethod
+    def RegenerateMenu(cls, inName, inMenu):
+        retVal = inMenu
+        regenerator = cls.menuRegenerators.get(inName, None)
+        if regenerator is not None:
+            retVal = regenerator(inName, inMenu)
+        return retVal
+
     @classmethod
     def Dump(cls):
         print "Contents of PlugIn registry:"
         pprint(cls.plugIns)
-        print "\nRegisterred menu entries:"
+        print "\nRegistered menu entries:"
         pprint(cls.menuEntries)
     

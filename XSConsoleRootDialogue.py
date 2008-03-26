@@ -104,6 +104,7 @@ class RootDialogue(Dialogue):
         return handled
 
     def ChangeMenu(self, inName):
+        self.menu.SetMenu(inName, Importer.RegenerateMenu(inName, self.menu.GetMenu(inName)))
         self.menu.ChangeMenu(inName)
         self.menu.CurrentMenu().HandleEnter()
     

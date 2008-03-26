@@ -36,7 +36,7 @@ class XSFeatureLocalShell:
             'LOCAL_SHELL', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_ROOT',
-                'menupriority' : 1050,
+                'menupriority' : 1500,
                 'menutext' : Lang('Local Command Shell'),
                 'statusupdatehandler' : XSFeatureLocalShell.StatusUpdateHandler,
                 'activatehandler' : XSFeatureLocalShell.ActivateHandler
