@@ -11,15 +11,36 @@ if __name__ == "__main__":
 from XSConsoleStandard import *
 
 class XSFeatureVMInfo:
+    
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Virtual Machine Information"))
     
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to display detailed information about each virtual machine on this host."))
-        inPane.NewLine()
-        inPane.AddWrappedTextField(Lang(
-            "(Currently disabled)"))
+    
+    @classmethod
+    def NoVMStatusUpdateHandler(cls, inPane):
+        inPane.AddTitleField(Lang("Virtual Machine Information"))
+
+        inPane.AddWrappedTextField(Lang("There are no virtual machines on this host."))
+
+    
+    @classmethod
+    def InfoStatusUpdateHandler(cls, inPane, inHandle):
+        inPane.AddTitleField(Lang("Virtual Machine Information"))
+    
+        vm = HotAccessor().guest_vm(inHandle)
+        if vm is None:
+            inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
+        else:
+            inPane.AddWrappedTextField(vm.Get('name_label'))
+            inPane.NewLine()
+            try:
+                inPane.AddStatusField(Lang("Total Memory", 16), vm.Get('guest_metrics')['memory']['total']+' KB')
+                inPane.AddStatusField(Lang("Free Memory", 16), vm.Get('guest_metrics')['memory']['free']+' KB')
+            except Exception, e:
+                pass
     
     @classmethod
     def ActivateHandler(cls):
@@ -27,9 +48,18 @@ class XSFeatureVMInfo:
     
     @classmethod
     def MenuRegenerator(cls, inName, inMenu):
-        retVal = Menu(None, None, Lang("Customize System"), [
-            ChoiceDef(Lang("Enter current filename"), None)
-            ])
+        retVal = copy.copy(inMenu)
+        retVal.RemoveChoices()
+        for key, vm in HotData.Inst().guest_vm({}).iteritems():
+            nameLabel = vm.get('name_label', Lang('<Unknown>'))
+            retVal.AddChoice(name = nameLabel,
+                                        statusUpdateHandler = cls.InfoStatusUpdateHandler,
+                                        handle = key)
+            
+        if retVal.NumChoices() == 0:
+            retVal.AddChoice(name = Lang('<No Virtual Machines Present>'),
+                                        statusUpdateHandler = cls.NoVMStatusUpdateHandler)
+            
         return retVal
     
     def Register(self):
@@ -41,7 +71,7 @@ class XSFeatureVMInfo:
                 'menutext' : Lang('Virtual Machine Information'),
                 'menupriority' : 100,
                 'menuregenerator' : XSFeatureVMInfo.MenuRegenerator,
-                #'activatehandler' : XSFeatureVMInfo.ActivateHandler,
+                'activatehandler' : XSFeatureVMInfo.ActivateHandler,
                 'statusupdatehandler' : XSFeatureVMInfo.StatusUpdateHandler
             }
         )

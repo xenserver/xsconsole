@@ -106,12 +106,6 @@ class XSFeatureSystem:
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
         
     def Register(self):
-        #   ChoiceDef(Lang("System Description"), None, lambda : inDialogue.ChangeStatus('SYSTEM')),
-        #   ChoiceDef(Lang("Processor"), None, lambda : inDialogue.ChangeStatus('PROCESSOR')),
-        #   ChoiceDef(Lang("System Memory"), None, lambda : inDialogue.ChangeStatus('MEMORY')),
-        #   ChoiceDef(Lang("Local Storage Controllers"), None, lambda : inDialogue.ChangeStatus('STORAGE')),
-        #   ChoiceDef(Lang("BIOS Information"), None, lambda : inDialogue.ChangeStatus('BIOS'))
-            
         
         Importer.RegisterNamedPlugIn(
             self,

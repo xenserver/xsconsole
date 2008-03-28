@@ -6,7 +6,7 @@
 # countries.
 
 # App-wide imports
-import inspect, re
+import copy, inspect, re
 from pprint import pprint
 
 

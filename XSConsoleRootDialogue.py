@@ -28,7 +28,6 @@ class RootDialogue(Dialogue):
         statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(40, 2, 39, 21)), 'status')
         statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
         self.menu = Importer.BuildRootMenu(self)
-        self.currentStatus = 'STATUS'
         self.UpdateFields()
 
     def UpdateFields(self):
@@ -51,10 +50,13 @@ class RootDialogue(Dialogue):
             
             statusUpdateHandler = currentChoiceDef.StatusUpdateHandler()
             if statusUpdateHandler is not None:
-                # New method - use plugin's StatusUpdateHandler
-                statusUpdateHandler(statusPane)
+                if currentChoiceDef.handle is not None:
+                    statusUpdateHandler(statusPane, currentChoiceDef.handle)
+                else:
+                    statusUpdateHandler(statusPane)
+                    
             else:
-                getattr(self, 'UpdateFields'+self.currentStatus)(statusPane) # Despatch method named 'UpdateFields'+self.currentStatus
+                raise Exception(Lang("Missing status handler"))
 
         except Exception, e:
             statusPane.ResetFields()
@@ -76,12 +78,6 @@ class RootDialogue(Dialogue):
                 statusPane.AddKeyHelpField( {
                     Lang("<Page Up/Page Down>") : Lang("Scroll")
                 })
-    
-    def ChangeStatus(self, inName):
-        self.Pane('status').ResetFields()
-        self.Pane('status').ResetScroll()
-        self.currentStatus = inName
-        self.UpdateFields()
     
     def HandleKey(self, inKey):
         currentMenu = self.menu.CurrentMenu()

@@ -16,9 +16,8 @@ from XSConsoleImporter import *
 from XSConsoleLang import *
 
 class ChoiceDef:
-    def __init__(self, name, onAction = None, onEnter = None, priority = None):
+    def __init__(self, name, onAction = None, onEnter = None, priority = None, statusUpdateHandler = None, handle = None):
         ParamsToAttr()
-        self.statusUpdateHandler = None
         
     def StatusUpdateHandler(self):
         return self.statusUpdateHandler
@@ -48,11 +47,12 @@ class Menu:
     def TitleSet(self, inTitle): self.title = inTitle
     def ChoiceDefs(self): return self.choiceDefs
     def ChoiceIndex(self): return self.choiceIndex
+    def NumChoices(self): return len(self.choiceDefs)
 
     def AddChoiceDef(self, inChoiceDef, inPriority = None):
         if inPriority is None:
-            priority = self.defaultPrority
-            self.defaultPrority += 100
+            priority = self.defaultPriority
+            self.defaultPriority += 100
         else:
             priority = inPriority
         
@@ -61,6 +61,15 @@ class Menu:
         
         self.choiceDefs.sort(lambda x, y : cmp(x.priority, y.priority))
 
+    def AddChoice(self, name, onAction = None, onEnter = None, priority = None, statusUpdateHandler = None, handle = None):
+        choiceDef = ChoiceDef(name, onAction, onEnter, priority, statusUpdateHandler, handle)
+        self.AddChoiceDef(choiceDef)
+        
+    def RemoveChoices(self):
+        self.choiceDefs = []
+        self.choiceIndex = 0
+        self.defaultPriority=1000
+            
     def CurrentChoiceSet(self,  inChoice):
         self.choiceIndex = inChoice
         # Also need to call HandleEnter
@@ -92,13 +101,21 @@ class Menu:
         return handled
 
     def HandleEnter(self):
-        if callable(self.CurrentChoiceDef().onEnter):
-            self.CurrentChoiceDef().onEnter()
+        choiceDef = self.CurrentChoiceDef()
+        if callable(choiceDef.onEnter):
+            if choiceDef.handle is not None:
+                self.CurrentChoiceDef().onEnter(choiceDef.handle)
+            else:
+                self.CurrentChoiceDef().onEnter()
         return True
 
     def HandleSelect(self):
-        if callable(self.CurrentChoiceDef().onAction):
-            self.CurrentChoiceDef().onAction()
+        choiceDef = self.CurrentChoiceDef()
+        if callable(choiceDef.onAction):
+            if choiceDef.handle is not None:
+                self.CurrentChoiceDef().onAction(choiceDef.handle)
+            else:
+                self.CurrentChoiceDef().onAction()
         return True
 
     def HandleKey(self, inKey):
