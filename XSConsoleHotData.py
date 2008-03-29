@@ -27,10 +27,12 @@ class HotDataMethod:
     def __call__(self,  inDefault = None):
         return self.send(self.name,  inDefault)
 
+
+        
 class HotAccessor:
-    def __init__(self):
-        self.name = []
-        self.refs = []
+    def __init__(self, inName = None, inRefs = None):
+        self.name = FirstValue(inName, [])
+        self.refs = FirstValue(inRefs, [])
         
     def __getattr__(self, inName):
         self.name.append(inName)
@@ -43,7 +45,10 @@ class HotAccessor:
         
     def Get(self, inName, inDefault = None):
         return HotData.Inst().GetData(self.name+[inName], inDefault, self.refs+[None])
-        
+    
+    def __repr__(self):
+        pprint(self)
+
 class HotData:
     DATA_TIMEOUT_SECONDS = 1
     instance = None
@@ -87,7 +92,7 @@ class HotData:
             else:
                 timeNow = time.time()
                 lastFetchTime = self.timestamps.get(id(itemRef), None)
-                if lastFetchTime is None or timeNow - lastFetchTime > fetcher[1]:
+                if (name in itemRef and isinstance(itemRef[name], str)) or lastFetchTime is None or timeNow - lastFetchTime > fetcher[1]:
                     itemRef[name] = self.Fetch(itemRef, name)
                     self.timestamps[id(itemRef)] = timeNow
                 itemRef = itemRef[name]
@@ -105,11 +110,13 @@ class HotData:
     def Fetchers(self):
         retVal = {
             'guest_metrics' : [ lambda x, y: self.GuestMetrics(x, y), 5, None ],
+            'metrics' : [ lambda x, y: self.Metrics(x, y), 5, None ],
             'vm' : [ lambda x, y: self.Session().xenapi.VM.get_all_records(), 5, None ],
             'guest_vm' : [ lambda x, y: self.GuestVM(), 5, None ],
             'guest_vm_derived' : [ lambda x, y: self.GuestVMDerived(), 5, None ]
         }
         return retVal
+    
     
     def GuestMetrics(self, inItemRef, inName):
         itemValue = inItemRef[inName]
@@ -119,6 +126,18 @@ class HotData:
             retVal['opaqueref'] = opaqueRef
         else:
             retVal = self.Session().xenapi.VM_guest_metrics.get_record(itemValue['opaqueref'])
+            
+        return retVal
+    
+        
+    def Metrics(self, inItemRef, inName):
+        itemValue = inItemRef[inName]
+        if isinstance(itemValue, str):
+            opaqueRef = itemValue
+            retVal = self.Session().xenapi.VM_metrics.get_record(opaqueRef)
+            retVal['opaqueref'] = opaqueRef
+        else:
+            retVal = self.Session().xenapi.VM_metrics.get_record(itemValue['opaqueref'])
             
         return retVal
     

@@ -6,6 +6,7 @@
 # countries.
 
 import re, signal, string, subprocess, types
+from XSConsoleLang import *
 
 # Utils that need to access Data must go in XSConsoleDataUtils,
 # and XSConsoleData can't use anything in XSConsoleDataUtils without creating
@@ -166,3 +167,27 @@ class IPUtils:
         if largest is 0: return False
         return True
     
+class SizeUtils:
+    @classmethod
+    def MemorySizeString(cls, inBytes):
+        if isinstance(inBytes, str):
+            bytes = int(inBytes)
+        else:
+            bytes = inBytes
+            
+        # Memory is always KiB/MiB/GiB
+        if bytes is None:
+            retVal = Lang('<Unknown>')
+        elif bytes >= 1073741824: # 1GB
+            if bytes < 10737418240: # 10GB
+                retVal = ('%.1f' % (int(bytes / 1073741824) / 10.0)) + Lang('GB') # e.g. 2.3GB
+            else:
+                retVal = str(int(bytes / 1073741824))+Lang('GB')
+        elif bytes >= 2097152:
+            retVal = str(int(bytes / 1048576))+Lang('MB')
+        elif bytes >= 2048:
+            retVal = str(int(bytes / 1024))+Lang('KB')
+        else:
+            retVal = str(int(bytes))
+
+        return retVal

@@ -28,17 +28,38 @@ class XSFeatureVMInfo:
     
     @classmethod
     def InfoStatusUpdateHandler(cls, inPane, inHandle):
-        inPane.AddTitleField(Lang("Virtual Machine Information"))
+        #inPane.AddTitleField(Lang("Virtual Machine Information"))
     
         vm = HotAccessor().guest_vm(inHandle)
         if vm is None:
             inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
         else:
+            powerState = vm.Get('power_state')
+            isRunning = powerState.lower().startswith('running')
             inPane.AddWrappedTextField(vm.Get('name_label'))
             inPane.NewLine()
+            inPane.AddStatusField(Lang("Power State", 16), powerState)
+            inPane.AddStatusField(Lang("Memory", 16), SizeUtils.MemorySizeString(vm.Get('memory_static_max')))
             try:
-                inPane.AddStatusField(Lang("Total Memory", 16), vm.Get('guest_metrics')['memory']['total']+' KB')
-                inPane.AddStatusField(Lang("Free Memory", 16), vm.Get('guest_metrics')['memory']['free']+' KB')
+                if isRunning:
+                    perCPUUsage = vm.metrics.Get('VCPUs_utilisation', {})
+    
+                    cpuUsage = sum(perCPUUsage.values()) / len(perCPUUsage) # Let divide by zero throw
+                    cpuUsage = max(0, min(cpuUsage, 1))
+                    cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), len(perCPUUsage))
+                else:
+                    cpuUsageStr = '-' # Follow XenCenter convention                    
+
+            except Exception, e:
+                cpuUsageStr = Lang('<Unknown>')
+            
+            inPane.AddStatusField(Lang("CPU Usage", 16), cpuUsageStr)
+            try:
+                if isRunning:
+                    
+                    vm = HotAccessor().guest_vm(inHandle)
+                    inPane.AddStatusField(Lang("Free Memory", 16),
+                        SizeUtils.MemorySizeString(int(vm.Get('guest_metrics')['memory']['free'])*1024))
             except Exception, e:
                 pass
     
