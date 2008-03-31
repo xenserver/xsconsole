@@ -37,7 +37,10 @@ class App:
             # Testing - dump data and exit
             Data.Inst().Dump()
             Importer.Dump()
-            HotData.Inst().guest_vm()
+            for key, value in HotData.Inst().guest_vm().iteritems():
+                vm = HotData.Inst().vm(key)
+                vm.metrics()
+                vm.guest_metrics()
             HotData.Inst().Dump()
             doQuit = True
         

@@ -15,19 +15,34 @@ from XSConsoleLang import *
 from XSConsoleState import *
 from XSConsoleUtils import *
 
-class HotDataMethod:
-    def __init__(self, inSend, inName):
-        self.send = inSend
-        self.name = inName
+class HotOpaqueRef:
+    def __init__(self, inOpaqueRef, inType):
+        self.opaqueRef = inOpaqueRef
+        self.type = inType
+        self.hash = hash(inOpaqueRef)
+    
+    def __repr__(self):
+        retVal = "HotOpaqueRef:\n"
+        retVal += "opaqueRef = "+str(self.opaqueRef)+"\n"
+        retVal += "type = "+str(self.type)+"\n"
+        retVal += "hash = "+str(self.hash)+"\n"
+        return retVal
         
-    def __getattr__(self, inName):
-        self.name.append(inName)
-        return self
-
-    def __call__(self,  inDefault = None):
-        return self.send(self.name,  inDefault)
-
-
+    # __hash__ and __cmp__ allow this object to be used as a dictionary key
+    def __hash__(self):
+        return self.hash
+    
+    def __cmp__(self, inOther):
+        if not isinstance(inOther, HotOpaqueRef):
+            return 1
+        if self.opaqueRef == inOther.opaqueRef:
+            return 0
+        if self.opaqueRef < inOther.opaqueRef:
+            return -1
+        return 1
+    
+    def OpaqueRef(self): return self.opaqueRef
+    def Type(self): return self.type
         
 class HotAccessor:
     def __init__(self, inName = None, inRefs = None):
@@ -35,29 +50,36 @@ class HotAccessor:
         self.refs = FirstValue(inRefs, [])
         
     def __getattr__(self, inName):
-        self.name.append(inName)
-        self.refs.append(None)
-        return self
+        retVal = HotAccessor(self.name[:], self.refs[:]) # [:] copies the array
+        retVal.name.append(inName)
+        retVal.refs.append(None)
+        return retVal
 
-    def __call__(self, inRef = None):
-        self.refs[-1] = inRef
-        return self
-        
-    def Get(self, inName, inDefault = None):
-        return HotData.Inst().GetData(self.name+[inName], inDefault, self.refs+[None])
+    def __call__(self, inParam = None):
+        if isinstance(inParam, HotOpaqueRef):
+            # Add a reference, selecting e.g. a key selecting a particular item from a dictionary
+            self.refs[-1] = inParam
+            retVal = self # Return this object for further operations
+        else:
+            # These are the brackets on the end of the statement, with optional default value.
+            # That makes it a request to fetch the data
+            retVal = HotData.Inst().GetData(self.name, inParam, self.refs)
+        return retVal
+    
+    def __str__(self):
+        return ",".join(zip(self.name,self.refs))
     
     def __repr__(self):
-        pprint(self)
+        return __str__(self)
 
 class HotData:
-    DATA_TIMEOUT_SECONDS = 1
     instance = None
     
     def __init__(self):
         self.data = {}
         self.timestamps = {}
         self.session = None
-        self.fetchers = self.Fetchers()
+        self.InitialiseFetchers()
 
     @classmethod
     def Inst(cls):
@@ -71,84 +93,82 @@ class HotData:
             del cls.instance
             cls.instance = None
             
-    def Fetch(self, inRef, inName):
-        retVal = self.fetchers[inName][0](inRef, inName)
+    def Fetch(self, inName, inRef):
+        # Top-level object are cached by name, referenced objects by reference
+        cacheName = FirstValue(inRef, inName)
+        cacheEntry = self.data.get(cacheName, None)
+        fetcher = self.fetchers[inName]
+        timeNow = time.time()
+        if cacheEntry is not None and timeNow - cacheEntry.timestamp < fetcher.lifetimeSecs:
+            retVal = cacheEntry.value
+        else:
+            retVal = fetcher.fetcher(inRef)
+            # Save in the cache
+            self.data[cacheName] = Struct(timestamp = timeNow, value = retVal)
         return retVal    
     
-    def GetData(self, inNames, inDefault = None, inRefs = None):
+    def GetData(self, inNames, inDefault, inRefs):
         itemRef = self.data # Start at the top level
         
         for i, name in enumerate(inNames):
             if name is '__repr__':
                 raise Exception('HotData.' + '.'.join(inNames[:-1]) + ' must end with ()')
     
+            
+            dataValue = itemRef.get(name, None)
             fetcher = self.fetchers.get(name, None)
             if fetcher is None:
                 # No fetcher for this item, so return it if it's there or fail
-                if name in itemRef:
-                    itemRef = itemRef[name]
+                if dataValue is not None:
+                    itemRef = dataValue
                 else:
                     return FirstValue(inDefault, None)
             else:
-                timeNow = time.time()
-                lastFetchTime = self.timestamps.get(id(itemRef), None)
-                if (name in itemRef and isinstance(itemRef[name], str)) or lastFetchTime is None or timeNow - lastFetchTime > fetcher[1]:
-                    itemRef[name] = self.Fetch(itemRef, name)
-                    self.timestamps[id(itemRef)] = timeNow
-                itemRef = itemRef[name]
-                
-            if inRefs is not None and inRefs[i] is not None:
-                itemRef = itemRef[inRefs[i]]
+                if dataValue is not None and isinstance(dataValue, HotOpaqueRef):
+                    # This is a subitem with an OpaqueRef supplied by xapi, so don't let the caller offer their own
+                    if inRefs[i] is not None:
+                        raise Exception("OpaqueRef given where not required, at '"+name+"' in '"+'.'.join(inNames[:-1])+"'")
+                    itemRef = self.Fetch(name, dataValue)
+                else:
+                    # Use the caller-supplied OpaqueRef, or None
+                    itemRef = self.Fetch(name, inRefs[i])
         return itemRef
     
     def __getattr__(self, inName):
         if inName[0].isupper():
             # Don't expect elements to start with upper case, so probably an unknown method name
             raise Exception("Unknown method HotData."+inName)
-        return HotDataMethod(self.GetData, [inName])
+        return HotAccessor([inName], [None])
 
-    def Fetchers(self):
-        retVal = {
-            'guest_metrics' : [ lambda x, y: self.GuestMetrics(x, y), 5, None ],
-            'metrics' : [ lambda x, y: self.Metrics(x, y), 5, None ],
-            'vm' : [ lambda x, y: self.Session().xenapi.VM.get_all_records(), 5, None ],
-            'guest_vm' : [ lambda x, y: self.GuestVM(), 5, None ],
-            'guest_vm_derived' : [ lambda x, y: self.GuestVMDerived(), 5, None ]
-        }
-        return retVal
+    def AddFetcher(self, inKey, inFetcher, inLifetimeSecs):
+        self.fetchers[inKey] = Struct( fetcher = inFetcher, lifetimeSecs = inLifetimeSecs ) 
+
+    def InitialiseFetchers(self):
+        self.fetchers = {}
+        self.AddFetcher('guest_metrics', self.FetchVMGuestMetrics, 5)
+        self.AddFetcher('guest_vm', self.FetchGuestVM, 5)
+        self.AddFetcher('guest_vm_derived', self.FetchGuestVMDerived, 5)
+        self.AddFetcher('metrics', self.FetchVMMetrics, 5)
+        self.AddFetcher('vm', self.FetchVM, 5)
     
-    
-    def GuestMetrics(self, inItemRef, inName):
-        itemValue = inItemRef[inName]
-        if isinstance(itemValue, str):
-            opaqueRef = itemValue
-            retVal = self.Session().xenapi.VM_guest_metrics.get_record(opaqueRef)
-            retVal['opaqueref'] = opaqueRef
+    def FetchVMGuestMetrics(self, inOpaqueRef):
+        retVal = self.Session().xenapi.VM_guest_metrics.get_record(inOpaqueRef.OpaqueRef())
+        return retVal    
+
+    def FetchGuestVM(self, inOpaqueRef):
+        if inOpaqueRef is not None:
+            # Don't need to filter, so can use the standard VM fetch
+            retVal = self.FetchVM(inOpaqueRef)
         else:
-            retVal = self.Session().xenapi.VM_guest_metrics.get_record(itemValue['opaqueref'])
-            
-        return retVal
-    
-        
-    def Metrics(self, inItemRef, inName):
-        itemValue = inItemRef[inName]
-        if isinstance(itemValue, str):
-            opaqueRef = itemValue
-            retVal = self.Session().xenapi.VM_metrics.get_record(opaqueRef)
-            retVal['opaqueref'] = opaqueRef
-        else:
-            retVal = self.Session().xenapi.VM_metrics.get_record(itemValue['opaqueref'])
-            
-        return retVal
-    
-    def GuestVM(self):
-        retVal = {}
-        for key, value in self.vm().iteritems():
-            if not value.get('is_a_template', False) and not value.get('is_control_domain', False):
-                retVal[key] = value
+            retVal = {}
+            test1 = self.vm()
+            test2 = self.vm().iteritems()
+            for key, value in self.vm().iteritems():
+                if not value.get('is_a_template', False) and not value.get('is_control_domain', False):
+                    retVal[key] = value
         return retVal
 
-    def GuestVMDerived(self):
+    def FetchGuestVMDerived(self, inOpaqueRef):
         retVal = {}
         halted = 0
         paused = 0
@@ -172,6 +192,49 @@ class HotData:
         retVal['num_suspended'] = suspended
 
         return retVal
+
+    def FetchVMMetrics(self, inOpaqueRef):
+        if inOpaqueRef is None:
+            raise Exception("Request for VM metrics requires an OpaqueRef")
+        retVal = self.Session().xenapi.VM_metrics.get_record(inOpaqueRef.OpaqueRef())
+        return retVal
+
+    def FetchVM(self, inOpaqueRef):
+        def LocalConverter(inVM):
+            return HotData.ConvertOpaqueRefs(inVM,
+                affinity='host',
+                guest_metrics='guest_metrics',
+                metrics='metrics',
+                resident_on='host',
+                suspend_VDI='vdi')
+        
+        if inOpaqueRef is not None:
+            vm = self.Session().xenapi.VM.get_record(inOpaqueRef.OpaqueRef())
+            retVal = LocalConverter(vm)
+        else:
+            vms = self.Session().xenapi.VM.get_all_records()
+            retVal = {}
+            for key, vm in vms.iteritems():
+                vm = LocalConverter(vm)
+                retVal[HotOpaqueRef(key, 'vm')] = vm
+        return retVal
+
+    @classmethod # classmethod so that other class's fetchers can use it easily
+    def ConvertOpaqueRefs(cls, *inArgs, **inKeywords):
+        if len(inArgs) != 1:
+            raise Exception('ConvertOpaqueRef requires a dictionary object as the first argument')
+        ioObj = inArgs[0]
+        for keyword, value in inKeywords.iteritems():
+            obj = ioObj.get(keyword, None)
+            if obj is not None:
+                ioObj[keyword] = HotOpaqueRef(obj, value)
+                
+        if Auth.Inst().IsTestMode(): # Tell the caller what they've missed, when in test mode
+            for key,value in ioObj.iteritems():
+                if isinstance(value, str) and value.startswith('OpaqueRef'):
+                    print('Missed OpaqueRef in HotData item: '+key)
+                    
+        return ioObj
 
     def Session(self):
         if self.session is None:

@@ -34,15 +34,15 @@ class XSFeatureVMInfo:
         if vm is None:
             inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
         else:
-            powerState = vm.Get('power_state')
+            powerState = vm.power_state(Lang('<Unknown>'))
             isRunning = powerState.lower().startswith('running')
-            inPane.AddWrappedTextField(vm.Get('name_label'))
+            inPane.AddWrappedTextField(vm.name_label())
             inPane.NewLine()
             inPane.AddStatusField(Lang("Power State", 16), powerState)
-            inPane.AddStatusField(Lang("Memory", 16), SizeUtils.MemorySizeString(vm.Get('memory_static_max')))
+            inPane.AddStatusField(Lang("Memory", 16), SizeUtils.MemorySizeString(vm.memory_static_max(0)))
             try:
                 if isRunning:
-                    perCPUUsage = vm.metrics.Get('VCPUs_utilisation', {})
+                    perCPUUsage = vm.metrics.VCPUs_utilisation({})
     
                     cpuUsage = sum(perCPUUsage.values()) / len(perCPUUsage) # Let divide by zero throw
                     cpuUsage = max(0, min(cpuUsage, 1))
@@ -59,7 +59,7 @@ class XSFeatureVMInfo:
                     
                     vm = HotAccessor().guest_vm(inHandle)
                     inPane.AddStatusField(Lang("Free Memory", 16),
-                        SizeUtils.MemorySizeString(int(vm.Get('guest_metrics')['memory']['free'])*1024))
+                        SizeUtils.MemorySizeString(int(vm.guest_metrics.memory()['free'])*1024))
             except Exception, e:
                 pass
     
