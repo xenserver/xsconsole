@@ -90,10 +90,9 @@ COMMAND := xsconsole
 #DOCUMENTS += LICENSE
 
 ################################################################################
-install:
+install-base:
 	mkdir -p $(LIBDIR)/xsconsole/
 	mkdir -p $(LIBDIR)/xsconsole/plugins-base
-	mkdir -p $(LIBDIR)/xsconsole/plugins-oem
 	mkdir -p $(LIBDIR)/xsconsole/plugins-extras
 
 	$(foreach script,$(SCRIPTS),\
@@ -102,9 +101,6 @@ install:
 	$(foreach script,$(PLUGINS_BASE),\
           $(INSTALL) -m $(LIB_MODE) plugins-base/$(script) $(LIBDIR)/xsconsole/plugins-base;)
 
-	$(foreach script,$(PLUGINS_OEM),\
-          $(INSTALL) -m $(LIB_MODE) plugins-oem/$(script) $(LIBDIR)/xsconsole/plugins-oem;)
-
 	$(foreach script,$(PLUGINS_EXTRAS),\
           $(INSTALL) -m $(LIB_MODE) plugins-extras/$(script) $(LIBDIR)/xsconsole/plugins-extras;)
 
@@ -112,6 +108,12 @@ install:
 
 #	$(foreach docfile,$(DOCUMENTS),\
 #          $(INSTALL) -m $(DOC_MODE) $(docfile) $(DOCDIR);)
+
+install-oem:
+	mkdir -p $(LIBDIR)/xsconsole/plugins-oem
+
+	$(foreach script,$(PLUGINS_OEM),\
+          $(INSTALL) -m $(LIB_MODE) plugins-oem/$(script) $(LIBDIR)/xsconsole/plugins-oem;)
 
 clean:
 
