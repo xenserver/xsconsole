@@ -79,7 +79,7 @@ class XSFeatureUpdate:
     def Register(self):
         Importer.RegisterNamedPlugIn(
             self,
-            'Update', # Key of this plugin for replacement, etc.
+            'UPDATE', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_BUR',
                 'menupriority' : 100,
