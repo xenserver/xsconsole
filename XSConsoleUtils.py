@@ -170,17 +170,14 @@ class IPUtils:
 class SizeUtils:
     @classmethod
     def MemorySizeString(cls, inBytes):
-        if isinstance(inBytes, str):
-            bytes = int(inBytes)
-        else:
-            bytes = inBytes
+        bytes = int(inBytes)
             
         # Memory is always KiB/MiB/GiB
-        if bytes is None:
+        if bytes is None or bytes < 0:
             retVal = Lang('<Unknown>')
-        elif bytes >= 1073741824: # 1GB
-            if bytes < 10737418240: # 10GB
-                retVal = ('%.1f' % (int(bytes / 1073741824) / 10.0)) + Lang('GB') # e.g. 2.3GB
+        elif bytes >= 1073741824: # 1GiB
+            if bytes < 10737418240: # 10GiB
+                retVal = ('%.1f' % (int(bytes / 107374182.4) / 10.0)) + Lang('GB') # e.g. 2.3GiB
             else:
                 retVal = str(int(bytes / 1073741824))+Lang('GB')
         elif bytes >= 2097152:

@@ -65,6 +65,7 @@ PLUGINS_BASE += XSFeatureTimezone.py
 PLUGINS_BASE += XSFeatureUpdate.py
 PLUGINS_BASE += XSFeatureUploadBugReport.py
 PLUGINS_BASE += XSFeatureValidate.py
+PLUGINS_BASE += XSFeatureVMCommon.py
 PLUGINS_BASE += XSFeatureVMInfo.py
 PLUGINS_BASE += XSMenuLayout.py
 

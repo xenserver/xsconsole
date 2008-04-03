@@ -67,7 +67,7 @@ class HotAccessor:
         return retVal
     
     def __str__(self):
-        return ",".join(zip(self.name,self.refs))
+        return ",".join(zip(self.name, self.refs))
     
     def __repr__(self):
         return __str__(self)
@@ -114,7 +114,6 @@ class HotData:
             if name is '__repr__':
                 raise Exception('HotData.' + '.'.join(inNames[:-1]) + ' must end with ()')
     
-            
             dataValue = itemRef.get(name, None)
             fetcher = self.fetchers.get(name, None)
             if fetcher is None:
@@ -161,8 +160,6 @@ class HotData:
             retVal = self.FetchVM(inOpaqueRef)
         else:
             retVal = {}
-            test1 = self.vm()
-            test2 = self.vm().iteritems()
             for key, value in self.vm().iteritems():
                 if not value.get('is_a_template', False) and not value.get('is_control_domain', False):
                     retVal[key] = value

@@ -15,12 +15,14 @@ class Importer:
     plugIns = {}
     menuEntries = {}
     menuRegenerators = {}
+    resources = {}
     
     @classmethod
     def Reset(cls):
         cls.plugIns = {}
         cls.menuEntries = {}
         cls.menuRegenerators = {}
+        cls.resources = {}
 
     @classmethod
     def ImportAbsDir(cls, inDir):
@@ -68,8 +70,17 @@ class Importer:
         # Store inObj only when we need to reregister plugins
         
     @classmethod
-    def UnegisterNamedPlugIn(cls, inName):
+    def UnregisterNamedPlugIn(cls, inName):
         del cls.plugIns[inName]
+        
+    @classmethod
+    def RegisterResource(cls, inObj, inName, inParams):
+        cls.resources[inName] = inParams
+        # Store inObj only when we need to reregister plugins
+        
+    @classmethod
+    def UnregisterResource(cls, inName):
+        del cls.resources[inName]
         
     @classmethod
     def ActivateNamedPlugIn(cls, inName, *inParams):
@@ -82,6 +93,24 @@ class Importer:
             raise Exception(Lang("PlugIn (for activation) named '")+inName+Lang("' has no activation handler"))
         
         handler(*inParams)
+    
+    @classmethod
+    def GetResource(cls, inName): # Don't use this until all of the PlugIns have had a chance to register
+        retVal = None
+        for resource in cls.resources.values():
+            item = resource.get(inName, None)
+            if item is not None:
+                retVal = item
+                break
+
+        return retVal
+        
+    def GetResourceOrThrow(cls, inName): # Don't use this until all of the PlugIns have had a chance to register
+        retVal = cls.GetResource(inName)
+        if retVal is None:
+            raise Exception(Lang("Resource named '")+inName+Lang("' does not exist"))
+        
+        return retVal
         
     @classmethod
     def BuildRootMenu(cls, inParent):
@@ -122,4 +151,6 @@ class Importer:
         pprint(cls.plugIns)
         print "\nRegistered menu entries:"
         pprint(cls.menuEntries)
+        print "\nRegistered resources:"
+        pprint(cls.resources)
     

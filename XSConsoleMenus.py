@@ -29,7 +29,7 @@ class ChoiceDef:
         return self.onAction
 
 class Menu:
-    def __init__(self, inOwner, inParent, inTitle, inChoiceDefs = None):
+    def __init__(self, inOwner = None, inParent = None, inTitle = None, inChoiceDefs = None):
         self.owner = inOwner
         self.parent = inParent
         self.title = inTitle

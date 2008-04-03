@@ -59,10 +59,9 @@ class ValidateDialogue(Dialogue):
 
     def HandleKey(self, inKey):
         handled = False
-        if inKey == 'KEY_ENTER':
+        if inKey == 'KEY_ENTER' or inKey == 'KEY_ESCAPE':
             Layout.Inst().PopDialogue()
             handled = True
-
         return handled
 
 

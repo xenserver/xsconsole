@@ -25,11 +25,8 @@ class XSFeatureVMInfo:
 
         inPane.AddWrappedTextField(Lang("There are no virtual machines on this host."))
 
-    
     @classmethod
     def InfoStatusUpdateHandler(cls, inPane, inHandle):
-        #inPane.AddTitleField(Lang("Virtual Machine Information"))
-    
         vm = HotAccessor().guest_vm(inHandle)
         if vm is None:
             inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
@@ -43,29 +40,41 @@ class XSFeatureVMInfo:
             try:
                 if isRunning:
                     perCPUUsage = vm.metrics.VCPUs_utilisation({})
-    
+
                     cpuUsage = sum(perCPUUsage.values()) / len(perCPUUsage) # Let divide by zero throw
                     cpuUsage = max(0, min(cpuUsage, 1))
                     cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), len(perCPUUsage))
                 else:
-                    cpuUsageStr = '-' # Follow XenCenter convention                    
+                    cpuUsageStr = '-' # Follow XenCenter convention
 
             except Exception, e:
                 cpuUsageStr = Lang('<Unknown>')
             
             inPane.AddStatusField(Lang("CPU Usage", 16), cpuUsageStr)
-            try:
-                if isRunning:
+
+            if isRunning:
+                try:
+                    freeMemoryKB = vm.guest_metrics.memory({})['free'] # returns a string or throws
+                    freeMemory = int(freeMemoryKB) * 1024.0 # int converts from string here
+                    usedMemory = int(vm.memory_static_max(0)) - freeMemory
+                    memoryUsage = usedMemory / int(vm.memory_static_max(1))
+                    memoryUsage = max(0, min(memoryUsage, 1))
+                    memoryUsageStr = "%d%% (%s)" % (int(memoryUsage * 100), SizeUtils.MemorySizeString(usedMemory))
+                except Exception, e:
+                    memoryUsageStr = Lang('<Unavailable>')
                     
-                    vm = HotAccessor().guest_vm(inHandle)
-                    inPane.AddStatusField(Lang("Free Memory", 16),
-                        SizeUtils.MemorySizeString(int(vm.guest_metrics.memory()['free'])*1024))
-            except Exception, e:
-                pass
+                inPane.AddStatusField(Lang("Memory Usage", 16), memoryUsageStr)
+    
+        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Control This Virtual Machine") } )
     
     @classmethod
     def ActivateHandler(cls):
         Layout.Inst().TopDialogue().ChangeMenu('MENU_VMINFO')
+    
+    @classmethod
+    def InfoActivateHandler(cls, inHandle):
+        dialogue = Importer.GetResource('VMControlDialogue')
+        Layout.Inst().PushDialogue(dialogue(inHandle))
     
     @classmethod
     def MenuRegenerator(cls, inName, inMenu):
@@ -74,6 +83,7 @@ class XSFeatureVMInfo:
         for key, vm in HotData.Inst().guest_vm({}).iteritems():
             nameLabel = vm.get('name_label', Lang('<Unknown>'))
             retVal.AddChoice(name = nameLabel,
+                                        onAction = cls.InfoActivateHandler,
                                         statusUpdateHandler = cls.InfoStatusUpdateHandler,
                                         handle = key)
             
