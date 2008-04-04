@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2008-04-03, 18:11:17 -->
+<!-- Saved: 2008-04-04, 18:06:23 -->
 <!-- Copyright (C) 2008 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -250,4 +250,112 @@
     <FiletypeAssociation pattern="*.py" type="SOURCES" />
     <FiletypeAssociation pattern="*.qrc" type="RESOURCES" />
   </FiletypeAssociations>
+  <PyLint>
+    <PyLintParams>
+      <dict>
+        <key>
+          <string>enableImports</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableMiscellaneous</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableClasses</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableExceptions</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableFormat</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableRPython</string>
+        </key>
+        <value>
+          <bool>False</bool>
+        </value>
+        <key>
+          <string>configFile</string>
+        </key>
+        <value>
+          <unicode>/home/asouthgate/build.hg/myrepos/xsconsole.hg/pylint.conf</unicode>
+        </value>
+        <key>
+          <string>enableMetrics</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableVariables</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>htmlReport</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>dialogReport</string>
+        </key>
+        <value>
+          <bool>False</bool>
+        </value>
+        <key>
+          <string>enableDesign</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableNewstyle</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableBasic</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>txtReport</string>
+        </key>
+        <value>
+          <bool>False</bool>
+        </value>
+        <key>
+          <string>enableTypecheck</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableSimilarities</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+      </dict>
+    </PyLintParams>
+  </PyLint>
 </Project>

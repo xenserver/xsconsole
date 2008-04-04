@@ -345,7 +345,7 @@ class RemoteDBDialogue(Dialogue):
         elif inChoice == 'FORMAT':
             self.ChangeState('CREATEDB')
         else:
-            self.PopDialogue()
+            Layout.Inst().PopDialogue()
 
 
 class XSFeatureRemoteDB:

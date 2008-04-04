@@ -80,6 +80,11 @@ PLUGINS_OEM += XSFeatureVerboseBoot.py
 
 PLUGINS_EXTRAS :=
 
+ALL_SCRIPTS := $(SCRIPTS)
+ALL_SCRIPTS += $(addprefix plugins-base/, $(PLUGINS_BASE))
+ALL_SCRIPTS += $(addprefix plugins-oem/, $(PLUGINS_OEM))
+ALL_SCRIPTS += $(addprefix plugins-extras/, $(PLUGINS_EXTRAS))
+
 ################################################################################
 # Executable:
 COMMAND := xsconsole
@@ -121,3 +126,14 @@ clean:
 depend:
 
 all:
+
+# Convenience targets for pylint output
+pylint.html: pylint.rc $(ALL_SCRIPTS)
+	pylint --rcfile pylint.rc --output-format html $(ALL_SCRIPTS) > $@
+
+pylint.txt: pylint.rc $(ALL_SCRIPTS)
+	if [ -f $@ ]; then mv $@ $@.tmp; fi
+	pylint --rcfile pylint.rc --output-format text $(ALL_SCRIPTS) > $@
+	# Show new/different warnings in stdout
+	if [ -f $@.tmp ]; then diff $@.tmp $@ | grep -E '^[<>]\s*[CRWE]' | cat ; fi
+	rm -f $@.tmp
