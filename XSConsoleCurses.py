@@ -88,7 +88,7 @@ class CursesPane:
         self.xOffset = inXOffset
         self.yOffset = inYOffset
         self.yClipMax = self.ySize
-
+        
     def HasBox(self):
         return self.hasBox
 
@@ -265,5 +265,5 @@ class CursesScreen(CursesPane):
         curses.echo()
         curses.endwin()
             
-    def UseColor():
+    def UseColor(self):
         return curses.has_color()

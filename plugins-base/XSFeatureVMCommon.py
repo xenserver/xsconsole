@@ -10,41 +10,67 @@ if __name__ == "__main__":
     
 from XSConsoleStandard import *
 
+class VMUtils:
+    operationNames = {
+        'FORCEREBOOT' : Lang("Force Reboot"),
+        'FORCESHUTDOWN' : Lang("Force Shutdown"),
+        'NONE' : Lang("No Operation"),
+        'REBOOT' : Lang("Reboot"),
+        'RESUME' : Lang("Resume"),
+        'SHUTDOWN' : Lang("Shut Down"),
+        'START' : Lang("Start"),
+        'SUSPEND' : Lang("Suspend")
+    }
+    @classmethod
+    def DoOperation(cls, inVMHandle, inOperation):
+        if inOperation == 'FORCEREBOOT':
+            HotData.Inst().Session().xenapi.VM.hard_reboot(inVMHandle.OpaqueRef())
+        elif inOperation == 'FORCESHUTDOWN':
+            HotData.Inst().Session().xenapi.VM.hard_shutdown(inVMHandle.OpaqueRef())
+        elif inOperation == 'NONE':
+            pass # No operation
+        elif inOperation == 'REBOOT':
+            HotData.Inst().Session().xenapi.VM.clean_reboot(inVMHandle.OpaqueRef())
+        elif inOperation == 'RESUME':
+            HotData.Inst().Session().xenapi.VM.resume(inVMHandle.OpaqueRef(), False, True)
+        elif inOperation == 'SHUTDOWN':
+            HotData.Inst().Session().xenapi.VM.clean_shutdown(inVMHandle.OpaqueRef())
+        elif inOperation == 'START':
+            HotData.Inst().Session().xenapi.VM.start(inVMHandle.OpaqueRef(), False, True)
+        elif inOperation == 'SUSPEND':
+            HotData.Inst().Session().xenapi.VM.suspend(inVMHandle.OpaqueRef())
+        else:
+            raise Exception("Unknown VM operation "+str(inOperation))
+                
+    @classmethod
+    def OperationName(cls, inOperation):
+        retVal = cls.operationNames.get(inOperation, None)
+        if retVal is None:
+            raise Exception("Unknown VM operation "+str(inOperation))
+        return retVal
+
 class VMControlDialogue(Dialogue):
     def __init__(self, inVMHandle):
         self.vmHandle = inVMHandle
         Dialogue.__init__(self)
-        
+        self.operation = 'NONE'
         
         vm = HotAccessor().guest_vm(self.vmHandle)
         powerState = vm.power_state('').lower()
         if powerState.startswith('running'):
-            choiceList = [
-                (Lang('Shut Down'), 'SHUTDOWN'),
-                (Lang('Suspend'), 'SUSPEND'),
-                (Lang('Reboot'), 'REBOOT'),
-                (Lang('Force Shutdown'), 'FORCESHUTDOWN'),
-                (Lang('Force Reboot'), 'FORCEREBOOT')
-            ]
+            choiceList = [ 'SHUTDOWN', 'SUSPEND', 'REBOOT', 'FORCESHUTDOWN', 'FORCEREBOOT' ]
         elif powerState.startswith('suspended'):
-            choiceList = [
-                (Lang('Resume'), 'RESUME'),
-                (Lang('Force Shutdown'), 'FORCESHUTDOWN')
-            ]
+            choiceList = [ 'RESUME', 'FORCESHUTDOWN' ]
         elif powerState.startswith('halted'):
-            choiceList = [
-                (Lang('Start'), 'START')
-            ]
+            choiceList = [ 'START' ]
         else:
-            choiceList = [
-                (Lang('<Unknown power state>'),'NONE')
-            ]
+            choiceList = [ 'NONE' ]
 
         self.controlMenu = Menu()
         for choice in choiceList:
-            self.controlMenu.AddChoice(name = choice[0],
+            self.controlMenu.AddChoice(name = VMUtils.OperationName(choice),
                 onAction = self.HandleControlChoice,
-                handle = choice[1])
+                handle = choice)
             
         self.ChangeState('INITIAL')
         
@@ -66,6 +92,21 @@ class VMControlDialogue(Dialogue):
         pane.AddMenuField(self.controlMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
+    def UpdateFieldsCONFIRM(self):
+        pane = self.Pane()
+        pane.ResetFields()
+
+        vm = HotAccessor().guest_vm(self.vmHandle)
+        vmName = vm.name_label(None)
+        if vmName is None:
+            pane.AddTitleField(Lang("The Virtual Machine is no longer present"))
+        else:
+            pane.AddTitleField(Lang('Press <F8> to confirm this operation'))
+            pane.AddStatusField(Lang("Operation", 20), VMUtils.OperationName(self.operation))
+            pane.AddStatusField(Lang("Virtual Machine", 20), vmName)
+
+        pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFields(self):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
@@ -77,6 +118,13 @@ class VMControlDialogue(Dialogue):
     
     def HandleKeyINITIAL(self, inKey):
         return self.controlMenu.HandleKey(inKey)
+
+    def HandleKeyCONFIRM(self, inKey):
+        handled = False
+        if inKey == 'KEY_F(8)':
+            self.Commit()
+            handled = True
+        return handled
 
     def HandleKey(self,  inKey):
         handled = False
@@ -90,42 +138,22 @@ class VMControlDialogue(Dialogue):
         return handled
     
     def HandleControlChoice(self, inChoice):
+        self.operation = inChoice
+        self.ChangeState('CONFIRM')
+        
+    def Commit(self):
+        operationName = VMUtils.OperationName(self.operation)
+        vmName = HotAccessor().guest_vm(self.vmHandle).name_label(Lang('<Unknown>'))
+        messagePrefix = operationName + Lang(' operation on ') + vmName + ' '
         try:
-            if inChoice == 'FORCEREBOOT':
-                Layout.Inst().TransientBanner(Lang("Forced Reboot In Progress..."))
-                HotData.Inst().Session().xenapi.VM.hard_reboot(self.vmHandle.OpaqueRef())
-            elif inChoice == 'FORCESHUTDOWN':
-                Layout.Inst().TransientBanner(Lang("Forced Shutdown In Progress..."))
-                HotData.Inst().Session().xenapi.VM.hard_shutdown(self.vmHandle.OpaqueRef())
-            elif inChoice == 'REBOOT':
-                Layout.Inst().TransientBanner(Lang("Reboot In Progress..."))
-                HotData.Inst().Session().xenapi.VM.clean_reboot(self.vmHandle.OpaqueRef())
-            elif inChoice == 'RESUME':
-                Layout.Inst().TransientBanner(Lang("Resume In Progress..."))
-                HotData.Inst().Session().xenapi.VM.resume(self.vmHandle.OpaqueRef(), False, True)
-            elif inChoice == 'SHUTDOWN':
-                Layout.Inst().TransientBanner(Lang("Shutdown In Progress..."))
-                HotData.Inst().Session().xenapi.VM.clean_shutdown(self.vmHandle.OpaqueRef())
-            elif inChoice == 'START':
-                Layout.Inst().TransientBanner(Lang("Start In Progress..."))
-                HotData.Inst().Session().xenapi.VM.start(self.vmHandle.OpaqueRef(), False, True)
-            elif inChoice == 'SUSPEND':
-                Layout.Inst().TransientBanner(Lang("Suspend In Progress..."))
-                HotData.Inst().Session().xenapi.VM.suspend(self.vmHandle.OpaqueRef())
-
-            
+            Layout.Inst().TransientBanner(messagePrefix + Lang("is in progress..."))
+            VMUtils.DoOperation(self.vmHandle, self.operation)
             Layout.Inst().PopDialogue()
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Successful")))
+            Layout.Inst().PushDialogue(InfoDialogue(messagePrefix + Lang("successful")))
+            
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
-       
-    
-    def Commit(self, inMessage):
-        try:
-            Data.Inst().SaveToResolvConf()
-            Layout.Inst().PushDialogue(InfoDialogue( inMessage))
-        except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue( Lang("Update failed: ")+Lang(e)))
+            self.ChangeState('INITIAL')
+            Layout.Inst().PushDialogue(InfoDialogue(messagePrefix + Lang("Failed"), Lang(e)))
 
 class XSFeatureVMCommon:
     def Register(self):
@@ -133,7 +161,8 @@ class XSFeatureVMCommon:
             self,
             'VM_COMMON', # Name of this item for replacement, etc.
             {
-                'VMControlDialogue' : VMControlDialogue, # Name of the menu this item leads to when selected
+                'VMControlDialogue' : VMControlDialogue,
+                'VMUtils' : VMUtils
             }
         )
 

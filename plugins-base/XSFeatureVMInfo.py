@@ -74,7 +74,7 @@ class XSFeatureVMInfo:
     @classmethod
     def InfoActivateHandler(cls, inHandle):
         dialogue = Importer.GetResource('VMControlDialogue')
-        Layout.Inst().PushDialogue(dialogue(inHandle))
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(dialogue(inHandle)))
     
     @classmethod
     def MenuRegenerator(cls, inName, inMenu):
