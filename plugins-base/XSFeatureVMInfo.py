@@ -11,7 +11,6 @@ if __name__ == "__main__":
 from XSConsoleStandard import *
 
 class XSFeatureVMInfo:
-    
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Virtual Machine Information"))
@@ -65,6 +64,13 @@ class XSFeatureVMInfo:
                     
                 inPane.AddStatusField(Lang("Memory Usage", 16), memoryUsageStr)
     
+                try:
+                    networks = vm.guest_metrics.networks({})
+                    for key in sorted(networks.keys()):
+                        inPane.AddStatusField((Lang('Network ')+key).ljust(16,  ' '), networks[key])
+                except Exception, e:
+                    inPane.AddStatusField(Lang('Network Info', 16), Lang('<Unavailable>'))
+                    
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Control This Virtual Machine") } )
     
     @classmethod
