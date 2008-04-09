@@ -38,9 +38,11 @@ class App:
             Data.Inst().Dump()
             Importer.Dump()
             for key, value in HotData.Inst().guest_vm().iteritems():
+                localhost = HotAccessor().local_host()
                 vm = HotData.Inst().vm(key)
                 vm.metrics()
-                vm.guest_metrics()
+                try: vm.guest_metrics()
+                except: pass # Not all VMs  have guest metrics
             HotData.Inst().Dump()
             doQuit = True
         
@@ -110,8 +112,6 @@ class App:
                     if len(commandList) == 0:
                         doQuit = True
                     else:
-                        # Double-check authentication
-                        Auth.Inst().AssertAuthenticatedOrPasswordUnset()
                         if self.layout.ExitCommandIsExec():
                             os.execv(commandList[0], commandList)
                             # Does not return
@@ -138,6 +138,7 @@ class App:
         doQuit= False
         startSeconds = time.time()
         lastDataUpdateSeconds = startSeconds
+        lastScreenUpdateSeconds = startSeconds
         resized = False
         data = Data.Inst()
         
@@ -177,6 +178,11 @@ class App:
                     self.layout.UpdateRootFields()
                     needsRefresh = True
     
+            if secondsNow - lastScreenUpdateSeconds >= 4:
+                lastScreenUpdateSeconds = secondsNow
+                self.layout.UpdateRootFields()
+                needsRefresh = True
+                
             if gotKey is not None:
                 Auth.Inst().KeepAlive()
                 if self.layout.TopDialogue().HandleKey(gotKey):

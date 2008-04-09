@@ -12,12 +12,19 @@ from XSConsoleStandard import *
 
 class XSFeatureVMInfo:
     @classmethod
-    def StatusUpdateHandler(cls, inPane):
+    def ResidentStatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Virtual Machine Information"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to display detailed information about each virtual machine on this host."))
+            "Press <Enter> to display detailed information about virtual machines running on this host."))
+
+    @classmethod
+    def AllStatusUpdateHandler(cls, inPane):
+        inPane.AddTitleField(Lang("Virtual Machine Information"))
     
+        inPane.AddWrappedTextField(Lang(
+            "Press <Enter> to display detailed information about all virtual machines in the Pool."))
+
     @classmethod
     def NoVMStatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Virtual Machine Information"))
@@ -26,7 +33,7 @@ class XSFeatureVMInfo:
 
     @classmethod
     def InfoStatusUpdateHandler(cls, inPane, inHandle):
-        vm = HotAccessor().guest_vm(inHandle)
+        vm = HotAccessor().vm(inHandle)
         if vm is None:
             inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
         else:
@@ -74,8 +81,12 @@ class XSFeatureVMInfo:
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Control This Virtual Machine") } )
     
     @classmethod
-    def ActivateHandler(cls):
-        Layout.Inst().TopDialogue().ChangeMenu('MENU_VMINFO')
+    def ResidentActivateHandler(cls):
+        Layout.Inst().TopDialogue().ChangeMenu('MENU_RESIDENTVM')
+    
+    @classmethod
+    def AllActivateHandler(cls):
+        Layout.Inst().TopDialogue().ChangeMenu('MENU_ALLVM')
     
     @classmethod
     def InfoActivateHandler(cls, inHandle):
@@ -83,15 +94,21 @@ class XSFeatureVMInfo:
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(dialogue(inHandle)))
     
     @classmethod
-    def MenuRegenerator(cls, inName, inMenu):
+    def MenuRegenerator(cls, inList, inMenu):
         retVal = copy.copy(inMenu)
         retVal.RemoveChoices()
-        for key, vm in HotData.Inst().guest_vm({}).iteritems():
-            nameLabel = vm.get('name_label', Lang('<Unknown>'))
-            retVal.AddChoice(name = nameLabel,
-                                        onAction = cls.InfoActivateHandler,
-                                        statusUpdateHandler = cls.InfoStatusUpdateHandler,
-                                        handle = key)
+        # inList is a list of HotOpaqueRef objects
+        vmList = [ HotAccessor().vm(x) for x in inList ]
+        # Sort list by VM name
+        vmList.sort(lambda x,y: cmp(x.name_label(''), y.name_label('')))
+        
+        for vm in vmList:
+            nameLabel = vm.name_label(Lang('<Unknown>'))
+            if not vm.is_control_domain(True) and not vm.is_a_template(True):
+                retVal.AddChoice(name = nameLabel,
+                                            onAction = cls.InfoActivateHandler,
+                                            statusUpdateHandler = cls.InfoStatusUpdateHandler,
+                                            handle = vm.OpaqueRef())
             
         if retVal.NumChoices() == 0:
             retVal.AddChoice(name = Lang('<No Virtual Machines Present>'),
@@ -99,17 +116,38 @@ class XSFeatureVMInfo:
             
         return retVal
     
+    @classmethod
+    def ResidentMenuRegenerator(cls, inName, inMenu):
+        return cls.MenuRegenerator(HotAccessor().local_host.resident_VMs([]), inMenu)
+    
+    @classmethod
+    def AllMenuRegenerator(cls, inName, inMenu):
+        return cls.MenuRegenerator(HotAccessor().guest_vm({}).keys(), inMenu)
+    
     def Register(self):
         Importer.RegisterMenuEntry(
             self,
             'MENU_VM', # Name of the menu this item is part of
             {
-                'menuname' : 'MENU_VMINFO', # Name of the menu this item leads to when selected
-                'menutext' : Lang('Virtual Machine Information'),
+                'menuname' : 'MENU_RESIDENTVM', # Name of the menu this item leads to when selected
+                'menutext' : Lang('VMs Running On This Host'),
                 'menupriority' : 100,
-                'menuregenerator' : XSFeatureVMInfo.MenuRegenerator,
-                'activatehandler' : XSFeatureVMInfo.ActivateHandler,
-                'statusupdatehandler' : XSFeatureVMInfo.StatusUpdateHandler
+                'menuregenerator' : XSFeatureVMInfo.ResidentMenuRegenerator,
+                'activatehandler' : XSFeatureVMInfo.ResidentActivateHandler,
+                'statusupdatehandler' : XSFeatureVMInfo.ResidentStatusUpdateHandler
+            }
+        )
+
+        Importer.RegisterMenuEntry(
+            self,
+            'MENU_VM', # Name of the menu this item is part of
+            {
+                'menuname' : 'MENU_ALLVM', # Name of the menu this item leads to when selected
+                'menutext' : Lang('All VMs'),
+                'menupriority' : 200,
+                'menuregenerator' : XSFeatureVMInfo.AllMenuRegenerator,
+                'activatehandler' : XSFeatureVMInfo.AllActivateHandler,
+                'statusupdatehandler' : XSFeatureVMInfo.AllStatusUpdateHandler
             }
         )
 

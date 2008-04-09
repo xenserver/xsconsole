@@ -28,9 +28,11 @@ class RootDialogue(Dialogue):
         statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(40, 2, 39, 21)), 'status')
         statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
         self.menu = Importer.BuildRootMenu(self)
+        self.menuName = 'MENU_ROOT'
         self.UpdateFields()
 
     def UpdateFields(self):
+        self.menu.SetMenu(self.menuName, Importer.RegenerateMenu(self.menuName, self.menu.GetMenu(self.menuName)))
         currentMenu = self.menu.CurrentMenu()
         currentChoiceDef = currentMenu.CurrentChoiceDef()
 
@@ -38,8 +40,7 @@ class RootDialogue(Dialogue):
         menuPane.ResetFields()
         menuPane.ResetPosition()
         menuPane.AddTitleField(currentMenu.Title())
-        # Scrolling doesn't work well for this menu because it's field is recreated on update.
-        # Preserving the scroll position would improve it if there are more than 15 entries
+
         menuPane.AddMenuField(currentMenu, 15) # Allow extra height for this menu
         
         statusPane = self.Pane('status')
@@ -100,6 +101,7 @@ class RootDialogue(Dialogue):
         return handled
 
     def ChangeMenu(self, inName):
+        self.menuName = inName
         self.menu.SetMenu(inName, Importer.RegenerateMenu(inName, self.menu.GetMenu(inName)))
         self.menu.ChangeMenu(inName)
         self.menu.CurrentMenu().HandleEnter()

@@ -66,6 +66,9 @@ class HotAccessor:
             retVal = HotData.Inst().GetData(self.name, inParam, self.refs)
         return retVal
     
+    def OpaqueRef(self):
+        return self.refs[-1]
+    
     def __str__(self):
         return ",".join(zip(self.name, self.refs))
     
@@ -147,6 +150,8 @@ class HotData:
         self.AddFetcher('guest_metrics', self.FetchVMGuestMetrics, 5)
         self.AddFetcher('guest_vm', self.FetchGuestVM, 5)
         self.AddFetcher('guest_vm_derived', self.FetchGuestVMDerived, 5)
+        self.AddFetcher('host', self.FetchHost, 5)
+        self.AddFetcher('local_host', self.FetchLocalHost, 5)
         self.AddFetcher('metrics', self.FetchVMMetrics, 5)
         self.AddFetcher('vm', self.FetchVM, 5)
     
@@ -190,6 +195,39 @@ class HotData:
 
         return retVal
 
+    def FetchLocalHost(self, inOpaqueRef):
+        if inOpaqueRef is not None:
+            raise Exception("Request for local host must not be passed an OpaqueRef")
+        thisHost = self.Session().xenapi.session.get_this_host(self.Session()._session)
+        retVal = self.FetchHost(HotOpaqueRef(thisHost, 'host'))
+        return retVal
+        
+    def FetchHost(self, inOpaqueRef):
+        def LocalConverter(inHost):
+            return HotData.ConvertOpaqueRefs(inHost,
+                crash_dump_sr = 'sr',
+                consoles = 'console',
+                host_CPUs = 'cpu',
+                metrics = 'host.metrics',
+                PBDs = 'pbd',
+                PIFs='pif',
+                resident_VMs = 'vm',
+                suspend_image_sr = 'sr',
+                VBDs = 'vbd',
+                VIFs = 'vif'
+                )
+        
+        if inOpaqueRef is not None:
+            host = self.Session().xenapi.host.get_record(inOpaqueRef.OpaqueRef())
+            retVal = LocalConverter(host)
+        else:
+            hosts = self.Session().xenapi.host.get_all_records()
+            retVal = {}
+            for key, host in host.iteritems():
+                host = LocalConverter(host)
+                retVal[HotOpaqueRef(key, 'host')] = host
+        return retVal
+
     def FetchVMMetrics(self, inOpaqueRef):
         if inOpaqueRef is None:
             raise Exception("Request for VM metrics requires an OpaqueRef")
@@ -200,10 +238,14 @@ class HotData:
         def LocalConverter(inVM):
             return HotData.ConvertOpaqueRefs(inVM,
                 affinity='host',
+                consoles='console',
                 guest_metrics='guest_metrics',
                 metrics='metrics',
+                PIFs='pif',
                 resident_on='host',
-                suspend_VDI='vdi')
+                suspend_VDI='vdi',
+                VBDs = 'vbd',
+                VIFs = 'vif')
         
         if inOpaqueRef is not None:
             vm = self.Session().xenapi.VM.get_record(inOpaqueRef.OpaqueRef())
@@ -224,12 +266,32 @@ class HotData:
         for keyword, value in inKeywords.iteritems():
             obj = ioObj.get(keyword, None)
             if obj is not None:
-                ioObj[keyword] = HotOpaqueRef(obj, value)
-                
+                if isinstance(obj, str):
+                    ioObj[keyword] = HotOpaqueRef(obj, value)
+                elif isinstance(obj, types.ListType):
+                    ioObj[keyword] = [ HotOpaqueRef(x, value) for x in obj ]
+                elif isinstance(obj, types.DictType):
+                    result = {}
+                    for key, item in obj:
+                        result[ HotOpaqueRef(key, value) ] = item
+                    ioObj[keyword] = result
+                    
         if Auth.Inst().IsTestMode(): # Tell the caller what they've missed, when in test mode
             for key,value in ioObj.iteritems():
                 if isinstance(value, str) and value.startswith('OpaqueRef'):
-                    print('Missed OpaqueRef in HotData item: '+key)
+                    print('Missed OpaqueRef string in HotData item: '+key)
+                elif isinstance(value, types.ListType):
+                    for item in value:
+                        if isinstance(item, str) and item.startswith('OpaqueRef'):
+                            print('Missed OpaqueRef List in HotData item: '+key)
+                            break
+                elif isinstance(value, types.DictType):
+                    for item in value.keys():
+                        if isinstance(item, str) and item.startswith('OpaqueRef'):
+                            print('Missed OpaqueRef Dict in HotData item: '+key)
+                            break
+
+
                     
         return ioObj
 

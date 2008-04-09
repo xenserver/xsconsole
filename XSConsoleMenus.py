@@ -67,7 +67,6 @@ class Menu:
         
     def RemoveChoices(self):
         self.choiceDefs = []
-        self.choiceIndex = 0
         self.defaultPriority=1000
             
     def CurrentChoiceSet(self,  inChoice):
@@ -75,6 +74,8 @@ class Menu:
         # Also need to call HandleEnter
         
     def CurrentChoiceDef(self):
+        if self.choiceIndex >= len(self.choiceDefs):
+            self.choiceIndex = max(0, len(self.choiceDefs) - 1)
         return self.choiceDefs[self.choiceIndex]
 
     def HandleArrowDown(self):
