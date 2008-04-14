@@ -22,26 +22,36 @@ class VMUtils:
         'SUSPEND' : Lang("Suspend")
     }
     @classmethod
-    def DoOperation(cls, inVMHandle, inOperation):
+    def AsyncOperation(cls, inVMHandle, inOperation):
         if inOperation == 'FORCEREBOOT':
-            HotData.Inst().Session().xenapi.VM.hard_reboot(inVMHandle.OpaqueRef())
+            task = Task.New(lambda x: x.xenapi.Async.VM.hard_reboot(inVMHandle.OpaqueRef()))
         elif inOperation == 'FORCESHUTDOWN':
-            HotData.Inst().Session().xenapi.VM.hard_shutdown(inVMHandle.OpaqueRef())
+            task = Task.New(lambda x: x.xenapi.Async.VM.hard_shutdown(inVMHandle.OpaqueRef()))
         elif inOperation == 'NONE':
-            pass # No operation
+            task = None # No operation
         elif inOperation == 'REBOOT':
-            HotData.Inst().Session().xenapi.VM.clean_reboot(inVMHandle.OpaqueRef())
+            task = Task.New(lambda x: x.xenapi.Async.VM.clean_reboot(inVMHandle.OpaqueRef()))
         elif inOperation == 'RESUME':
-            HotData.Inst().Session().xenapi.VM.resume(inVMHandle.OpaqueRef(), False, True)
+            task = Task.New(lambda x: x.xenapi.Async.VM.resume(inVMHandle.OpaqueRef(), False, True))
         elif inOperation == 'SHUTDOWN':
-            HotData.Inst().Session().xenapi.VM.clean_shutdown(inVMHandle.OpaqueRef())
+            task = Task.New(lambda x: x.xenapi.Async.VM.clean_shutdown(inVMHandle.OpaqueRef()))
         elif inOperation == 'START':
-            HotData.Inst().Session().xenapi.VM.start(inVMHandle.OpaqueRef(), False, True)
+            task = Task.New(lambda x: x.xenapi.Async.VM.start(inVMHandle.OpaqueRef(), False, True))
         elif inOperation == 'SUSPEND':
-            HotData.Inst().Session().xenapi.VM.suspend(inVMHandle.OpaqueRef())
+            task = Task.New(lambda x: x.xenapi.Async.VM.suspend(inVMHandle.OpaqueRef()))
         else:
             raise Exception("Unknown VM operation "+str(inOperation))
-                
+        
+        return task
+        
+    @classmethod
+    def DoOperation(cls, inVMHandle, inOperation):
+        task = cls.AsyncOperation(inVMHandle, inOperation)
+        
+        while task.IsPending():
+            time.sleep(1)
+        
+
     @classmethod
     def OperationName(cls, inOperation):
         retVal = cls.operationNames.get(inOperation, None)
@@ -142,14 +152,14 @@ class VMControlDialogue(Dialogue):
         self.ChangeState('CONFIRM')
         
     def Commit(self):
+        Layout.Inst().PopDialogue()
+
         operationName = VMUtils.OperationName(self.operation)
         vmName = HotAccessor().guest_vm(self.vmHandle).name_label(Lang('<Unknown>'))
         messagePrefix = operationName + Lang(' operation on ') + vmName + ' '
         try:
-            Layout.Inst().TransientBanner(messagePrefix + Lang("is in progress..."))
-            VMUtils.DoOperation(self.vmHandle, self.operation)
-            Layout.Inst().PopDialogue()
-            Layout.Inst().PushDialogue(InfoDialogue(messagePrefix + Lang("successful")))
+            task = VMUtils.AsyncOperation(self.vmHandle, self.operation)
+            Layout.Inst().PushDialogue(ProgressDialogue(task, messagePrefix))
             
         except Exception, e:
             self.ChangeState('INITIAL')

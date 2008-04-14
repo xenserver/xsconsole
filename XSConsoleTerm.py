@@ -217,7 +217,9 @@ class App:
 
             if needsRefresh:
                 self.layout.Refresh()
-            
+            elif self.layout.LiveUpdateFields():
+                self.layout.Refresh()
+                
             self.layout.DoUpdate()
 
     def HandleRestartChoice(self, inChoice):

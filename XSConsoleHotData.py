@@ -22,11 +22,7 @@ class HotOpaqueRef:
         self.hash = hash(inOpaqueRef)
     
     def __repr__(self):
-        retVal = "HotOpaqueRef:\n"
-        retVal += "opaqueRef = "+str(self.opaqueRef)+"\n"
-        retVal += "type = "+str(self.type)+"\n"
-        retVal += "hash = "+str(self.hash)+"\n"
-        return retVal
+        return str(self.__dict__)
         
     # __hash__ and __cmp__ allow this object to be used as a dictionary key
     def __hash__(self):
@@ -239,6 +235,7 @@ class HotData:
             return HotData.ConvertOpaqueRefs(inVM,
                 affinity='host',
                 consoles='console',
+                current_operations = 'task',
                 guest_metrics='guest_metrics',
                 metrics='metrics',
                 PIFs='pif',
@@ -272,7 +269,7 @@ class HotData:
                     ioObj[keyword] = [ HotOpaqueRef(x, value) for x in obj ]
                 elif isinstance(obj, types.DictType):
                     result = {}
-                    for key, item in obj:
+                    for key, item in obj.iteritems():
                         result[ HotOpaqueRef(key, value) ] = item
                     ioObj[keyword] = result
                     

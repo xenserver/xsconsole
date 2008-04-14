@@ -14,6 +14,7 @@ from XSConsoleFields import *
 from XSConsoleLayout import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
+from XSConsoleTask import *
 from XSConsoleUtils import *
 
 class Dialogue:
@@ -593,6 +594,58 @@ class SRDialogue(Dialogue):
 
     def HandleSRChoice(self, inChoice):
         self.DoAction(self.choices[inChoice].sr)
+
+class ProgressDialogue(Dialogue):
+    def __init__(self, inTask, inText):
+        Dialogue.__init__(self)
+        self.task = inTask
+        self.text = inText
+        self.complete = False
+        
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.AddBox()
+        self.UpdateFields()
+
+    def UpdateFields(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddWrappedCentredBoldTextField(self.text)
+        pane.NewLine()
+
+        try:
+            progressVal = self.task.ProgressValue()
+            progressStr = str(int(100*progressVal))+'%'
+            durationSecs = self.task.DurationSecs()
+            elapsedStr = TimeUtils.DurationString(durationSecs)
+            
+        except Exception, e:
+            progressStr = Lang(e)
+            elapsedStr = Lang(e)
+            
+        if self.complete:
+            pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
+            pane.AddWrappedTextField(Lang('Progress:', 16) + progressStr)
+            pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        else:
+            if not self.task.IsPending():
+                self.complete = True
+
+            pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
+            pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
+            pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Dismiss This Window") } )
+            
+    
+    def LiveUpdateFields(self):
+        self.UpdateFields()
+    
+    def HandleKey(self, inKey):
+        handled = True
+        if inKey == 'KEY_ESCAPE' or inKey == 'KEY_ENTER':
+            Layout.Inst().PopDialogue()
+        else:
+            handled = False
+        return True
 
 class DialogueUtils:
     # Helper for activate

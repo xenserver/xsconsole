@@ -82,6 +82,15 @@ class Layout:
         if len(self.dialogues) > 0:
             self.dialogues[0].UpdateFields()
     
+    def LiveUpdateFields(self):
+        needsRefresh = False
+        if len(self.dialogues) > 0:
+            topDialogue = self.dialogues[-1]
+            if hasattr(topDialogue, 'LiveUpdateFields'):
+                topDialogue.LiveUpdateFields()
+                needsRefresh = True
+        return needsRefresh
+    
     def TransientBannerHandlerSet(self, inHandler):
         self.transientBannerHandler = inHandler
     

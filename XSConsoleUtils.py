@@ -5,7 +5,9 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import re, signal, string, subprocess, types
+import re, signal, string, subprocess, time, types
+from pprint import pprint
+
 from XSConsoleLang import *
 
 # Utils that need to access Data must go in XSConsoleDataUtils,
@@ -154,6 +156,28 @@ class TimeUtils:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, oldHandler)
             
+    @classmethod
+    def DurationString(cls, inSecs):
+        secs = max(0, int(inSecs))
+        
+        hours = int(secs / 3600)
+        secs -= hours * 3600
+        mins = int(secs / 60)
+        secs -= mins * 60
+        if hours > 0:
+            retVal = "%d:%2.2d:%2.2d" % (hours, mins, secs)
+        else:
+            retVal = "%d:%2.2d" % (mins, secs)
+        return retVal
+        
+    @classmethod
+    def DateTimeToSecs(cls, inDateTime):
+        structTime = time.strptime(inDateTime.value, '%Y%m%dT%H:%M:%SZ')
+        retVal = time.mktime(structTime)
+        if retVal <= 3601.0: # Handle the effect of daylight savings on start of epoch
+            retVal = 0.0
+        return retVal
+    
 class IPUtils:
     @classmethod
     def ValidateIP(cls, text):

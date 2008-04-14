@@ -176,6 +176,9 @@ class Auth:
                 session = None
                 self.error = Lang(e)
         return session
+    
+    def NewSession(self):
+        return self.OpenSession()
         
     def CloseSession(self, inSession):
         inSession.logout()

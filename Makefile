@@ -36,6 +36,7 @@ SCRIPTS += XSConsoleRemoteDB.py
 SCRIPTS += XSConsoleRootDialogue.py
 SCRIPTS += XSConsoleStandard.py
 SCRIPTS += XSConsoleState.py
+SCRIPTS += XSConsoleTask.py
 SCRIPTS += XSConsoleTerm.py
 SCRIPTS += XSConsoleUtils.py
 
