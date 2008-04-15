@@ -38,11 +38,16 @@ class Language:
             return Lang(inText+"s")
 
     @classmethod
+    def XapiError(cls, inList):
+        retVal = LangErrors.Translate(inList[0])
+        for i in range(1, len(inList)):
+            retVal = retVal.replace('{'+str(i-1)+'}', inList[i])
+        return retVal
+
+    @classmethod
     def ToString(cls, inLabel):
         if isinstance(inLabel, XenAPI.Failure):
-            retVal = LangErrors.Translate(inLabel.details[0])
-            for i in range(0, len(inLabel.details)):
-                retVal = retVal.replace('{'+str(i-1)+'}', inLabel.details[i])
+            retVal = cls.XapiError(inLabel.details)
         elif isinstance(inLabel, Exception):
             retVal = str(inLabel)
         else:

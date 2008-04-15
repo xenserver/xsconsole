@@ -600,18 +600,18 @@ class ProgressDialogue(Dialogue):
         Dialogue.__init__(self)
         self.task = inTask
         self.text = inText
-        self.complete = False
         
+        self.ChangeState('INITIAL')
+
+    def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.AddBox()
-        self.UpdateFields()
 
-    def UpdateFields(self):
+    def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddWrappedCentredBoldTextField(self.text)
-        pane.NewLine()
+        pane.AddTitleField(self.text)
 
         try:
             progressVal = self.task.ProgressValue()
@@ -620,32 +620,93 @@ class ProgressDialogue(Dialogue):
             elapsedStr = TimeUtils.DurationString(durationSecs)
             
         except Exception, e:
-            progressStr = Lang(e)
+            progressStr = Lang(e) # FIXME: Change to 'Unavailable'
             elapsedStr = Lang(e)
-            
-        if self.complete:
-            pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
-            pane.AddWrappedTextField(Lang('Progress:', 16) + progressStr)
-            pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
-        else:
-            if not self.task.IsPending():
-                self.complete = True
 
-            pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
-            pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
-            pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Dismiss This Window") } )
+        pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
+        pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
+        
+        helpKeys = { Lang("<Enter>") : Lang("Hide This Window") }
+        if self.task.CanCancel():
+            helpKeys[ Lang('<Esc>') ]= Lang('Cancel Operation')
+        pane.AddKeyHelpField( helpKeys )
+    
+    def UpdateFieldsCANCEL(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddTitleField(self.text)
+        pane.AddWrappedBoldTextField(Lang('Attempting to cancel operation...'))
+        pane.NewLine()
+        
+        try:
+            progressVal = self.task.ProgressValue()
+            progressStr = str(int(100*progressVal))+'%'
+            durationSecs = self.task.DurationSecs()
+            elapsedStr = TimeUtils.DurationString(durationSecs)
             
+        except Exception, e:
+            progressStr = Lang(e) # FIXME: Change to 'Unavailable'
+            elapsedStr = Lang(e)
+
+        pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
+        pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
+        
+        helpKeys = { Lang("<Enter>") : Lang("Hide This Window") }
+        pane.AddKeyHelpField( helpKeys )
+    
+    def UpdateFieldsCOMPLETE(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddTitleField(self.text)
+
+        message = self.task.Message()
+        pane.AddWrappedBoldTextField(message)
+        pane.NewLine()
+        
+        progressStr = '100%'
+        try:
+            durationSecs = self.task.DurationSecs()
+            elapsedStr = TimeUtils.DurationString(durationSecs)
+            
+        except Exception, e:
+            elapsedStr = Lang(e)
+
+        pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+    
+    def UpdateFields(self):
+        if self.state != 'COMPLETE' and not self.task.IsPending():
+            self.HandleCompletion()
+        self.Pane().ResetPosition()
+        getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
     
     def LiveUpdateFields(self):
         self.UpdateFields()
     
+    def ChangeState(self, inState):
+        self.state = inState
+        self.BuildPane()
+        self.UpdateFields()
+        
     def HandleKey(self, inKey):
         handled = True
-        if inKey == 'KEY_ESCAPE' or inKey == 'KEY_ENTER':
+        if inKey == 'KEY_ESCAPE':
+            if self.task.CanCancel():
+                self.task.Cancel()
+                self.ChangeState('CANCEL')
+            else:
+                Layout.Inst().PopDialogue()
+        elif inKey == 'KEY_ENTER':
             Layout.Inst().PopDialogue()
         else:
             handled = False
         return True
+
+    def HandleCompletion(self):
+        # This method is called from UpdateFields, so shouldn't pop the dialogue, etc.
+        self.ChangeState('COMPLETE')
 
 class DialogueUtils:
     # Helper for activate

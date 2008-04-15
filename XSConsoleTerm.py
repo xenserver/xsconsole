@@ -47,7 +47,8 @@ class App:
             doQuit = True
         
         # Purge leftover VBDs at startup
-        Data.Inst().PurgeVBDs()
+        # Removed following API change
+        # Data.Inst().PurgeVBDs()
         
         # Reinstate keymap
         if State.Inst().Keymap() is not None:

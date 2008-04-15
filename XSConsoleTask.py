@@ -19,6 +19,38 @@ class TaskEntry:
         retVal = self.session.xenapi.task.get_status(self.opaqueRef.OpaqueRef())
         return retVal
     
+    def Result(self):
+        retVal = self.session.xenapi.task.get_status(self.opaqueRef.OpaqueRef())
+        return HotOpaqueRef(retVal, 'any')
+    
+    def CanCancel(self):
+        allowedOps = self.session.xenapi.task.get_allowed_operations(self.opaqueRef.OpaqueRef())
+
+        if 'cancel' in allowedOps:
+            retVal = True
+        else:
+            retVal = False
+            
+        return retVal
+        
+    def Message(self):
+        status = self.Status().lower()
+        if status.startswith('pending'):
+            retVal = Lang('In progress')
+        elif status.startswith('success'):
+            retVal = Lang('Operation was successful')
+        elif status.startswith('failure'):
+            errorInfo = self.session.xenapi.task.get_error_info(self.opaqueRef.OpaqueRef())
+            retVal = Lang('Failed: ')+Language.XapiError(errorInfo)
+        elif stats.startswith('cancelling'):
+            retVal = Lang('Cancellation in progress')
+        elif stats.startswith('cancelled'):
+            retVal = Lang('Cancelled')
+        else:
+            retVal = Lang('<Unknown>')
+            
+        return retVal
+    
     def IsPending(self):
         if self.Status().lower().startswith('pending'):
             retVal = True
@@ -39,6 +71,9 @@ class TaskEntry:
             retVal = time.time() - self.startTime
         return retVal
     
+    def Cancel(self):
+        self.session.xenapi.task.cancel(self.opaqueRef.OpaqueRef())
+        
 class Task:
     instance = None
     def __init__(self):

@@ -241,6 +241,7 @@ class HotData:
                 PIFs='pif',
                 resident_on='host',
                 suspend_VDI='vdi',
+                snapshot_of='snapshot',
                 VBDs = 'vbd',
                 VIFs = 'vif')
         
