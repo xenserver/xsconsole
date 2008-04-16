@@ -19,6 +19,7 @@ class VMUtils:
         'RESUME' : Lang("Resume"),
         'SHUTDOWN' : Lang("Shut Down"),
         'START' : Lang("Start"),
+        'STARTONTHISHOST' : Lang("Start On This Host"),
         'SUSPEND' : Lang("Suspend")
     }
     @classmethod
@@ -37,6 +38,9 @@ class VMUtils:
             task = Task.New(lambda x: x.xenapi.Async.VM.clean_shutdown(inVMHandle.OpaqueRef()))
         elif inOperation == 'START':
             task = Task.New(lambda x: x.xenapi.Async.VM.start(inVMHandle.OpaqueRef(), False, True))
+        elif inOperation == 'STARTONTHISHOST':
+            hostRef = HotAccessor().local_host.opaque_ref()
+            task = Task.New(lambda x: x.xenapi.Async.VM.start_on(inVMHandle.OpaqueRef(), hostRef.OpaqueRef(), False, True))
         elif inOperation == 'SUSPEND':
             task = Task.New(lambda x: x.xenapi.Async.VM.suspend(inVMHandle.OpaqueRef()))
         else:
@@ -50,7 +54,6 @@ class VMUtils:
         
         while task.IsPending():
             time.sleep(1)
-        
 
     @classmethod
     def OperationName(cls, inOperation):
@@ -72,7 +75,7 @@ class VMControlDialogue(Dialogue):
         elif powerState.startswith('suspended'):
             choiceList = [ 'RESUME', 'FORCESHUTDOWN' ]
         elif powerState.startswith('halted'):
-            choiceList = [ 'START' ]
+            choiceList = [ 'STARTONTHISHOST' ]
         else:
             choiceList = [ 'NONE' ]
 

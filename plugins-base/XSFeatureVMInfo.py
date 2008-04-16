@@ -33,7 +33,7 @@ class XSFeatureVMInfo:
 
     @classmethod
     def InfoStatusUpdateHandler(cls, inPane, inHandle):
-        vm = HotAccessor().vm(inHandle)
+        vm = HotAccessor().vm[inHandle]
         if vm is None:
             inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
         else:
@@ -98,7 +98,7 @@ class XSFeatureVMInfo:
         retVal = copy.copy(inMenu)
         retVal.RemoveChoices()
         # inList is a list of HotOpaqueRef objects
-        vmList = [ HotAccessor().vm(x) for x in inList ]
+        vmList = [ HotAccessor().vm[x] for x in inList ]
         # Sort list by VM name
         vmList.sort(lambda x,y: cmp(x.name_label(''), y.name_label('')))
         
@@ -144,7 +144,7 @@ class XSFeatureVMInfo:
             {
                 'menuname' : 'MENU_ALLVM', # Name of the menu this item leads to when selected
                 'menutext' : Lang('All VMs'),
-                'menupriority' : 200,
+                'menupriority' : 300,
                 'menuregenerator' : XSFeatureVMInfo.AllMenuRegenerator,
                 'activatehandler' : XSFeatureVMInfo.AllActivateHandler,
                 'statusupdatehandler' : XSFeatureVMInfo.AllStatusUpdateHandler

@@ -51,25 +51,42 @@ class HotAccessor:
         retVal.refs.append(None)
         return retVal
 
-    def __call__(self, inParam = None):
-        if isinstance(inParam, HotOpaqueRef):
-            # Add a reference, selecting e.g. a key selecting a particular item from a dictionary
-            self.refs[-1] = inParam
-            retVal = self # Return this object for further operations
-        else:
-            # These are the brackets on the end of the statement, with optional default value.
-            # That makes it a request to fetch the data
-            retVal = HotData.Inst().GetData(self.name, inParam, self.refs)
+    def __iter__(self):
+        self.iterKeys = HotData.Inst().GetData(self.name, {}, self.refs).keys()
+        return self
+        
+    # This method will hide fields called 'next' in the xapi database.  If any appear, __iter__ will need to
+    # return a new object type and this method will need to be moved into that
+    def next(self):
+        if len(self.iterKeys) <= 0:
+            raise StopIteration
+        retVal = HotAccessor(self.name[:], self.refs[:]) # [:] copies the array
+        retVal.refs[-1] = self.iterKeys.pop(0)
         return retVal
+
+    def __getitem__(self, inParam):
+        # These are square brackets selecting a particular item from a dict using its OpaqueRef
+        retVal = HotAccessor(self.name[:], self.refs[:])
+        if not isinstance(inParam, HotOpaqueRef):
+            raise Exception('Use of HotAccessor[param] requires param of type HotOpaqueRef, but got '+type(inParam))
+        retVal.refs[-1] = inParam
+        return retVal
+
+    def __call__(self, inParam = None):
+        # These are the brackets on the end of the statement, with optional default value.
+        # That makes it a request to fetch the data
+        if isinstance(inParam, HotOpaqueRef):
+            raise Exception('Use [] to pass HotOpaqueRefs to HotAccessors')
+        return HotData.Inst().GetData(self.name, inParam, self.refs)
     
     def OpaqueRef(self):
         return self.refs[-1]
     
     def __str__(self):
-        return ",".join(zip(self.name, self.refs))
+        return str(self.__dict__)
     
     def __repr__(self):
-        return __str__(self)
+        return str(self.__dict__)
 
 class HotData:
     instance = None
@@ -110,9 +127,6 @@ class HotData:
         itemRef = self.data # Start at the top level
         
         for i, name in enumerate(inNames):
-            if name is '__repr__':
-                raise Exception('HotData.' + '.'.join(inNames[:-1]) + ' must end with ()')
-    
             dataValue = itemRef.get(name, None)
             fetcher = self.fetchers.get(name, None)
             if fetcher is None:
@@ -147,8 +161,9 @@ class HotData:
         self.AddFetcher('guest_vm', self.FetchGuestVM, 5)
         self.AddFetcher('guest_vm_derived', self.FetchGuestVMDerived, 5)
         self.AddFetcher('host', self.FetchHost, 5)
+        self.AddFetcher('host_CPUs', self.FetchHostCPUs, 5)
         self.AddFetcher('local_host', self.FetchLocalHost, 5)
-        self.AddFetcher('metrics', self.FetchVMMetrics, 5)
+        self.AddFetcher('metrics', self.FetchMetrics, 5)
         self.AddFetcher('vm', self.FetchVM, 5)
     
     def FetchVMGuestMetrics(self, inOpaqueRef):
@@ -164,6 +179,23 @@ class HotData:
             for key, value in self.vm().iteritems():
                 if not value.get('is_a_template', False) and not value.get('is_control_domain', False):
                     retVal[key] = value
+        return retVal
+
+    def FetchHostCPUs(self, inOpaqueRef):
+        def LocalConverter(inCPU):
+            return HotData.ConvertOpaqueRefs(inCPU,
+                host='host'
+                )
+            
+        if inOpaqueRef is not None:
+            cpu = self.Session().xenapi.host_cpu.get_record(inOpaqueRef.OpaqueRef())
+            retVal = LocalConverter(cpu)
+        else:    
+            cpus = self.Session().xenapi.host_cpu.get_all_records()
+            retVal = {}
+            for key, cpu in cpus.iteritems():
+                cpu = LocalConverter(cpu)
+                retVal[HotOpaqueRef(key, 'cpu')] = cpu
         return retVal
 
     def FetchGuestVMDerived(self, inOpaqueRef):
@@ -196,6 +228,8 @@ class HotData:
             raise Exception("Request for local host must not be passed an OpaqueRef")
         thisHost = self.Session().xenapi.session.get_this_host(self.Session()._session)
         retVal = self.FetchHost(HotOpaqueRef(thisHost, 'host'))
+        # Add an easy way to get the local host OpaqueRef
+        retVal['opaque_ref'] = HotOpaqueRef(thisHost, 'host')
         return retVal
         
     def FetchHost(self, inOpaqueRef):
@@ -204,7 +238,7 @@ class HotData:
                 crash_dump_sr = 'sr',
                 consoles = 'console',
                 host_CPUs = 'cpu',
-                metrics = 'host.metrics',
+                metrics = 'host::metrics',
                 PBDs = 'pbd',
                 PIFs='pif',
                 resident_VMs = 'vm',
@@ -223,11 +257,16 @@ class HotData:
                 host = LocalConverter(host)
                 retVal[HotOpaqueRef(key, 'host')] = host
         return retVal
-
-    def FetchVMMetrics(self, inOpaqueRef):
+        
+    def FetchMetrics(self, inOpaqueRef):
         if inOpaqueRef is None:
             raise Exception("Request for VM metrics requires an OpaqueRef")
-        retVal = self.Session().xenapi.VM_metrics.get_record(inOpaqueRef.OpaqueRef())
+        if inOpaqueRef.Type() == 'vm::metrics':
+            retVal = self.Session().xenapi.VM_metrics.get_record(inOpaqueRef.OpaqueRef())
+        elif inOpaqueRef.Type() == 'host::metrics':
+            retVal = self.Session().xenapi.host_metrics.get_record(inOpaqueRef.OpaqueRef())
+        else:
+            raise Exception("Unknown metrics type '"+inOpaqueRef.Type()+"'")
         return retVal
 
     def FetchVM(self, inOpaqueRef):
@@ -237,7 +276,7 @@ class HotData:
                 consoles='console',
                 current_operations = 'task',
                 guest_metrics='guest_metrics',
-                metrics='metrics',
+                metrics='vm::metrics',
                 PIFs='pif',
                 resident_on='host',
                 suspend_VDI='vdi',

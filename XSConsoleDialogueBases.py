@@ -620,8 +620,8 @@ class ProgressDialogue(Dialogue):
             elapsedStr = TimeUtils.DurationString(durationSecs)
             
         except Exception, e:
-            progressStr = Lang(e) # FIXME: Change to 'Unavailable'
-            elapsedStr = Lang(e)
+            progressStr = Lang('<Unavailable>')
+            elapsedStr = Lang('<Unavailable>')
 
         pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
         pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
@@ -646,8 +646,8 @@ class ProgressDialogue(Dialogue):
             elapsedStr = TimeUtils.DurationString(durationSecs)
             
         except Exception, e:
-            progressStr = Lang(e) # FIXME: Change to 'Unavailable'
-            elapsedStr = Lang(e)
+            progressStr = Lang('<Unavailable>')
+            elapsedStr = Lang('<Unavailable>')
 
         pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
         pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
