@@ -68,7 +68,7 @@ class VMControlDialogue(Dialogue):
         Dialogue.__init__(self)
         self.operation = 'NONE'
         
-        vm = HotAccessor().guest_vm(self.vmHandle)
+        vm = HotAccessor().guest_vm[self.vmHandle]
         powerState = vm.power_state('').lower()
         if powerState.startswith('running'):
             choiceList = [ 'SHUTDOWN', 'SUSPEND', 'REBOOT', 'FORCESHUTDOWN', 'FORCEREBOOT' ]
@@ -96,7 +96,7 @@ class VMControlDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
 
-        vm = HotAccessor().guest_vm(self.vmHandle)
+        vm = HotAccessor().guest_vm[self.vmHandle]
         vmName = vm.name_label(None)
         if vmName is None:
             pane.AddTitleField(Lang("The Virtual Machine is no longer present"))
@@ -109,7 +109,7 @@ class VMControlDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
 
-        vm = HotAccessor().guest_vm(self.vmHandle)
+        vm = HotAccessor().guest_vm[self.vmHandle]
         vmName = vm.name_label(None)
         if vmName is None:
             pane.AddTitleField(Lang("The Virtual Machine is no longer present"))
@@ -158,7 +158,7 @@ class VMControlDialogue(Dialogue):
         Layout.Inst().PopDialogue()
 
         operationName = VMUtils.OperationName(self.operation)
-        vmName = HotAccessor().guest_vm(self.vmHandle).name_label(Lang('<Unknown>'))
+        vmName = HotAccessor().guest_vm[self.vmHandle].name_label(Lang('<Unknown>'))
         messagePrefix = operationName + Lang(' operation on ') + vmName + ' '
         try:
             task = VMUtils.AsyncOperation(self.vmHandle, self.operation)
