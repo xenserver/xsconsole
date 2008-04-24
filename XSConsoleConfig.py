@@ -13,12 +13,12 @@ class Config:
     def __init__(self):
         self.colours = {
             # Colours specified as name : (red, green, blue), value range 0..999
-            'fg_dark' : (444, 444, 333),
-            'fg_normal' : (666, 666, 500),
-            'fg_bright' : (999, 999, 750),
+            'fg_dark' : (400, 400, 360),
+            'fg_normal' : (600, 600, 550),
+            'fg_bright' : (999, 999, 800),
             'bg_dark' : (0, 0, 0), 
-            'bg_normal' : (333, 0, 0), 
-            'bg_bright' : (500, 0, 0), 
+            'bg_normal' : (0, 168, 325), 
+            'bg_bright' : (0, 200, 400), 
         }
         
         self.ftpname = 'XenServer Support'
