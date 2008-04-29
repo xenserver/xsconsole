@@ -4,6 +4,7 @@
 # Xen, the Xen logo, XenCenter, XenMotion are trademarks or registered
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
+# (Test modification)
 
 
 if __name__ == "__main__":
