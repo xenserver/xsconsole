@@ -52,7 +52,11 @@ class HotAccessor:
         return retVal
 
     def __iter__(self):
-        self.iterKeys = HotData.Inst().GetData(self.name, {}, self.refs).keys()
+        iterData = HotData.Inst().GetData(self.name, {}, self.refs)
+        if isinstance(iterData, types.DictType):
+            self.iterKeys = iterData.keys()
+        else:
+            self.iterKeys = iterData
         return self
         
     # This method will hide fields called 'next' in the xapi database.  If any appear, __iter__ will need to
@@ -66,9 +70,9 @@ class HotAccessor:
 
     def __getitem__(self, inParam):
         # These are square brackets selecting a particular item from a dict using its OpaqueRef
+        if not isinstance(inParam, (types.IntType, HotOpaqueRef)):
+            raise Exception('Use of HotAccessor[param] requires param of type int or HotOpaqueRef, but got '+str(type(inParam)))
         retVal = HotAccessor(self.name[:], self.refs[:])
-        if not isinstance(inParam, HotOpaqueRef):
-            raise Exception('Use of HotAccessor[param] requires param of type HotOpaqueRef, but got '+type(inParam))
         retVal.refs[-1] = inParam
         return retVal
 
@@ -115,7 +119,8 @@ class HotData:
         cacheEntry = self.data.get(cacheName, None)
         fetcher = self.fetchers[inName]
         timeNow = time.time()
-        if cacheEntry is not None and timeNow - cacheEntry.timestamp < fetcher.lifetimeSecs:
+        # If inRef is an array index, the result can't be cached
+        if not isinstance(inRef, types.IntType) and cacheEntry is not None and timeNow - cacheEntry.timestamp < fetcher.lifetimeSecs:
             retVal = cacheEntry.value
         else:
             retVal = fetcher.fetcher(inRef)
@@ -123,27 +128,59 @@ class HotData:
             self.data[cacheName] = Struct(timestamp = timeNow, value = retVal)
         return retVal    
     
+    def FetchByRef(self, inRef):
+        retVal = self.Fetch(inRef.Type(), inRef)
+        return retVal
+    
+    def FetchByNameOrRef(self, inName, inRef):
+        if inName in self.fetchers:
+            retVal = self.Fetch(inName, inRef)
+        else:
+            retVal = self.Fetch(inRef.Type(), inRef)
+        return retVal
+
     def GetData(self, inNames, inDefault, inRefs):
         itemRef = self.data # Start at the top level
-        
+
         for i, name in enumerate(inNames):
-            dataValue = itemRef.get(name, None)
-            fetcher = self.fetchers.get(name, None)
-            if fetcher is None:
-                # No fetcher for this item, so return it if it's there or fail
-                if dataValue is not None:
-                    itemRef = dataValue
-                else:
-                    return FirstValue(inDefault, None)
+            currentRef = inRefs[i]
+            if isinstance(currentRef, HotOpaqueRef):
+                # If currentRef is a HotOpaqueRef, always fetch the corresponding object
+                itemRef = self.FetchByNameOrRef(name, currentRef)
             else:
-                if dataValue is not None and isinstance(dataValue, HotOpaqueRef):
-                    # This is a subitem with an OpaqueRef supplied by xapi, so don't let the caller offer their own
-                    if inRefs[i] is not None:
-                        raise Exception("OpaqueRef given where not required, at '"+name+"' in '"+'.'.join(inNames[:-1])+"'")
-                    itemRef = self.Fetch(name, dataValue)
+                # Look for a data fetcher matching this item name
+                if name in self.fetchers:
+                    # We have a fetcher for this element, so use it
+                    
+                    # Handle the case where itemRef is a dictionary containing the key/value pair ( current name : HotOpaqueRef )
+                    if isinstance(itemRef, types.DictType) and name in itemRef and isinstance(itemRef[name], HotOpaqueRef):
+                        # This is a subitem with an OpaqueRef supplied by xapi, so fetch the obect it's referring to
+                        itemRef = self.Fetch(name, itemRef[name])
+                    else:
+                        # Fetch without a reference
+                        itemRef = self.Fetch(name, None)
                 else:
-                    # Use the caller-supplied OpaqueRef, or None
-                    itemRef = self.Fetch(name, inRefs[i])
+                    # No fetcher for this item, so return the value of the named element if is in the dictionary,
+                    # or the default if not
+                    # First, promote OpaqueRefs to the object they refer to
+                    if isinstance(itemRef, HotOpaqueRef):
+                        itemRef = self.FetchByRef(itemRef)
+                        
+                    try:
+                        # This allows hash navigation using HotAccessor().key1.key2.key3(), etc.
+                        itemRef = itemRef[name]
+                    except:
+                        # Hash key not present, so return the default value
+                        return FirstValue(inDefault, None)
+
+                # Handle integer references as list indices
+                if isinstance(currentRef, types.IntType):
+                    if not isinstance(itemRef, (types.ListType, types.TupleType)):
+                        raise Exception("List index supplied but element '"+'.'.join(inNames)+"' is not a list")
+                    if inRefs[i] >= len(itemRef) or currentRef < -len(itemRef):
+                        raise Exception("List index "+str(currentRef)+" out of range in '"+'.'.join(inNames)+"'")
+                    itemRef = itemRef[currentRef]
+                    
         return itemRef
     
     def __getattr__(self, inName):
@@ -253,7 +290,7 @@ class HotData:
         else:
             hosts = self.Session().xenapi.host.get_all_records()
             retVal = {}
-            for key, host in host.iteritems():
+            for key, host in hosts.iteritems():
                 host = LocalConverter(host)
                 retVal[HotOpaqueRef(key, 'host')] = host
         return retVal
@@ -283,7 +320,7 @@ class HotData:
                 snapshot_of='snapshot',
                 VBDs = 'vbd',
                 VIFs = 'vif')
-        
+                
         if inOpaqueRef is not None:
             vm = self.Session().xenapi.VM.get_record(inOpaqueRef.OpaqueRef())
             retVal = LocalConverter(vm)

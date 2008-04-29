@@ -12,36 +12,41 @@ from XSConsoleStandard import *
 
 class VMUtils:
     operationNames = {
-        'FORCEREBOOT' : Lang("Force Reboot"),
-        'FORCESHUTDOWN' : Lang("Force Shutdown"),
-        'NONE' : Lang("No Operation"),
-        'REBOOT' : Lang("Reboot"),
-        'RESUME' : Lang("Resume"),
-        'SHUTDOWN' : Lang("Shut Down"),
-        'START' : Lang("Start"),
-        'STARTONTHISHOST' : Lang("Start On This Host"),
-        'SUSPEND' : Lang("Suspend")
+                      
+        'start' : Struct(name = Lang("Start"), priority = 10),
+        'start_on' : Struct(name = Lang("Start On This Host"), priority = 20),
+        'suspend' : Struct(name = Lang("Suspend"), priority = 30),
+        'resume' : Struct(name = Lang("Resume"), priority = 40),
+        'clean_reboot' : Struct(name = Lang("Reboot"), priority = 50),
+        'clean_shutdown' : Struct(name = Lang("Shut Down"), priority = 60),
+        'hard_reboot' : Struct(name = Lang("Force Reboot"), priority = 70),
+        'hard_shutdown' : Struct(name = Lang("Force Shutdown"), priority = 80),
+        'none' : Struct(name = Lang("No Operation"), priority = 90)
     }
     @classmethod
+    def AllowedOperations(cls):
+        return cls.operationNames.keys()
+        
+    @classmethod
     def AsyncOperation(cls, inVMHandle, inOperation):
-        if inOperation == 'FORCEREBOOT':
+        if inOperation == 'hard_reboot':
             task = Task.New(lambda x: x.xenapi.Async.VM.hard_reboot(inVMHandle.OpaqueRef()))
-        elif inOperation == 'FORCESHUTDOWN':
+        elif inOperation == 'hard_shutdown':
             task = Task.New(lambda x: x.xenapi.Async.VM.hard_shutdown(inVMHandle.OpaqueRef()))
-        elif inOperation == 'NONE':
+        elif inOperation == 'none':
             task = None # No operation
-        elif inOperation == 'REBOOT':
+        elif inOperation == 'clean_reboot':
             task = Task.New(lambda x: x.xenapi.Async.VM.clean_reboot(inVMHandle.OpaqueRef()))
-        elif inOperation == 'RESUME':
+        elif inOperation == 'resume':
             task = Task.New(lambda x: x.xenapi.Async.VM.resume(inVMHandle.OpaqueRef(), False, True))
-        elif inOperation == 'SHUTDOWN':
+        elif inOperation == 'clean_shutdown':
             task = Task.New(lambda x: x.xenapi.Async.VM.clean_shutdown(inVMHandle.OpaqueRef()))
-        elif inOperation == 'START':
+        elif inOperation == 'start':
             task = Task.New(lambda x: x.xenapi.Async.VM.start(inVMHandle.OpaqueRef(), False, True))
-        elif inOperation == 'STARTONTHISHOST':
+        elif inOperation == 'start_on':
             hostRef = HotAccessor().local_host.opaque_ref()
             task = Task.New(lambda x: x.xenapi.Async.VM.start_on(inVMHandle.OpaqueRef(), hostRef.OpaqueRef(), False, True))
-        elif inOperation == 'SUSPEND':
+        elif inOperation == 'suspend':
             task = Task.New(lambda x: x.xenapi.Async.VM.suspend(inVMHandle.OpaqueRef()))
         else:
             raise Exception("Unknown VM operation "+str(inOperation))
@@ -52,33 +57,39 @@ class VMUtils:
     def DoOperation(cls, inVMHandle, inOperation):
         task = cls.AsyncOperation(inVMHandle, inOperation)
         
-        while task.IsPending():
+        while task is not None and task.IsPending():
             time.sleep(1)
 
     @classmethod
-    def OperationName(cls, inOperation):
+    def OperationStruct(cls, inOperation):
         retVal = cls.operationNames.get(inOperation, None)
         if retVal is None:
             raise Exception("Unknown VM operation "+str(inOperation))
         return retVal
 
+    @classmethod
+    def OperationName(cls, inOperation):
+        return cls.OperationStruct(inOperation).name
+
+    @classmethod
+    def OperationPriority(cls, inOperation):
+        return cls.OperationStruct(inOperation).priority
+
 class VMControlDialogue(Dialogue):
     def __init__(self, inVMHandle):
         self.vmHandle = inVMHandle
         Dialogue.__init__(self)
-        self.operation = 'NONE'
+        self.operation = 'none'
         
         vm = HotAccessor().guest_vm[self.vmHandle]
-        powerState = vm.power_state('').lower()
-        if powerState.startswith('running'):
-            choiceList = [ 'SHUTDOWN', 'SUSPEND', 'REBOOT', 'FORCESHUTDOWN', 'FORCEREBOOT' ]
-        elif powerState.startswith('suspended'):
-            choiceList = [ 'RESUME', 'FORCESHUTDOWN' ]
-        elif powerState.startswith('halted'):
-            choiceList = [ 'STARTONTHISHOST' ]
-        else:
-            choiceList = [ 'NONE' ]
+        allowedOps = vm.allowed_operations()
 
+        choiceList = [ name for name in allowedOps if name in VMUtils.AllowedOperations() ]
+        if len(choiceList) == 0:
+            choiceList.append('none')
+        
+        choiceList.sort(lambda x, y: cmp(VMUtils.OperationPriority(x), VMUtils.OperationPriority(y)))
+        
         self.controlMenu = Menu()
         for choice in choiceList:
             self.controlMenu.AddChoice(name = VMUtils.OperationName(choice),
