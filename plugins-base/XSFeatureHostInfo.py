@@ -5,6 +5,7 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
+
 if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
@@ -16,11 +17,11 @@ class XSFeatureHostInfo:
         inPane.AddTitleField("Host Performance Information")
         
         host = HotAccessor().local_host
-        numCPUs = len(host.host_CPUs({}))
+        localCPUs = [cpu for cpu in host.host_CPUs if cpu.host.uuid() == host.uuid()]
         try:
-            cpuUsage = sum( [cpu.utilisation() for cpu in host.host_CPUs] ) / numCPUs # Allow divide-by-zero to throw
+            cpuUsage = sum( [cpu.utilisation() for cpu in localCPUs] ) / len(localCPUs) # Allow divide-by-zero to throw
             cpuUsage = max(0.0, min(1.0, cpuUsage))
-            cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), numCPUs)
+            cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), len(localCPUs))
         except Exception, e:
             cpuUsageStr = Lang('<Unavailable>')
 
