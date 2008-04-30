@@ -354,7 +354,7 @@ class XSFeatureRemoteDB:
         data = Data.Inst()
         inPane.AddTitleField(Lang("Setup Remote Database"))
 
-        description = "A remote database, if configured, is used to store xapi configuration settings that are written frequently.  The copy of the xapi database on the FLASH media is updated less frequently as it is rate-limited to reduce writes to the device.  This setting is particularly useful for diskless blades."
+        description = "A remote database, if configured, is used to store xapi configuration settings that are written frequently.  The copy of the xapi database on the FLASH media is updated less frequently as it is rate-limited to reduce writes to the device.  This setting is particularly useful for diskless servers."
             
         if not data.remotedb.is_on_remote_storage(False):
             inPane.AddWrappedTextField(Lang(description))
