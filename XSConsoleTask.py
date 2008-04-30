@@ -10,21 +10,21 @@ from XSConsoleBases import *
 from XSConsoleHotData import *
 
 class TaskEntry:
-    def __init__(self, inOpaqueRef, inSession):
-        self.opaqueRef = inOpaqueRef
+    def __init__(self, inHotOpaqueRef, inSession):
+        self.hotOpaqueRef = inHotOpaqueRef
         self.session = inSession
         self.startTime = time.time()
         
     def Status(self):
-        retVal = self.session.xenapi.task.get_status(self.opaqueRef.OpaqueRef())
+        retVal = self.session.xenapi.task.get_status(self.hotOpaqueRef.OpaqueRef())
         return retVal
     
     def Result(self):
-        retVal = self.session.xenapi.task.get_status(self.opaqueRef.OpaqueRef())
+        retVal = self.session.xenapi.task.get_status(self.hotOpaqueRef.OpaqueRef())
         return HotOpaqueRef(retVal, 'any')
     
     def CanCancel(self):
-        allowedOps = self.session.xenapi.task.get_allowed_operations(self.opaqueRef.OpaqueRef())
+        allowedOps = self.session.xenapi.task.get_allowed_operations(self.hotOpaqueRef.OpaqueRef())
 
         if 'cancel' in allowedOps:
             retVal = True
@@ -40,7 +40,7 @@ class TaskEntry:
         elif status.startswith('success'):
             retVal = Lang('Operation was successful')
         elif status.startswith('failure'):
-            errorInfo = self.session.xenapi.task.get_error_info(self.opaqueRef.OpaqueRef())
+            errorInfo = self.session.xenapi.task.get_error_info(self.hotOpaqueRef.OpaqueRef())
             retVal = Lang('Failed: ')+Language.XapiError(errorInfo)
         elif stats.startswith('cancelling'):
             retVal = Lang('Cancellation in progress')
@@ -59,25 +59,26 @@ class TaskEntry:
         return retVal
 
     def ProgressValue(self):
-        retVal = self.session.xenapi.task.get_progress(self.opaqueRef.OpaqueRef())
+        retVal = self.session.xenapi.task.get_progress(self.hotOpaqueRef.OpaqueRef())
         return retVal
     
     def DurationSecs(self):
-        finished = TimeUtils.DateTimeToSecs(self.session.xenapi.task.get_finished(self.opaqueRef.OpaqueRef()))
+        finished = TimeUtils.DateTimeToSecs(self.session.xenapi.task.get_finished(self.hotOpaqueRef.OpaqueRef()))
         if finished > 0:
-            created = TimeUtils.DateTimeToSecs(self.session.xenapi.task.get_created(self.opaqueRef.OpaqueRef()))
+            created = TimeUtils.DateTimeToSecs(self.session.xenapi.task.get_created(self.hotOpaqueRef.OpaqueRef()))
             retVal = finished - created
         else:
             retVal = time.time() - self.startTime
         return retVal
     
     def Cancel(self):
-        self.session.xenapi.task.cancel(self.opaqueRef.OpaqueRef())
+        self.session.xenapi.task.cancel(self.hotOpaqueRef.OpaqueRef())
         
 class Task:
     instance = None
     def __init__(self):
         self.taskList = {}
+        self.syncSession = None
             
     @classmethod
     def Inst(cls):
@@ -100,8 +101,19 @@ class Task:
         self.taskList[hotTaskRef] = taskEntry
         return taskEntry
 
+    def SyncSession(self):
+        if self.syncSession is None:
+            self.syncSession = Auth.Inst().NewSession()
+        return self.syncSession
+
+    def SyncOperation(self, inProc):
+        retVal = inProc(self.SyncSession())
+        return retVal
+
     @classmethod
     def New(cls, inProc):
         return cls.Inst().Create(inProc)
     
-    
+    @classmethod
+    def Sync(cls, inProc):
+        return cls.Inst().SyncOperation(inProc)

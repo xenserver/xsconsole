@@ -12,23 +12,24 @@ from XSConsoleStandard import *
 
 class VMUtils:
     operationNames = {
-                      
-        'start' : Struct(name = Lang("Start"), priority = 10),
+        # Only allow start on this host
+        # 'start' : Struct(name = Lang("Start"), priority = 10),
         'start_on' : Struct(name = Lang("Start On This Host"), priority = 20),
         'suspend' : Struct(name = Lang("Suspend"), priority = 30),
         'resume' : Struct(name = Lang("Resume"), priority = 40),
         'clean_reboot' : Struct(name = Lang("Reboot"), priority = 50),
         'clean_shutdown' : Struct(name = Lang("Shut Down"), priority = 60),
-        'hard_reboot' : Struct(name = Lang("Force Reboot"), priority = 70),
-        'hard_shutdown' : Struct(name = Lang("Force Shutdown"), priority = 80),
-        'none' : Struct(name = Lang("No Operation"), priority = 90)
+        'pool_migrate' : Struct(name = Lang("Migrate"), priority = 70),
+        'hard_reboot' : Struct(name = Lang("Force Reboot"), priority = 80),
+        'hard_shutdown' : Struct(name = Lang("Force Shutdown"), priority = 90),
+        'none' : Struct(name = Lang("No Operation"), priority = 100)
     }
     @classmethod
     def AllowedOperations(cls):
         return cls.operationNames.keys()
         
     @classmethod
-    def AsyncOperation(cls, inVMHandle, inOperation):
+    def AsyncOperation(cls, inVMHandle, inOperation, inParam0 = None):
         if inOperation == 'hard_reboot':
             task = Task.New(lambda x: x.xenapi.Async.VM.hard_reboot(inVMHandle.OpaqueRef()))
         elif inOperation == 'hard_shutdown':
@@ -41,6 +42,10 @@ class VMUtils:
             task = Task.New(lambda x: x.xenapi.Async.VM.resume(inVMHandle.OpaqueRef(), False, True))
         elif inOperation == 'clean_shutdown':
             task = Task.New(lambda x: x.xenapi.Async.VM.clean_shutdown(inVMHandle.OpaqueRef()))
+        elif inOperation == 'pool_migrate':
+            if not isinstance(inParam0, HotOpaqueRef):
+                raise Exception("Operation pool_migrate require a host HotOpaqueRef parameter")
+            task = Task.New(lambda x: x.xenapi.Async.VM.pool_migrate(inVMHandle.OpaqueRef(), inParam0.OpaqueRef(), {}))
         elif inOperation == 'start':
             task = Task.New(lambda x: x.xenapi.Async.VM.start(inVMHandle.OpaqueRef(), False, True))
         elif inOperation == 'start_on':
@@ -59,6 +64,17 @@ class VMUtils:
         
         while task is not None and task.IsPending():
             time.sleep(1)
+
+    @classmethod
+    def GetPossibleHostRefs(cls, inVMHandle):
+        hostList = Task.Sync(lambda x: x.xenapi.VM.get_possible_hosts(inVMHandle.OpaqueRef()))
+        hostList = [ HotOpaqueRef(host, 'host') for host in hostList ] # Convert OpaqueRefs to HotOpaqueRefs
+        return hostList
+
+    @classmethod
+    def GetPossibleHostAccessors(cls, inVMHandle):
+        # Convert host HotOpaqueRefs (from GetPossibleHostRefs) to HotAccessors for the hosts
+        return [ HotAccessor().host[hostRef] for hostRef in cls.GetPossibleHostRefs(inVMHandle) ]
 
     @classmethod
     def OperationStruct(cls, inOperation):
@@ -80,8 +96,9 @@ class VMControlDialogue(Dialogue):
         self.vmHandle = inVMHandle
         Dialogue.__init__(self)
         self.operation = 'none'
-        
-        vm = HotAccessor().guest_vm[self.vmHandle]
+        self.extraInfo = []
+        self.opParams = []
+        vm = HotAccessor().vm[self.vmHandle]
         allowedOps = vm.allowed_operations()
 
         choiceList = [ name for name in allowedOps if name in VMUtils.AllowedOperations() ]
@@ -103,6 +120,19 @@ class VMControlDialogue(Dialogue):
         pane.TitleSet(Lang("Virtual Machine Control"))
         pane.AddBox()
         
+        if self.state == 'MIGRATE':
+            hosts = VMUtils.GetPossibleHostAccessors(self.vmHandle)
+            hosts.sort(lambda x, y: cmp(x.name_label(), y.name_label()))
+            self.hostMenu = Menu()
+            residentHost = HotAccessor().vm[self.vmHandle].resident_on()
+            for host in hosts:
+                if host.HotOpaqueRef() != residentHost:
+                    self.hostMenu.AddChoice(name = host.name_label(),
+                        onAction = self.HandleHostChoice,
+                        handle = host.HotOpaqueRef())
+            if self.hostMenu.NumChoices() == 0:
+                self.hostMenu.AddChoice(Lang('<No hosts available>'))
+
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -116,11 +146,19 @@ class VMControlDialogue(Dialogue):
         pane.AddMenuField(self.controlMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
+    def UpdateFieldsMIGRATE(self):
+        pane = self.Pane()
+        pane.ResetFields()
+
+        pane.AddTitleField(Lang('Please choose a new host for this Virtual Machine'))
+        pane.AddMenuField(self.hostMenu)
+        pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
         pane.ResetFields()
 
-        vm = HotAccessor().guest_vm[self.vmHandle]
+        vm = HotAccessor().vm[self.vmHandle]
         vmName = vm.name_label(None)
         if vmName is None:
             pane.AddTitleField(Lang("The Virtual Machine is no longer present"))
@@ -128,7 +166,9 @@ class VMControlDialogue(Dialogue):
             pane.AddTitleField(Lang('Press <F8> to confirm this operation'))
             pane.AddStatusField(Lang("Operation", 20), VMUtils.OperationName(self.operation))
             pane.AddStatusField(Lang("Virtual Machine", 20), vmName)
-
+            for values in self.extraInfo:
+                pane.AddStatusField(values[0], values[1])
+                
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFields(self):
@@ -142,6 +182,9 @@ class VMControlDialogue(Dialogue):
     
     def HandleKeyINITIAL(self, inKey):
         return self.controlMenu.HandleKey(inKey)
+
+    def HandleKeyMIGRATE(self, inKey):
+        return self.hostMenu.HandleKey(inKey)
 
     def HandleKeyCONFIRM(self, inKey):
         handled = False
@@ -163,6 +206,15 @@ class VMControlDialogue(Dialogue):
     
     def HandleControlChoice(self, inChoice):
         self.operation = inChoice
+        if inChoice == 'pool_migrate':
+            self.ChangeState('MIGRATE')
+        else:
+            self.ChangeState('CONFIRM')
+        
+    def HandleHostChoice(self, inChoice):
+        self.opParams.append(inChoice)
+        hostName = HotAccessor().vm[inChoice].name_label(Lang('<Unknown>'))
+        self.extraInfo.append( (Lang('New Host', 20), hostName) ) # Append a tuple (so double brackets)
         self.ChangeState('CONFIRM')
         
     def Commit(self):
@@ -172,7 +224,7 @@ class VMControlDialogue(Dialogue):
         vmName = HotAccessor().guest_vm[self.vmHandle].name_label(Lang('<Unknown>'))
         messagePrefix = operationName + Lang(' operation on ') + vmName + ' '
         try:
-            task = VMUtils.AsyncOperation(self.vmHandle, self.operation)
+            task = VMUtils.AsyncOperation(self.vmHandle, self.operation, *self.opParams)
             Layout.Inst().PushDialogue(ProgressDialogue(task, messagePrefix))
             
         except Exception, e:

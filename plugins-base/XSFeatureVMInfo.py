@@ -108,7 +108,7 @@ class XSFeatureVMInfo:
                 retVal.AddChoice(name = nameLabel,
                                             onAction = cls.InfoActivateHandler,
                                             statusUpdateHandler = cls.InfoStatusUpdateHandler,
-                                            handle = vm.OpaqueRef())
+                                            handle = vm.HotOpaqueRef())
             
         if retVal.NumChoices() == 0:
             retVal.AddChoice(name = Lang('<No Virtual Machines Present>'),

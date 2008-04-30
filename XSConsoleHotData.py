@@ -83,7 +83,7 @@ class HotAccessor:
             raise Exception('Use [] to pass HotOpaqueRefs to HotAccessors')
         return HotData.Inst().GetData(self.name, inParam, self.refs)
     
-    def OpaqueRef(self):
+    def HotOpaqueRef(self):
         return self.refs[-1]
     
     def __str__(self):
@@ -140,49 +140,48 @@ class HotData:
         return retVal
 
     def GetData(self, inNames, inDefault, inRefs):
-        itemRef = self.data # Start at the top level
-
-        for i, name in enumerate(inNames):
-            currentRef = inRefs[i]
-            if isinstance(currentRef, HotOpaqueRef):
-                # If currentRef is a HotOpaqueRef, always fetch the corresponding object
-                itemRef = self.FetchByNameOrRef(name, currentRef)
-            else:
-                # Look for a data fetcher matching this item name
-                if name in self.fetchers:
-                    # We have a fetcher for this element, so use it
-                    
-                    # Handle the case where itemRef is a dictionary containing the key/value pair ( current name : HotOpaqueRef )
-                    if isinstance(itemRef, types.DictType) and name in itemRef and isinstance(itemRef[name], HotOpaqueRef):
-                        # This is a subitem with an OpaqueRef supplied by xapi, so fetch the obect it's referring to
-                        itemRef = self.Fetch(name, itemRef[name])
-                    else:
-                        # Fetch without a reference
-                        itemRef = self.Fetch(name, None)
-                else:
-                    # No fetcher for this item, so return the value of the named element if is in the dictionary,
-                    # or the default if not
-                    # First, promote OpaqueRefs to the object they refer to
-                    if isinstance(itemRef, HotOpaqueRef):
-                        itemRef = self.FetchByRef(itemRef)
-                        
-                    try:
-                        # This allows hash navigation using HotAccessor().key1.key2.key3(), etc.
-                        itemRef = itemRef[name]
-                    except:
-                        # Hash key not present, so return the default value
-                        return FirstValue(inDefault, None)
-
-                # Handle integer references as list indices
-                if isinstance(currentRef, types.IntType):
-                    if not isinstance(itemRef, (types.ListType, types.TupleType)):
-                        raise Exception("List index supplied but element '"+'.'.join(inNames)+"' is not a list")
-                    if inRefs[i] >= len(itemRef) or currentRef < -len(itemRef):
-                        raise Exception("List index "+str(currentRef)+" out of range in '"+'.'.join(inNames)+"'")
-                    itemRef = itemRef[currentRef]
-                    
-        return itemRef
+        try:
+            itemRef = self.data # Start at the top level
     
+            for i, name in enumerate(inNames):
+                currentRef = inRefs[i]
+                if isinstance(currentRef, HotOpaqueRef):
+                    # If currentRef is a HotOpaqueRef, always fetch the corresponding object
+                    itemRef = self.FetchByNameOrRef(name, currentRef)
+                else:
+                    # Look for a data fetcher matching this item name
+                    if name in self.fetchers:
+                        # We have a fetcher for this element, so use it
+                        
+                        # Handle the case where itemRef is a dictionary containing the key/value pair ( current name : HotOpaqueRef )
+                        if isinstance(itemRef, types.DictType) and name in itemRef and isinstance(itemRef[name], HotOpaqueRef):
+                            # This is a subitem with an OpaqueRef supplied by xapi, so fetch the obect it's referring to
+                            itemRef = self.Fetch(name, itemRef[name])
+                        else:
+                            # Fetch without a reference
+                            itemRef = self.Fetch(name, None)
+                    else:
+                        # No fetcher for this item, so return the value of the named element if is in the dictionary,
+                        # or the default if not
+                        # First, promote OpaqueRefs to the object they refer to
+                        if isinstance(itemRef, HotOpaqueRef):
+                            itemRef = self.FetchByRef(itemRef)
+
+                        # This allows hash navigation using HotAccessor().key1.key2.key3(), etc.
+                        itemRef = itemRef[name] # Allow to throw if element not present
+    
+                    # Handle integer references as list indices
+                    if isinstance(currentRef, types.IntType):
+                        if not isinstance(itemRef, (types.ListType, types.TupleType)):
+                            raise Exception("List index supplied but element '"+'.'.join(inNames)+"' is not a list")
+                        if inRefs[i] >= len(itemRef) or currentRef < -len(itemRef):
+                            raise Exception("List index "+str(currentRef)+" out of range in '"+'.'.join(inNames)+"'")
+                        itemRef = itemRef[currentRef]
+            return itemRef
+        except Exception, e:
+            # Data not present/fetchable, so return the default value
+            return FirstValue(inDefault, None)                
+        
     def __getattr__(self, inName):
         if inName[0].isupper():
             # Don't expect elements to start with upper case, so probably an unknown method name
