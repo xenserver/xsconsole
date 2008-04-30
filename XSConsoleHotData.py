@@ -198,8 +198,11 @@ class HotData:
         self.AddFetcher('guest_vm_derived', self.FetchGuestVMDerived, 5)
         self.AddFetcher('host', self.FetchHost, 5)
         self.AddFetcher('host_CPUs', self.FetchHostCPUs, 5)
-        self.AddFetcher('local_host', self.FetchLocalHost, 5)
+        self.AddFetcher('local_host', self.FetchLocalHost, 5) # Derived
+        self.AddFetcher('local_host_ref', self.FetchLocalHostRef, 60) # Derived
+        self.AddFetcher('local_pool', self.FetchLocalPool, 5) # Derived
         self.AddFetcher('metrics', self.FetchMetrics, 5)
+        self.AddFetcher('pool', self.FetchPool, 5)
         self.AddFetcher('vm', self.FetchVM, 5)
     
     def FetchVMGuestMetrics(self, inOpaqueRef):
@@ -260,12 +263,25 @@ class HotData:
         return retVal
 
     def FetchLocalHost(self, inOpaqueRef):
+        retVal = self.FetchHost(self.FetchLocalHostRef(inOpaqueRef))
+        return retVal
+        
+    def FetchLocalHostRef(self, inOpaqueRef):
         if inOpaqueRef is not None:
-            raise Exception("Request for local host must not be passed an OpaqueRef")
+            raise Exception("Request for local host ref must not be passed an OpaqueRef")
         thisHost = self.Session().xenapi.session.get_this_host(self.Session()._session)
-        retVal = self.FetchHost(HotOpaqueRef(thisHost, 'host'))
-        # Add an easy way to get the local host OpaqueRef
-        retVal['opaque_ref'] = HotOpaqueRef(thisHost, 'host')
+        retVal = HotOpaqueRef(thisHost, 'host')
+        return retVal    
+    
+    def FetchLocalPool(self, inOpaqueRef):
+        if inOpaqueRef is not None:
+            raise Exception("Request for local host pool must not be passed an OpaqueRef")
+
+        pools = self.Session().xenapi.pool.get_all()
+        if len(pools) != 1:
+            raise Exception("Unexpected number of pools "+str(pools))
+
+        retVal = self.FetchPool(HotOpaqueRef(pools[0], 'pool'))
         return retVal
         
     def FetchHost(self, inOpaqueRef):
@@ -273,6 +289,7 @@ class HotData:
             return HotData.ConvertOpaqueRefs(inHost,
                 crash_dump_sr = 'sr',
                 consoles = 'console',
+                current_operations = 'task',
                 host_CPUs = 'cpu',
                 metrics = 'host::metrics',
                 PBDs = 'pbd',
@@ -305,6 +322,26 @@ class HotData:
             raise Exception("Unknown metrics type '"+inOpaqueRef.Type()+"'")
         return retVal
 
+    def FetchPool(self, inOpaqueRef):
+        def LocalConverter(inPool):
+            return HotData.ConvertOpaqueRefs(inPool,
+                crash_dump_SR='sr',
+                default_SR='sr',
+                master='host',
+                suspend_image_SR='sr'
+            )
+                
+        if inOpaqueRef is not None:
+            pool = self.Session().xenapi.pool.get_record(inOpaqueRef.OpaqueRef())
+            retVal = LocalConverter(pool)
+        else:
+            pools = self.Session().xenapi.pool.get_all_records()
+            retVal = {}
+            for key, pool in pools.iteritems():
+                pool = LocalConverter(pool)
+                retVal[HotOpaqueRef(key, 'pool')] = pool
+        return retVal
+        
     def FetchVM(self, inOpaqueRef):
         def LocalConverter(inVM):
             return HotData.ConvertOpaqueRefs(inVM,

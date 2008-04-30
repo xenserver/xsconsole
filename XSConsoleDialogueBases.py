@@ -623,8 +623,8 @@ class ProgressDialogue(Dialogue):
             progressStr = Lang('<Unavailable>')
             elapsedStr = Lang('<Unavailable>')
 
-        pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
-        pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
+        pane.AddWrappedTextField(Lang('Time', 16) + elapsedStr)
+        pane.AddWrappedTextField(Lang('Progress', 16) + progressStr)
         
         helpKeys = { Lang("<Enter>") : Lang("Hide This Window") }
         if self.task.CanCancel():
@@ -649,8 +649,8 @@ class ProgressDialogue(Dialogue):
             progressStr = Lang('<Unavailable>')
             elapsedStr = Lang('<Unavailable>')
 
-        pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
-        pane.AddWrappedTextField(Lang('Progress: ', 16) + progressStr)
+        pane.AddWrappedTextField(Lang('Time', 16) + elapsedStr)
+        pane.AddWrappedTextField(Lang('Progress', 16) + progressStr)
         
         helpKeys = { Lang("<Enter>") : Lang("Hide This Window") }
         pane.AddKeyHelpField( helpKeys )
@@ -673,7 +673,7 @@ class ProgressDialogue(Dialogue):
         except Exception, e:
             elapsedStr = Lang(e)
 
-        pane.AddWrappedTextField(Lang('Time:', 16) + elapsedStr)
+        pane.AddWrappedTextField(Lang('Time', 16) + elapsedStr)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
     
     def UpdateFields(self):

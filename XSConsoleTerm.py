@@ -39,10 +39,11 @@ class App:
             Importer.Dump()
             for key, value in HotData.Inst().guest_vm().iteritems():
                 localhost = HotAccessor().local_host()
-                vm = HotData.Inst().vm(key)
+                vm = HotData.Inst().vm[key]
                 vm.metrics()
                 try: vm.guest_metrics()
                 except: pass # Not all VMs  have guest metrics
+                HotAccessor().pool()
             HotData.Inst().Dump()
             doQuit = True
         
@@ -142,6 +143,7 @@ class App:
         lastScreenUpdateSeconds = startSeconds
         resized = False
         data = Data.Inst()
+        db = HotAccessor()
         
         self.layout.DoUpdate()
         while not doQuit:
@@ -202,6 +204,10 @@ class App:
                 doQuit = True
             
             bannerStr = Language.Inst().Branding(data.host.software_version.product_brand('')) + ' ' + data.host.software_version.product_version('')
+            if db.local_pool.master.uuid() == db.local_host.uuid():
+                bannerStr += ' (Master)'
+            else:
+                bannerStr += ' (Slave)'
             
             if Auth.Inst().IsAuthenticated():
                 hostStr = Auth.Inst().LoggedInUsername()+'@'+data.host.hostname('')

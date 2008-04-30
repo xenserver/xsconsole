@@ -49,7 +49,7 @@ class VMUtils:
         elif inOperation == 'start':
             task = Task.New(lambda x: x.xenapi.Async.VM.start(inVMHandle.OpaqueRef(), False, True))
         elif inOperation == 'start_on':
-            hostRef = HotAccessor().local_host.opaque_ref()
+            hostRef = HotAccessor().local_host_ref()
             task = Task.New(lambda x: x.xenapi.Async.VM.start_on(inVMHandle.OpaqueRef(), hostRef.OpaqueRef(), False, True))
         elif inOperation == 'suspend':
             task = Task.New(lambda x: x.xenapi.Async.VM.suspend(inVMHandle.OpaqueRef()))
