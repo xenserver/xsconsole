@@ -268,14 +268,14 @@ class HotData:
         
     def FetchLocalHostRef(self, inOpaqueRef):
         if inOpaqueRef is not None:
-            raise Exception("Request for local host ref must not be passed an OpaqueRef")
+            raise Exception("Request for local host must not be passed an OpaqueRef")
         thisHost = self.Session().xenapi.session.get_this_host(self.Session()._session)
         retVal = HotOpaqueRef(thisHost, 'host')
         return retVal    
     
     def FetchLocalPool(self, inOpaqueRef):
         if inOpaqueRef is not None:
-            raise Exception("Request for local host pool must not be passed an OpaqueRef")
+            raise Exception("Request for local pool must not be passed an OpaqueRef")
 
         pools = self.Session().xenapi.pool.get_all()
         if len(pools) != 1:
