@@ -10,15 +10,6 @@ if __name__ == "__main__":
     
 from XSConsoleStandard import *
 
-class HostEvacuateUtils:
-    @classmethod
-    def EnableHost(cls, inHost):
-        Task.Sync(lambda x: x.xenapi.host.enable(inHost.OpaqueRef()))
-
-    @classmethod
-    def DesignateNewMaster(cls, inHost):
-        Task.Sync(lambda x: x.xenapi.pool.designate_new_master(inHost.OpaqueRef()))
-        
 class HostEvacuateDialogue(Dialogue):
     def __init__(self):
         Dialogue.__init__(self)
@@ -119,18 +110,17 @@ class HostEvacuateDialogue(Dialogue):
         self.ChangeState('CONFIRM')
 
     def Commit(self):
+        hostUtils = Importer.GetResource('HostUtils')
         Layout.Inst().PopDialogue()
 
         if self.hostWasEnabled:
             try:
                 Layout.Inst().TransientBanner(Lang('Entering Maintenance Mode...'))
-                time.sleep(0.5) # Prevent flicker when host has no VMs and command completes quickly
-                ShellPipe(['xe', 'host-evacuate', 'uuid='+HotAccessor().local_host.uuid()]).Call()
-
+                hostUtils.DoOperation('evacuate', HotAccessor().local_host_ref())
                 message = None
                 if self.newMaster is not None:
                     Layout.Inst().TransientBanner(Lang('Designating New Pool Master...'))
-                    HostEvacuateUtils.DesignateNewMaster(self.newMaster.HotOpaqueRef())
+                    hostUtils.DoOperation('designate_new_master', self.newMaster.HotOpaqueRef())
                     
                     message = Lang('Please allow several seconds for the pool to propagate information about the new Master')
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Successfully Entered Maintenance Mode"), message))
@@ -138,7 +128,7 @@ class HostEvacuateDialogue(Dialogue):
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Enter Maintenance Mode Failed To Complete"), Lang(e)))
         else:
             try:
-                HostEvacuateUtils.EnableHost(HotAccessor().local_host_ref())
+                hostUtils.DoOperation('enable', HotAccessor().local_host_ref())
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Successfully Exited Maintenance Mode")))
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Exit Maintenance Mode Failed"), Lang(e)))
@@ -186,14 +176,6 @@ class XSFeatureHostEvacuate:
                 'menutext' : Lang('Enter/Exit Maintenance Mode') ,
                 'activatehandler' : XSFeatureHostEvacuate.ActivateHandler,
                 'statusupdatehandler' : XSFeatureHostEvacuate.StatusUpdateHandler
-            }
-        )
-
-        Importer.RegisterResource(
-            self,
-            'HOST_EVACUATE', # Name of this item for replacement, etc.
-            {
-                'HostEvacuateUtils' : HostEvacuateUtils
             }
         )
 

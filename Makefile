@@ -46,6 +46,7 @@ PLUGINS_BASE += XSFeatureChangeTimeout.py
 PLUGINS_BASE += XSFeatureClaimSR.py
 PLUGINS_BASE += XSFeatureCrashDumpSR.py
 PLUGINS_BASE += XSFeatureDNS.py
+PLUGINS_BASE += XSFeatureHostCommon.py
 PLUGINS_BASE += XSFeatureHostEvacuate.py
 PLUGINS_BASE += XSFeatureHostInfo.py
 PLUGINS_BASE += XSFeatureInstallLicence.py

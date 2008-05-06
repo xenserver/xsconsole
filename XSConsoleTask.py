@@ -51,6 +51,11 @@ class TaskEntry:
             
         return retVal
     
+    def RaiseIfFailed(self):
+        if self.Status().lower().startswith('failure'):
+            errorInfo = self.session.xenapi.task.get_error_info(self.hotOpaqueRef.OpaqueRef())
+            raise Exception(Language.XapiError(errorInfo))
+    
     def IsPending(self):
         if self.Status().lower().startswith('pending'):
             retVal = True

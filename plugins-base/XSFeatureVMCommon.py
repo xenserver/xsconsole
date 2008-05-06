@@ -29,7 +29,7 @@ class VMUtils:
         return cls.operationNames.keys()
         
     @classmethod
-    def AsyncOperation(cls, inVMHandle, inOperation, inParam0 = None):
+    def AsyncOperation(cls, inOperation, inVMHandle, inParam0 = None):
         if inOperation == 'hard_reboot':
             task = Task.New(lambda x: x.xenapi.Async.VM.hard_reboot(inVMHandle.OpaqueRef()))
         elif inOperation == 'hard_shutdown':
@@ -59,11 +59,13 @@ class VMUtils:
         return task
         
     @classmethod
-    def DoOperation(cls, inVMHandle, inOperation):
-        task = cls.AsyncOperation(inVMHandle, inOperation)
+    def DoOperation(cls, inOperation, inVMHandle):
+        task = cls.AsyncOperation(inOperation, inVMHandle)
         
-        while task is not None and task.IsPending():
-            time.sleep(1)
+        if task is not None:
+            while task.IsPending():
+                time.sleep(0.1)
+                task.RaiseIfFailed()
 
     @classmethod
     def GetPossibleHostRefs(cls, inVMHandle):
@@ -224,7 +226,7 @@ class VMControlDialogue(Dialogue):
         vmName = HotAccessor().guest_vm[self.vmHandle].name_label(Lang('<Unknown>'))
         messagePrefix = operationName + Lang(' operation on ') + vmName + ' '
         try:
-            task = VMUtils.AsyncOperation(self.vmHandle, self.operation, *self.opParams)
+            task = VMUtils.AsyncOperation(self.operation, self.vmHandle, *self.opParams)
             Layout.Inst().PushDialogue(ProgressDialogue(task, messagePrefix))
             
         except Exception, e:
