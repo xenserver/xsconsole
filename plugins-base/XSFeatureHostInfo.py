@@ -16,7 +16,7 @@ class XSFeatureHostInfo:
         inPane.AddTitleField("Host Performance Information")
         
         host = HotAccessor().local_host
-        localCPUs = [cpu for cpu in host.host_CPUs if cpu.host.uuid() == host.uuid()]
+        localCPUs = [cpu for cpu in host.host_CPUs]
         try:
             cpuUsage = sum( [cpu.utilisation() for cpu in localCPUs] ) / len(localCPUs) # Allow divide-by-zero to throw
             cpuUsage = max(0.0, min(1.0, cpuUsage))

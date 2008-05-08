@@ -75,6 +75,7 @@ class CursesPalette:
         cls.colours['MODAL_FLASH'] = cls.ColourCreate(fgBright, bgBright) | curses.A_BLINK
         cls.colours['HELP_BASE'] = cls.ColourCreate(fgNormal, bgDark)
         cls.colours['HELP_BRIGHT'] = cls.ColourCreate(fgBright, bgDark)
+        cls.colours['HELP_FLASH'] = cls.ColourCreate(fgBright, bgDark) | curses.A_BLINK
         cls.colours['TOPLINE_BASE'] = cls.ColourCreate(fgDark, bgDark)
         
 class CursesPane:

@@ -294,7 +294,7 @@ class XSFeatureClaimSR:
             'CLAIM_SR', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_DISK',
-                'menupriority' : 100,
+                'menupriority' : 500,
                 'menutext' : Lang('Claim Local Disk as SR') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler

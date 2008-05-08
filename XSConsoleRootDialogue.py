@@ -26,7 +26,7 @@ class RootDialogue(Dialogue):
         menuPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(1, 2, 39, 21)), 'menu')
         menuPane.ColoursSet('MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT', 'MENU_SELECTED')
         statusPane = self.NewPane(DialoguePane(self.parent, PaneSizerFixed(40, 2, 39, 21)), 'status')
-        statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT')
+        statusPane.ColoursSet('HELP_BASE', 'HELP_BRIGHT', None, None, None, 'HELP_FLASH')
         self.menu = Importer.BuildRootMenu(self)
         self.menuName = 'MENU_ROOT'
         self.UpdateFields()

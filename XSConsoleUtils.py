@@ -194,21 +194,28 @@ class IPUtils:
 class SizeUtils:
     @classmethod
     def MemorySizeString(cls, inBytes):
-        bytes = int(inBytes)
-            
-        # Memory is always KiB/MiB/GiB
-        if bytes is None or bytes < 0:
+        if inBytes is None:
             retVal = Lang('<Unknown>')
-        elif bytes >= 1073741824: # 1GiB
-            if bytes < 10737418240: # 10GiB
-                retVal = ('%.1f' % (int(bytes / 107374182.4) / 10.0)) + Lang('GB') # e.g. 2.3GiB
-            else:
-                retVal = str(int(bytes / 1073741824))+Lang('GB')
-        elif bytes >= 2097152:
-            retVal = str(int(bytes / 1048576))+Lang('MB')
-        elif bytes >= 2048:
-            retVal = str(int(bytes / 1024))+Lang('KB')
         else:
-            retVal = str(int(bytes))
+            bytes = int(inBytes)
+            
+            # Memory is always KiB/MiB/GiB
+            if bytes is None or bytes < 0:
+                retVal = Lang('<Unknown>')
+            elif bytes >= 1073741824: # 1GiB
+                if bytes < 10737418240: # 10GiB
+                    retVal = ('%.1f' % (int(bytes / 107374182.4) / 10.0)) + Lang('GB') # e.g. 2.3GiB
+                else:
+                    retVal = str(int(bytes / 1073741824))+Lang('GB')
+            elif bytes >= 2097152:
+                retVal = str(int(bytes / 1048576))+Lang('MB')
+            elif bytes >= 2048:
+                retVal = str(int(bytes / 1024))+Lang('KB')
+            else:
+                retVal = str(int(bytes))+Lang(' bytes')
 
         return retVal
+
+    @classmethod
+    def SRSizeString(cls, inBytes):
+        return cls.MemorySizeString(inBytes)

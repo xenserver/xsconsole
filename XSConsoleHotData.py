@@ -55,8 +55,10 @@ class HotAccessor:
         iterData = HotData.Inst().GetData(self.name, {}, self.refs)
         if isinstance(iterData, types.DictType):
             self.iterKeys = iterData.keys()
+        elif isinstance(iterData, (types.ListType, types.TupleType)):
+            self.iterKeys = iterData[:] # [:] copy is necessary
         else:
-            self.iterKeys = iterData
+            raise Exception(Lang("Cannot iterate over type '")+str(type(iterData))+"'")
         return self
         
     # This method will hide fields called 'next' in the xapi database.  If any appear, __iter__ will need to
@@ -197,12 +199,15 @@ class HotData:
         self.AddFetcher('guest_vm', self.FetchGuestVM, 5)
         self.AddFetcher('guest_vm_derived', self.FetchGuestVMDerived, 5)
         self.AddFetcher('host', self.FetchHost, 5)
-        self.AddFetcher('host_CPUs', self.FetchHostCPUs, 5)
+        self.AddFetcher('host_cpu', self.FetchHostCPUs, 5)
         self.AddFetcher('local_host', self.FetchLocalHost, 5) # Derived
         self.AddFetcher('local_host_ref', self.FetchLocalHostRef, 60) # Derived
         self.AddFetcher('local_pool', self.FetchLocalPool, 5) # Derived
         self.AddFetcher('metrics', self.FetchMetrics, 5)
+        self.AddFetcher('pbd', self.FetchPBD, 5)
         self.AddFetcher('pool', self.FetchPool, 5)
+        self.AddFetcher('sr', self.FetchSR, 5)
+        self.AddFetcher('visible_sr', self.FetchVisibleSR, 5) # Derived
         self.AddFetcher('vm', self.FetchVM, 5)
     
     def FetchVMGuestMetrics(self, inOpaqueRef):
@@ -234,7 +239,7 @@ class HotData:
             retVal = {}
             for key, cpu in cpus.iteritems():
                 cpu = LocalConverter(cpu)
-                retVal[HotOpaqueRef(key, 'cpu')] = cpu
+                retVal[HotOpaqueRef(key, 'host_cpu')] = cpu
         return retVal
 
     def FetchGuestVMDerived(self, inOpaqueRef):
@@ -290,7 +295,7 @@ class HotData:
                 crash_dump_sr = 'sr',
                 consoles = 'console',
                 current_operations = 'task',
-                host_CPUs = 'cpu',
+                host_CPUs = 'host_cpu',
                 metrics = 'host::metrics',
                 PBDs = 'pbd',
                 PIFs='pif',
@@ -322,6 +327,24 @@ class HotData:
             raise Exception("Unknown metrics type '"+inOpaqueRef.Type()+"'")
         return retVal
 
+    def FetchPBD(self, inOpaqueRef):
+        def LocalConverter(inPBD):
+            return HotData.ConvertOpaqueRefs(inPBD,
+                host='host',
+                SR='sr'
+            )
+                
+        if inOpaqueRef is not None:
+            pbd = self.Session().xenapi.PBD.get_record(inOpaqueRef.OpaqueRef())
+            retVal = LocalConverter(pbd)
+        else:
+            pbds = self.Session().xenapi.PBD.get_all_records()
+            retVal = {}
+            for key, pbd in pbds.iteritems():
+                pbd = LocalConverter(pbd)
+                retVal[HotOpaqueRef(key, 'pbd')] = pbd
+        return retVal
+
     def FetchPool(self, inOpaqueRef):
         def LocalConverter(inPool):
             return HotData.ConvertOpaqueRefs(inPool,
@@ -342,6 +365,36 @@ class HotData:
                 retVal[HotOpaqueRef(key, 'pool')] = pool
         return retVal
         
+    def FetchSR(self, inOpaqueRef):
+        def LocalConverter(inSR):
+            return HotData.ConvertOpaqueRefs(inSR,
+                current_operations = 'task',
+                PBDs = 'pbd',
+                VDIs = 'vdi')
+                
+        if inOpaqueRef is not None:
+            sr = self.Session().xenapi.SR.get_record(inOpaqueRef.OpaqueRef())
+            retVal = LocalConverter(sr)
+        else:
+            srs = self.Session().xenapi.SR.get_all_records()
+            retVal = {}
+            for key, sr in srs.iteritems():
+                sr = LocalConverter(sr)
+                retVal[HotOpaqueRef(key, 'sr')] = sr
+        return retVal
+    
+    def FetchVisibleSR(self, inOpaqueRef):
+        if inOpaqueRef is not None:
+            # Make sr[ref] and visible_sr[ref] do the same thing, i.e. don't check the the SR is visible
+            retVal = FetchSR(sr) 
+        else:
+            retVal = {}
+            for sr in HotAccessor().sr: # Iterates through HotAccessors to SRs
+                for pbd in sr.PBDs(): # Iterates through HotOpaqueRefs to PBDs
+                    if pbd in HotAccessor().local_host.PBDs(): # host.PBDs() is a list of HotOpaqueRefs
+                        retVal[sr.HotOpaqueRef()] = sr
+        return retVal
+
     def FetchVM(self, inOpaqueRef):
         def LocalConverter(inVM):
             return HotData.ConvertOpaqueRefs(inVM,

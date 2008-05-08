@@ -16,26 +16,26 @@ class XSFeatureVMInfo:
         inPane.AddTitleField(Lang("Virtual Machine Information"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to display detailed information about virtual machines running on this host."))
+            "Press <Enter> to display detailed information about Virtual Machines running on this host."))
 
     @classmethod
     def AllStatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Virtual Machine Information"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to display detailed information about all virtual machines in the Pool."))
+            "Press <Enter> to display detailed information about all Virtual Machines in the Pool."))
 
     @classmethod
     def NoVMStatusUpdateHandler(cls, inPane):
         inPane.AddTitleField(Lang("Virtual Machine Information"))
 
-        inPane.AddWrappedTextField(Lang("There are no virtual machines on this host."))
+        inPane.AddWrappedTextField(Lang("There are no Virtual Machines on this host."))
 
     @classmethod
     def InfoStatusUpdateHandler(cls, inPane, inHandle):
         vm = HotAccessor().vm[inHandle]
         if vm is None:
-            inPane.AddWrappedTextField(Lang("This virtual machine is no longer present"))
+            inPane.AddWrappedTextField(Lang("This Virtual Machine is no longer present"))
         else:
             powerState = vm.power_state(Lang('<Unknown>'))
             isRunning = powerState.lower().startswith('running')
