@@ -32,7 +32,7 @@ class App:
     
     def Enter(self):
         doQuit = False
-
+        
         if '--dump' in sys.argv:
             # Testing - dump data and exit
             Data.Inst().Dump()
@@ -60,7 +60,6 @@ class App:
                 try:
                     sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
                     if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
-                    if os.path.isfile("/bin/dmesg"): os.system("/bin/dmesg -n 1") # Suppress console messages
                     
                     os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
                     
@@ -144,6 +143,7 @@ class App:
         resized = False
         data = Data.Inst()
         db = HotAccessor()
+        errorCount = 0
         
         self.layout.DoUpdate()
         while not doQuit:
@@ -187,18 +187,29 @@ class App:
                 needsRefresh = True
                 
             if gotKey is not None:
-                Auth.Inst().KeepAlive()
-                if self.layout.TopDialogue().HandleKey(gotKey):
-                    State.Inst().SaveIfRequired()
-                    needsRefresh = True
-                elif gotKey == 'KEY_ESCAPE':
-                    # Set root menu choice to the first, to give a fixed start state after lots of escapes
-                    self.layout.TopDialogue().Reset()
-                    needsRefresh = True
-                elif gotKey == 'KEY_F(5)':
-                    data.Update()
-                    self.layout.UpdateRootFields()
-                    needsRefresh = True
+                try:
+                    Auth.Inst().KeepAlive()
+                    if self.layout.TopDialogue().HandleKey(gotKey):
+                        State.Inst().SaveIfRequired()
+                        needsRefresh = True
+                    elif gotKey == 'KEY_ESCAPE':
+                        # Set root menu choice to the first, to give a fixed start state after lots of escapes
+                        self.layout.TopDialogue().Reset()
+                        needsRefresh = True
+                    elif gotKey == 'KEY_F(5)':
+                        data.Update()
+                        self.layout.UpdateRootFields()
+                        needsRefresh = True
+                except Exception, e:
+                    if Auth.Inst().IsTestMode():
+                        raise
+                    if errorCount <= 10:
+                        message = Lang(e)
+                        if errorCount == 10:
+                            message += Lang('\n\n(No more errors will be reported)')
+                        errorCount += 1
+                        Layout.Inst().PushDialogue(InfoDialogue(Lang("Error"), message))
+
                     
             if self.layout.ExitCommand() is not None:
                 doQuit = True

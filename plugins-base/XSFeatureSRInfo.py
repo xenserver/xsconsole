@@ -65,6 +65,14 @@ class XSFeatureSRInfo:
                     if devConfig.targetIQN() is not None:
                         inPane.AddStatusField(Lang('Target IQN', 10), devConfig.targetIQN())
             
+            flags = srUtils.SRFlags(sr)
+            if 'default' in flags:
+                inPane.AddStatusField(Lang('Default', 10), Lang('Yes'))
+            if 'suspend' in flags:
+                inPane.AddStatusField(Lang('Suspend', 10), Lang('Yes'))
+            if 'crashdump' in flags:
+                inPane.AddStatusField(Lang('Crash Dump', 10), Lang('Yes'))
+
             inPane.NewLine()
             if not attached:
                 inPane.AddWarningField(Lang('This Storage Repository is unplugged and not usable by this host.'))
@@ -81,9 +89,8 @@ class XSFeatureSRInfo:
     
     @classmethod
     def InfoActivateHandler(cls, inHandle):
-        pass
-        # dialogue = Importer.GetResource('SRControlDialogue')
-        # DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(dialogue(inHandle)))
+        dialogue = Importer.GetResource('SRControlDialogue')
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(dialogue(inHandle)))
     
     @classmethod
     def MenuRegenerator(cls, inList, inMenu):
