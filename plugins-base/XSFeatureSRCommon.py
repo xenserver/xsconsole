@@ -134,7 +134,9 @@ class SRUtils: # FIXME: Name clash
     
     @classmethod
     def IsDetachable(cls, inSR):
-        if 'forget' in inSR.allowed_operations() and inSR.type() in ('iso', 'lvmoiscsi', 'nfs', 'netapp', 'lvmohba'):
+        # Use same criteria as XenCenter for detach (from IsDetachable in SR.cs)
+        # Also allow lvm to detach local disks
+        if 'forget' in inSR.allowed_operations() and inSR.type() in ('lvm', 'iso', 'lvmoiscsi', 'nfs', 'netapp', 'lvmohba'):
             retVal = True
         else:
             retVal = False

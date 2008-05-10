@@ -60,6 +60,7 @@ PLUGINS_BASE += XSFeatureQuit.py
 PLUGINS_BASE += XSFeatureReboot.py
 PLUGINS_BASE += XSFeatureRemoteShell.py
 PLUGINS_BASE += XSFeatureSRCommon.py
+PLUGINS_BASE += XSFeatureSRCreate.py
 PLUGINS_BASE += XSFeatureSRInfo.py
 PLUGINS_BASE += XSFeatureSaveBugReport.py
 PLUGINS_BASE += XSFeatureShutdown.py
