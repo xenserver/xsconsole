@@ -191,6 +191,38 @@ class IPUtils:
         if largest is 0: return False
         return True
     
+    @classmethod
+    def AssertValidHostname(cls, inName):
+        # Allow 0-9, A-Z, a-z and hyphen, but disallow hyphen at start and end
+        if not re.match(r'[0-9A-Za-z]([-0-9A-Za-z]{0,61}[0-9A-Za-z]|)$', inName):
+            raise Exception(Lang('Invalid hostname'))
+        return inName
+        
+    @classmethod
+    def AssertValidNetworkName(cls, inName):
+        # Also allow FQDN-style names
+        for subName in inName.split('.'):
+            cls.AssertValidHostname(subName)
+        if len(inName) > 255:
+            raise Exception(Lang("Network name '"+inName+Lang("' too long")))
+        return inName
+
+    @classmethod
+    def AssertValidDirectoryName(cls, inName):
+        # Use POSIX filename restrictions
+        if not re.match(r'[-_.0-9A-Za-z]+$', inName) or inName[0] == '-':
+            raise Exception(Lang("Invalid directory name '"+inName+"'"))
+        return inName
+
+    @classmethod
+    def AssertValidNFSPathName(cls, inName):
+        splitNames = inName.split('/')
+        if len(splitNames) <= 1:
+            raise Exception(Lang("First character of NFS share name must be '/'"))
+        for subName in splitNames[1:]:
+            cls.AssertValidDirectoryName(subName)
+        return inName
+
 class SizeUtils:
     @classmethod
     def MemorySizeString(cls, inBytes):

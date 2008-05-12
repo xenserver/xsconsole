@@ -50,6 +50,7 @@ class SRCreateDialogue(Dialogue):
         pane.ResetFields()
         pane.AddTitleField(Lang('Please enter a name and path for the new NFS storage'))
         pane.AddInputField(Lang('Name', 16), Lang('NFS Virtual Disk Storage'), 'name')
+        pane.AddInputField(Lang('Description', 16), '', 'description')
         pane.AddInputField(Lang('Share Name', 16), 'server:/path', 'sharename')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         if pane.CurrentInput() is None:
@@ -89,12 +90,11 @@ class SRCreateDialogue(Dialogue):
             pane.InputIndexSet(0)
         if inKey == 'KEY_ENTER':
             if pane.IsLastInput():
-                self.srParams = pane.GetFieldValues()
-                self.extraInfo = [
-                    (Lang('Name'), self.srParams['name']),
-                    (Lang('Share Name'), self.srParams['sharename'])
-                    ]
-                self.ChangeState('CONFIRM')
+                try:
+                    self.HandleNFSData(pane.GetFieldValues())
+                except Exception, e:
+                    Layout.Inst().PopDialogue()
+                    Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
             else:
                 pane.ActivateNextInput()
         elif inKey == 'KEY_TAB':
@@ -129,17 +129,44 @@ class SRCreateDialogue(Dialogue):
         self.createType = inChoice
         
         self.ChangeState('GATHER_'+inChoice)
-        
+
+    def HandleNFSData(self, inParams):
+        self.srParams = inParams
+        match = re.match(r'([^:]*):([^:]*)$', self.srParams['sharename'])
+        if not match:
+            raise Exception(Lang('Share name must contain a single colon, e.g. server:/path'))
+        self.srParams['server'] = IPUtils.AssertValidNetworkName(match.group(1))
+        self.srParams['serverpath'] = IPUtils.AssertValidNFSPathName(match.group(2))
+        self.extraInfo = [
+            (Lang('Name'), self.srParams['name']),
+            (Lang('Share Name'), self.srParams['sharename'])
+            ]
+        self.ChangeState('CONFIRM')
+
     def Commit(self):
         Layout.Inst().PopDialogue()
 
         Layout.Inst().TransientBanner(Lang('Creating SR...'))
         try:
-            raise Exception(Lang('Not yet implemented'))
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Successful")))
+            db = HotAccessor()
+            Task.Sync(lambda x: x.xenapi.SR.create(
+                db.local_host_ref().OpaqueRef(), # host
+                { # device_config
+                    'server':self.srParams['server'],
+                    'serverpath':self.srParams['serverpath'],
+                },
+                '0', # physical_size
+                self.srParams['name'], # name_label
+                self.srParams['description'], # name_description
+                'nfs', # type
+                'user', # content_type
+                True # shared
+                )
+            )
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
 
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed"), Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
 
 class XSFeatureSRCreate:
     @classmethod
