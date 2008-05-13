@@ -93,7 +93,8 @@ class App:
                         State.Inst().RebootMessageSet(None)
                             
                     self.layout.Clear()
-                    self.MainLoop()
+                    if not '--dryrun' in sys.argv:
+                        self.MainLoop()
                     
                 finally:
                     if self.cursesScreen is not None:

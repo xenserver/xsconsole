@@ -9,8 +9,9 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
+import xml.dom.minidom
 
-class SRCreateDialogue(Dialogue):
+class SRNewDialogue(Dialogue):
     srTypeNames = {
         'NFS': Lang('NFS Storage'),
         'ISCSI': Lang('iSCSI Storage'),
@@ -19,8 +20,10 @@ class SRCreateDialogue(Dialogue):
         'NFS_ISO': Lang('NFS ISO Library')
     }    
     
-    def __init__(self):
+    def __init__(self, inVariant):
+
         Dialogue.__init__(self)
+        self.variant = inVariant
         self.createMenu = Menu()
 
         choices = ['NFS']
@@ -32,30 +35,48 @@ class SRCreateDialogue(Dialogue):
                 
         
         self.ChangeState('INITIAL')
-        
+    
+    def BuildPanePROBE_NFS(self):
+        self.srMenu = Menu()
+        for srChoice in self.srChoices:
+            self.srMenu.AddChoice(name = srChoice,
+            onAction = self.HandleProbeChoice,
+            handle = srChoice)
+        if self.srMenu.NumChoices() == 0:
+            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Present>'))
+            
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.TitleSet(Lang("New Storage Repository"))
         pane.AddBox()
-        
+        if hasattr(self, 'BuildPane'+self.state):
+            handled = getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
+            
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.AddTitleField(Lang('Please select the type of Storage Repository to create or attach'))
+        pane.AddTitleField(Lang('Please select the type of Storage Repository to ')+Lang(self.variant.lower()))
         pane.AddMenuField(self.createMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsGATHER_NFS(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.AddTitleField(Lang('Please enter a name and path for the new NFS storage'))
+        pane.AddTitleField(Lang('Please enter a name and path for the NFS Storage Repository'))
         pane.AddInputField(Lang('Name', 16), Lang('NFS Virtual Disk Storage'), 'name')
         pane.AddInputField(Lang('Description', 16), '', 'description')
         pane.AddInputField(Lang('Share Name', 16), 'server:/path', 'sharename')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
-            
+    
+    def UpdateFieldsPROBE_NFS(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select the Storage Repository to ')+Lang(self.variant.lower()))
+        pane.AddMenuField(self.srMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -67,8 +88,6 @@ class SRCreateDialogue(Dialogue):
         
         pane.NewLine()
 
-
-                
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFields(self):
@@ -107,6 +126,9 @@ class SRCreateDialogue(Dialogue):
             handled = False
         return handled
 
+    def HandleKeyPROBE_NFS(self, inKey):
+        return self.srMenu.HandleKey(inKey)
+
     def HandleKeyCONFIRM(self, inKey):
         handled = False
         if inKey == 'KEY_F(8)':
@@ -130,6 +152,11 @@ class SRCreateDialogue(Dialogue):
         
         self.ChangeState('GATHER_'+inChoice)
 
+    def HandleProbeChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice
+        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
     def HandleNFSData(self, inParams):
         self.srParams = inParams
         match = re.match(r'([^:]*):([^:]*)$', self.srParams['sharename'])
@@ -141,7 +168,24 @@ class SRCreateDialogue(Dialogue):
             (Lang('Name'), self.srParams['name']),
             (Lang('Share Name'), self.srParams['sharename'])
             ]
-        self.ChangeState('CONFIRM')
+        if self.variant == 'CREATE':
+            self.ChangeState('CONFIRM')
+        else:
+            db = HotAccessor()
+            xmlSRList = Task.Sync(lambda x: x.xenapi.SR.probe(
+                db.local_host_ref().OpaqueRef(), # host
+                { # device_config
+                    'server':self.srParams['server'],
+                    'serverpath':self.srParams['serverpath'],
+                },
+                'nfs' # type
+                )
+            )
+            # Parse XML for UUID values
+            xmlDoc = xml.dom.minidom.parseString(xmlSRList)
+            self.srChoices = [ node.firstChild.nodeValue.strip() for node in xmlDoc.getElementsByTagName("UUID") ]
+                
+            self.ChangeState('PROBE_NFS')
 
     def Commit(self):
         Layout.Inst().PopDialogue()
@@ -170,15 +214,26 @@ class SRCreateDialogue(Dialogue):
 
 class XSFeatureSRCreate:
     @classmethod
-    def StatusUpdateHandler(cls, inPane):
-        inPane.AddTitleField(Lang("New Storage Repository"))
+    def CreateStatusUpdateHandler(cls, inPane):
+        inPane.AddTitleField(Lang("Create New Storage Repository"))
     
         inPane.AddWrappedTextField(Lang(
-            "This option is used to create a new Storage Repository, or attach an ISO library"))
+            "This option is used to create a new Storage Repository."))
     
     @classmethod
-    def ActivateHandler(cls):
-        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SRCreateDialogue()))
+    def AttachStatusUpdateHandler(cls, inPane):
+        inPane.AddTitleField(Lang("Attach Existing Storage Repository"))
+    
+        inPane.AddWrappedTextField(Lang(
+            "This option is used to attach a Storage Repository or ISO library that already exists."))
+    
+    @classmethod
+    def CreateActivateHandler(cls):
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SRNewDialogue('CREATE')))
+    
+    @classmethod
+    def AttachActivateHandler(cls):
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(SRNewDialogue('ATTACH')))
     
     def Register(self):
         Importer.RegisterNamedPlugIn(
@@ -187,9 +242,21 @@ class XSFeatureSRCreate:
             {
                 'menuname' : 'MENU_DISK',
                 'menupriority' : 50,
-                'menutext' : Lang('New Storage Repository') ,
-                'statusupdatehandler' : self.StatusUpdateHandler,
-                'activatehandler' : self.ActivateHandler
+                'menutext' : Lang('Create New Storage Repository') ,
+                'statusupdatehandler' : self.CreateStatusUpdateHandler,
+                'activatehandler' : self.CreateActivateHandler
+            }
+        )
+
+        Importer.RegisterNamedPlugIn(
+            self,
+            'SR_ATTACH', # Key of this plugin for replacement, etc.
+            {
+                'menuname' : 'MENU_DISK',
+                'menupriority' : 40,
+                'menutext' : Lang('Attach Existing Storage Repository') ,
+                'statusupdatehandler' : self.AttachStatusUpdateHandler,
+                'activatehandler' : self.AttachActivateHandler
             }
         )
 
