@@ -189,28 +189,58 @@ class SRNewDialogue(Dialogue):
 
     def Commit(self):
         Layout.Inst().PopDialogue()
-
-        Layout.Inst().TransientBanner(Lang('Creating SR...'))
-        try:
-            db = HotAccessor()
-            Task.Sync(lambda x: x.xenapi.SR.create(
-                db.local_host_ref().OpaqueRef(), # host
-                { # device_config
-                    'server':self.srParams['server'],
-                    'serverpath':self.srParams['serverpath'],
-                },
-                '0', # physical_size
-                self.srParams['name'], # name_label
-                self.srParams['description'], # name_description
-                'nfs', # type
-                'user', # content_type
-                True # shared
+        if self.variant == 'CREATE':
+            Layout.Inst().TransientBanner(Lang('Creating SR...'))
+            try:
+                db = HotAccessor()
+                Task.Sync(lambda x: x.xenapi.SR.create(
+                    db.local_host_ref().OpaqueRef(), # host
+                    { # device_config
+                        'server':self.srParams['server'],
+                        'serverpath':self.srParams['serverpath'],
+                    },
+                    '0', # physical_size
+                    self.srParams['name'], # name_label
+                    self.srParams['description'], # name_description
+                    'nfs', # type
+                    'user', # content_type
+                    True # shared
+                    )
                 )
-            )
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
+        else:
+            Layout.Inst().TransientBanner(Lang('Attaching Storage Repository...'))
+            try:
+                db = HotAccessor()
+                srRef = Task.Sync(lambda x: x.xenapi.SR.introduce(
+                    self.srParams['uuid'], # uuid
+                    self.srParams['name'], # name_label
+                    self.srParams['description'], # name_description
+                    'nfs', # type
+                    'user', # content_type
+                    True # shared
+                    )
+                )
 
-        except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
+                pbdList = []
+                for host in db.host:
+                    pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
+                        'host':host.HotOpaqueRef().OpaqueRef(), # Host ref
+                        'SR':srRef, # SR ref
+                        'device_config':{ # device_config
+                            'server':self.srParams['server'],
+                            'serverpath':self.srParams['serverpath'],
+                        }
+                    })))
+                
+                for pbd in pbdList:
+                    Task.Sync(lambda x: x.xenapi.PBD.plug(pbd))
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Successful")))
+
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Failed"), Lang(e)))
 
 class XSFeatureSRCreate:
     @classmethod

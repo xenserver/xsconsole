@@ -156,7 +156,7 @@ class DialoguePane:
         self.AddBodyFieldObj(SeparatorField(Field.FLOW_RETURN))
 
     def AddTitleField(self, inTitle):
-        self.AddBodyFieldObj(TextField(inTitle, self.titleColour, Field.FLOW_DOUBLERETURN))
+        self.AddBodyFieldObj(WrappedTextField(inTitle, self.titleColour, Field.FLOW_DOUBLERETURN))
         
     def AddWarningField(self, inText):
         self.AddBodyFieldObj(WrappedTextField(inText, self.flashColour, Field.FLOW_DOUBLERETURN))
