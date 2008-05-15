@@ -69,7 +69,7 @@ class XSFeatureValidate:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Validate Server Configration"))
+        inPane.AddTitleField(Lang("Validate Server Configuration"))
 
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to check the basic configuration of this server."))

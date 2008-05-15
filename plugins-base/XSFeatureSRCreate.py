@@ -24,6 +24,7 @@ class SRNewDialogue(Dialogue):
 
         Dialogue.__init__(self)
         self.variant = inVariant
+        self.srParams = {}
         self.createMenu = Menu()
 
         choices = ['NFS']
@@ -63,9 +64,9 @@ class SRNewDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         pane.AddTitleField(Lang('Please enter a name and path for the NFS Storage Repository'))
-        pane.AddInputField(Lang('Name', 16), Lang('NFS Virtual Disk Storage'), 'name')
+        pane.AddInputField(Lang('Name', 16), self.srParams.get('name', Lang('NFS Virtual Disk Storage')), 'name')
         pane.AddInputField(Lang('Description', 16), '', 'description')
-        pane.AddInputField(Lang('Share Name', 16), 'server:/path', 'sharename')
+        pane.AddInputField(Lang('Share Name', 16), self.srParams.get('sharename', 'server:/path'), 'sharename')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
@@ -73,14 +74,20 @@ class SRNewDialogue(Dialogue):
     def UpdateFieldsPROBE_NFS(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.AddTitleField(Lang('Please select the Storage Repository to ')+Lang(self.variant.lower()))
+        pane.AddWarningField('WARNING')
+        pane.AddWrappedBoldTextField(Lang('You must ensure that the chosen SR is not in use by any server '
+            'that is not a member of this Pool.  Failure to do so may result in data loss.'))
+        pane.NewLine()
+        pane.AddWrappedBoldTextField(Lang('Please select the Storage Repository to ')+Lang(self.variant.lower()))
+        pane.NewLine()
+
         pane.AddMenuField(self.srMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.AddTitleField(Lang('Press <F8> to create this Storage Repository'))
+        pane.AddTitleField(Lang('Press <F8> to ')+Lang(self.variant.lower())+Lang(' this Storage Repository'))
         
         pane.AddStatusField(Lang('SR Type', 16), self.srTypeNames[self.createType])
         for name, value in self.extraInfo:
@@ -110,9 +117,12 @@ class SRNewDialogue(Dialogue):
         if inKey == 'KEY_ENTER':
             if pane.IsLastInput():
                 try:
-                    self.HandleNFSData(pane.GetFieldValues())
+                    inputValues = pane.GetFieldValues()
+                    if self.variant == 'ATTACH':
+                        Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
+                    self.HandleNFSData(inputValues)
                 except Exception, e:
-                    Layout.Inst().PopDialogue()
+                    pane.InputIndexSet(None)
                     Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
             else:
                 pane.ActivateNextInput()
@@ -132,7 +142,11 @@ class SRNewDialogue(Dialogue):
     def HandleKeyCONFIRM(self, inKey):
         handled = False
         if inKey == 'KEY_F(8)':
-            self.Commit()
+            try:
+                getattr(self, 'Commit'+self.variant)() # Despatch method named 'Commit'+self.variant
+            except Exception, e:
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
             handled = True
         return handled
 
@@ -164,16 +178,16 @@ class SRNewDialogue(Dialogue):
             raise Exception(Lang('Share name must contain a single colon, e.g. server:/path'))
         self.srParams['server'] = IPUtils.AssertValidNetworkName(match.group(1))
         self.srParams['serverpath'] = IPUtils.AssertValidNFSPathName(match.group(2))
-        self.extraInfo = [
+        self.extraInfo = [ # Array of tuples
             (Lang('Name'), self.srParams['name']),
             (Lang('Share Name'), self.srParams['sharename'])
             ]
+
         if self.variant == 'CREATE':
             self.ChangeState('CONFIRM')
-        else:
-            db = HotAccessor()
+        elif self.variant == 'ATTACH':
             xmlSRList = Task.Sync(lambda x: x.xenapi.SR.probe(
-                db.local_host_ref().OpaqueRef(), # host
+                HotAccessor().local_host_ref().OpaqueRef(), # host
                 { # device_config
                     'server':self.srParams['server'],
                     'serverpath':self.srParams['serverpath'],
@@ -186,61 +200,83 @@ class SRNewDialogue(Dialogue):
             self.srChoices = [ node.firstChild.nodeValue.strip() for node in xmlDoc.getElementsByTagName("UUID") ]
                 
             self.ChangeState('PROBE_NFS')
-
-    def Commit(self):
+        else:
+            raise Exception('Bad self.variant') # Logic error
+            
+    def CommitCREATE(self):
         Layout.Inst().PopDialogue()
-        if self.variant == 'CREATE':
-            Layout.Inst().TransientBanner(Lang('Creating SR...'))
-            try:
-                db = HotAccessor()
-                Task.Sync(lambda x: x.xenapi.SR.create(
-                    db.local_host_ref().OpaqueRef(), # host
-                    { # device_config
+        Layout.Inst().TransientBanner(Lang('Creating SR...'))
+        try:
+            Task.Sync(lambda x: x.xenapi.SR.create(
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                { # device_config
+                    'server':self.srParams['server'],
+                    'serverpath':self.srParams['serverpath'],
+                },
+                '0', # physical_size
+                self.srParams['name'], # name_label
+                self.srParams['description'], # name_description
+                'nfs', # type
+                'user', # content_type
+                True # shared
+                )
+            )
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
+        except Exception, e:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
+
+    def CommitATTACH(self):
+        for sr in HotAccessor().sr:
+            if sr.uuid() == self.srParams['uuid']:
+                raise Exception(Lang('SR ID ')+self.srParams['uuid']+Lang(" is already attached to the system as '")+sr.name_label(Lang('<Unknown>'))+"'")
+
+        Layout.Inst().PopDialogue()
+        Layout.Inst().TransientBanner(Lang('Attaching Storage Repository...'))
+        srRef = None
+        pbdList = []
+        pluggedPBDList = []
+        try:
+            srRef = Task.Sync(lambda x: x.xenapi.SR.introduce(
+                self.srParams['uuid'], # uuid
+                self.srParams['name'], # name_label
+                self.srParams['description'], # name_description
+                'nfs', # type
+                'user', # content_type
+                True # shared
+                )
+            )
+
+            for host in HotAccessor().host:
+                pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
+                    'host':host.HotOpaqueRef().OpaqueRef(), # Host ref
+                    'SR':srRef, # SR ref
+                    'device_config':{ # device_config
                         'server':self.srParams['server'],
                         'serverpath':self.srParams['serverpath'],
-                    },
-                    '0', # physical_size
-                    self.srParams['name'], # name_label
-                    self.srParams['description'], # name_description
-                    'nfs', # type
-                    'user', # content_type
-                    True # shared
-                    )
-                )
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
-            except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
-        else:
-            Layout.Inst().TransientBanner(Lang('Attaching Storage Repository...'))
-            try:
-                db = HotAccessor()
-                srRef = Task.Sync(lambda x: x.xenapi.SR.introduce(
-                    self.srParams['uuid'], # uuid
-                    self.srParams['name'], # name_label
-                    self.srParams['description'], # name_description
-                    'nfs', # type
-                    'user', # content_type
-                    True # shared
-                    )
-                )
-
-                pbdList = []
-                for host in db.host:
-                    pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
-                        'host':host.HotOpaqueRef().OpaqueRef(), # Host ref
-                        'SR':srRef, # SR ref
-                        'device_config':{ # device_config
-                            'server':self.srParams['server'],
-                            'serverpath':self.srParams['serverpath'],
-                        }
-                    })))
+                    }
+                })))
+            
+            for pbd in pbdList:
+                Task.Sync(lambda x: x.xenapi.PBD.plug(pbd))
+                pluggedPBDList.append(pbd)
                 
-                for pbd in pbdList:
-                    Task.Sync(lambda x: x.xenapi.PBD.plug(pbd))
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Successful")))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Successful")))
 
+        except Exception, e:
+            message = Lang(e)
+            # Attempt to undo the work we've done, because the SR is incomplete
+            try:
+                for pluggedPBD in pluggedPBDList:
+                    Task.Sync(lambda x: x.xenapi.PBD.unplug(pluggedPBD))
+                for pbd in pbdList:
+                    Task.Sync(lambda x: x.xenapi.PBD.destroy(pbd))
+                    
+                Task.Sync(lambda x: x.xenapi.SR.forget(srRef))
+                
             except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Failed"), Lang(e)))
+                message += Lang('.  Attempts to rollback also failed: ')+Lang(e)
+
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Failed"), message))
 
 class XSFeatureSRCreate:
     @classmethod
