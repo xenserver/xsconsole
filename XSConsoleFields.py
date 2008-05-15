@@ -184,7 +184,7 @@ class WrappedTextField(Field):
         return retVal
 
     def Height(self):
-        return len(self.wrappedText)
+        return max(1, len(self.wrappedText))
 
 class MenuField(Field):
     def __init__(self, menu, colour, highlight, height, flow):

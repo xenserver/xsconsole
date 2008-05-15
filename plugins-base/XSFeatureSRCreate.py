@@ -27,16 +27,23 @@ class SRNewDialogue(Dialogue):
         self.srParams = {}
         self.createMenu = Menu()
 
-        choices = ['NFS']
+        choices = ['ISCSI', 'NFS']
         #choices = ['NFS', 'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
         for type in choices:
             self.createMenu.AddChoice(name = self.srTypeNames[type],
                 onAction = self.HandleCreateChoice,
                 handle = type)
-                
-        
+
         self.ChangeState('INITIAL')
     
+    def IQNString(self, inIQN, inLUN = None):
+        if inLUN is None: # LUN not present
+            retVal = "TGPT %-4.4s %-60.60s" % (inIQN.tgpt[:4], inIQN.name[:60])
+        else:
+            retVal = "TGPT %-4.4s %-52.52s LUN %-3.3s" % (inIQN.tgpt[:4], inIQN.name[:52], str(inLUN)[:3])
+        
+        return retVal
+        
     def BuildPanePROBE_NFS(self):
         self.srMenu = Menu()
         for srChoice in self.srChoices:
@@ -45,6 +52,15 @@ class SRNewDialogue(Dialogue):
             handle = srChoice)
         if self.srMenu.NumChoices() == 0:
             self.srMenu.AddChoice(name = Lang('<No Storage Repositories Present>'))
+            
+    def BuildPanePROBE_ISCSI_IQN(self):
+        self.iqnMenu = Menu()
+        for iqnChoice in self.iqnChoices:
+            self.iqnMenu.AddChoice(name = self.IQNString(iqnChoice),
+            onAction = self.HandleIQNChoice,
+            handle = iqnChoice)
+        if self.iqnMenu.NumChoices() == 0:
+            self.iqnMenu.AddChoice(name = Lang('<No IQNs Detected>'))
             
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
@@ -71,6 +87,22 @@ class SRNewDialogue(Dialogue):
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
     
+    def UpdateFieldsGATHER_ISCSI(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please enter the configuration details for the iSCSI Storage Repository'))
+        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('iSCSI Virtual Disk Storage')), 'name')
+        pane.AddInputField(Lang('Description', 26), '', 'description')
+        pane.AddInputField(Lang('Initiator IQN', 26), HotAccessor().local_host.other_config.iscsi_iqn(''), 'localiqn')
+        pane.AddInputField(Lang('Port Number', 26), '3260', 'port')
+        pane.AddInputField(Lang('Hostname of iSCSI Target', 26), '', 'remotehost')
+        pane.AddInputField(Lang('Username', 26), '', 'username')
+        pane.AddPasswordField(Lang('Password', 26), '', 'password')
+
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+    
     def UpdateFieldsPROBE_NFS(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -84,14 +116,22 @@ class SRNewDialogue(Dialogue):
         pane.AddMenuField(self.srMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
+    def UpdateFieldsPROBE_ISCSI_IQN(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select from the list of discovered IQNs.'))
+
+        pane.AddMenuField(self.iqnMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
         pane.ResetFields()
         pane.AddTitleField(Lang('Press <F8> to ')+Lang(self.variant.lower())+Lang(' this Storage Repository'))
         
-        pane.AddStatusField(Lang('SR Type', 16), self.srTypeNames[self.createType])
+        pane.AddStatusField(Lang('SR Type', 26), self.srTypeNames[self.createType])
         for name, value in self.extraInfo:
-            pane.AddStatusField(name.ljust(16, ' '), value)
+            pane.AddStatusField(name.ljust(26, ' '), value)
         
         pane.NewLine()
 
@@ -136,8 +176,36 @@ class SRNewDialogue(Dialogue):
             handled = False
         return handled
 
+    def HandleKeyGATHER_ISCSI(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+        if inKey == 'KEY_ENTER':
+            if pane.IsLastInput():
+                try:
+                    inputValues = pane.GetFieldValues()
+                    self.HandleISCSIData(inputValues)
+                except Exception, e:
+                    pane.InputIndexSet(None)
+                    Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+            else:
+                pane.ActivateNextInput()
+        elif inKey == 'KEY_TAB':
+            pane.ActivateNextInput()
+        elif inKey == 'KEY_BTAB':
+            pane.ActivatePreviousInput()
+        elif pane.CurrentInput().HandleKey(inKey):
+            pass # Leave handled as True
+        else:
+            handled = False
+        return handled
+
     def HandleKeyPROBE_NFS(self, inKey):
         return self.srMenu.HandleKey(inKey)
+
+    def HandleKeyPROBE_ISCSI_IQN(self, inKey):
+        return self.iqnMenu.HandleKey(inKey)
 
     def HandleKeyCONFIRM(self, inKey):
         handled = False
@@ -171,6 +239,11 @@ class SRNewDialogue(Dialogue):
         self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
         self.ChangeState('CONFIRM')
 
+    def HandleIQNChoice(self, inChoice):
+        self.srParams['iqn'] = inChoice
+        self.extraInfo.append( (Lang('IQN'), self.IQNString(inChoice)) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
     def HandleNFSData(self, inParams):
         self.srParams = inParams
         match = re.match(r'([^:]*):([^:]*)$', self.srParams['sharename'])
@@ -202,7 +275,19 @@ class SRNewDialogue(Dialogue):
             self.ChangeState('PROBE_NFS')
         else:
             raise Exception('Bad self.variant') # Logic error
-            
+    
+    def HandleISCSIData(self, inParams):
+        self.srParams = inParams
+        self.extraInfo = [ # Array of tuples
+            (Lang('Initiator IQN'), self.srParams['localiqn']),
+            (Lang('Port Number'), self.srParams['port']),
+            (Lang('Hostname of iSCSI Target'), self.srParams['remotehost']),
+            (Lang('Username'), self.srParams['username']),
+            (Lang('Password'), '*' * len(self.srParams['password']))
+        ]
+        self.iqnChoices = XSConsoleiSCSI.ProbeIQNs(self.srParams)
+        self.ChangeState('PROBE_ISCSI_IQN')
+    
     def CommitCREATE(self):
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang('Creating SR...'))
