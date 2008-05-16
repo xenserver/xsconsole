@@ -44,6 +44,11 @@ class SRNewDialogue(Dialogue):
         
         return retVal
         
+    def LUNString(self, inLUN):
+        retVal = "LUN %-4.4s %s" % (inLUN.LUNid[:4], (SizeUtils.SRSizeString(inLUN.size)+ ' ('+inLUN.vendor)[:62]+')')
+        
+        return retVal
+        
     def BuildPanePROBE_NFS(self):
         self.srMenu = Menu()
         for srChoice in self.srChoices:
@@ -61,6 +66,15 @@ class SRNewDialogue(Dialogue):
             handle = iqnChoice)
         if self.iqnMenu.NumChoices() == 0:
             self.iqnMenu.AddChoice(name = Lang('<No IQNs Detected>'))
+    
+    def BuildPanePROBE_ISCSI_LUN(self):
+        self.lunMenu = Menu()
+        for lunChoice in self.lunChoices:
+            self.lunMenu.AddChoice(name = self.LUNString(lunChoice),
+            onAction = self.HandleLUNChoice,
+            handle = lunChoice)
+        if self.lunMenu.NumChoices() == 0:
+            self.lunMenu.AddChoice(name = Lang('<No LUNs Detected>'))
             
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
@@ -122,6 +136,14 @@ class SRNewDialogue(Dialogue):
         pane.AddTitleField(Lang('Please select from the list of discovered IQNs.'))
 
         pane.AddMenuField(self.iqnMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_ISCSI_LUN(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select from the list of discovered LUNs.'))
+
+        pane.AddMenuField(self.lunMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
@@ -207,11 +229,15 @@ class SRNewDialogue(Dialogue):
     def HandleKeyPROBE_ISCSI_IQN(self, inKey):
         return self.iqnMenu.HandleKey(inKey)
 
+    def HandleKeyPROBE_ISCSI_LUN(self, inKey):
+        return self.lunMenu.HandleKey(inKey)
+
     def HandleKeyCONFIRM(self, inKey):
         handled = False
         if inKey == 'KEY_F(8)':
             try:
-                getattr(self, 'Commit'+self.variant)() # Despatch method named 'Commit'+self.variant
+                # Despatch method named 'Commit'+self.srCreateType+'_'+self.variant
+                getattr(self, 'Commit'+self.createType+'_'+self.variant)() 
             except Exception, e:
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
@@ -241,7 +267,42 @@ class SRNewDialogue(Dialogue):
 
     def HandleIQNChoice(self, inChoice):
         self.srParams['iqn'] = inChoice
-        self.extraInfo.append( (Lang('IQN'), self.IQNString(inChoice)) ) # Append tuple, so double brackets
+        self.extraInfo.append( (Lang('IQN'), inChoice.name) ) # Append tuple, so double brackets
+        Layout.Inst().TransientBanner(Lang('Probing for LUNs...'))
+        self.lunChoices = []
+        try:
+            # This task will raise an exception with details of available LUNs
+            Task.Sync(lambda x: x.xenapi.SR.probe(
+                    HotAccessor().local_host_ref().OpaqueRef(), # host
+                    { # device_config
+                        'target':self.srParams['remotehost'],
+                        'port':self.srParams['port'],
+                        'targetIQN':self.srParams['iqn'].iqn
+                    },
+                    'lvmoiscsi' # type
+                    )
+                )
+        except XenAPI.Failure, e:
+            # Parse XML for UUID values
+
+            xmlDoc = xml.dom.minidom.parseString(e.details[3])
+            for xmlLUN in xmlDoc.getElementsByTagName('LUN'):
+                try:
+                    record = Struct()
+                    for name in ('vendor', 'LUNid', 'size', 'SCSIid'):
+                        setattr(record, name, str(xmlLUN.getElementsByTagName(name)[0].firstChild.nodeValue.strip()))
+                        
+                    self.lunChoices.append(record)
+                        
+                except Exception, e:
+                    raise # FIXME: test
+                    pass # Ignore failures
+        
+        self.ChangeState('PROBE_ISCSI_LUN')
+
+    def HandleLUNChoice(self, inChoice):
+        self.srParams['lun'] = inChoice
+        self.extraInfo.append( (Lang('LUN'), str(inChoice.LUNid)) ) # Append tuple, so double brackets
         self.ChangeState('CONFIRM')
 
     def HandleNFSData(self, inParams):
@@ -285,10 +346,37 @@ class SRNewDialogue(Dialogue):
             (Lang('Username'), self.srParams['username']),
             (Lang('Password'), '*' * len(self.srParams['password']))
         ]
-        self.iqnChoices = XSConsoleiSCSI.ProbeIQNs(self.srParams)
+        try:
+            # This task will raise an exception with details of available IQNs
+            Task.Sync(lambda x: x.xenapi.SR.probe(
+                    HotAccessor().local_host_ref().OpaqueRef(), # host
+                    { # device_config
+                        'target':self.srParams['remotehost'],
+                        'port':self.srParams['port']
+                    },
+                    'lvmoiscsi' # type
+                    )
+                )
+        except XenAPI.Failure, e:
+            # Parse XML for UUID values
+            self.iqnChoices = []
+            xmlDoc = xml.dom.minidom.parseString(e.details[3])
+            for tgt in xmlDoc.getElementsByTagName('TGT'):
+                try:
+                    index = str(tgt.getElementsByTagName('Index')[0].firstChild.nodeValue.strip())
+                    iqn =  str(tgt.getElementsByTagName('TargetIQN')[0].firstChild.nodeValue.strip())
+                    self.iqnChoices.append(Struct(
+                        portal = self.srParams['remotehost']+':'+self.srParams['port'],
+                        tgpt=index,
+                        name=iqn,
+                        iqn=iqn))
+                        
+                except Exception, e:
+                    pass # Ignore failures
+                
         self.ChangeState('PROBE_ISCSI_IQN')
     
-    def CommitCREATE(self):
+    def CommitNFS_CREATE(self):
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang('Creating SR...'))
         try:
@@ -310,7 +398,7 @@ class SRNewDialogue(Dialogue):
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
 
-    def CommitATTACH(self):
+    def CommitNFS_ATTACH(self):
         for sr in HotAccessor().sr:
             if sr.uuid() == self.srParams['uuid']:
                 raise Exception(Lang('SR ID ')+self.srParams['uuid']+Lang(" is already attached to the system as '")+sr.name_label(Lang('<Unknown>'))+"'")
@@ -363,6 +451,12 @@ class SRNewDialogue(Dialogue):
 
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Failed"), message))
 
+    def CommitISCSI_CREATE(self):
+        raise Exception('Not implemented')
+        
+    def CommitISCSI_ATTACH(self):
+        raise Exception('Not implemented')
+        
 class XSFeatureSRCreate:
     @classmethod
     def CreateStatusUpdateHandler(cls, inPane):

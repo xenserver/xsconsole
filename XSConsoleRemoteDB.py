@@ -11,16 +11,6 @@ from pprint import pprint
 from XSConsoleBases import *
 
 oldPath = sys.path
-
-# Local shared_db_util.py overrides system copy
-sys.path = ['/opt/xensource/sm'] + sys.path
-if os.path.isfile(sys.path[0]+'/iscsilib.py'):
-    try:
-        import iscsilib
-    except Exception, e:
-        print "Exception importing iscsilib.py: " + str(e)
-        # Ignore
-
 if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
     try:
         import shared_db_util
@@ -28,23 +18,6 @@ if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
         print "Exception importing shared_db_util.py: " + str(e)
         # Ignore
 sys.path = oldPath
-
-class XSConsoleiSCSI:
-    @classmethod
-    def ProbeIQNs(cls, inParams):
-        localIQN = inParams['localiqn']
-        iscsilib.ensure_daemon_running_ok(localIQN)
-        probedIQNs = iscsilib.discovery(
-            inParams['remotehost'],
-            int(inParams.get('port', 3260)),
-            inParams.get('username', ''),
-            inParams.get('password', '')
-        )
-        
-        retVal = []
-        for iqn in probedIQNs:
-            retVal.append(Struct(portal = iqn[0], tgpt=iqn[1], name=iqn[2]))
-        return retVal
 
 class RemoteDB:
     instance = None
