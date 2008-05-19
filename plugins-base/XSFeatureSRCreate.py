@@ -53,17 +53,17 @@ class SRNewDialogue(Dialogue):
         self.srMenu = Menu()
         for srChoice in self.srChoices:
             self.srMenu.AddChoice(name = srChoice,
-            onAction = self.HandleProbeChoice,
-            handle = srChoice)
+                onAction = self.HandleProbeChoice,
+                handle = srChoice)
         if self.srMenu.NumChoices() == 0:
-            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Present>'))
+            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
             
     def BuildPanePROBE_ISCSI_IQN(self):
         self.iqnMenu = Menu()
         for iqnChoice in self.iqnChoices:
             self.iqnMenu.AddChoice(name = self.IQNString(iqnChoice),
-            onAction = self.HandleIQNChoice,
-            handle = iqnChoice)
+                onAction = self.HandleIQNChoice,
+                handle = iqnChoice)
         if self.iqnMenu.NumChoices() == 0:
             self.iqnMenu.AddChoice(name = Lang('<No IQNs Detected>'))
     
@@ -71,11 +71,20 @@ class SRNewDialogue(Dialogue):
         self.lunMenu = Menu()
         for lunChoice in self.lunChoices:
             self.lunMenu.AddChoice(name = self.LUNString(lunChoice),
-            onAction = self.HandleLUNChoice,
-            handle = lunChoice)
+                onAction = self.HandleLUNChoice,
+                handle = lunChoice)
         if self.lunMenu.NumChoices() == 0:
             self.lunMenu.AddChoice(name = Lang('<No LUNs Detected>'))
             
+    def BuildPanePROBE_ISCSI_SR(self):
+        self.srMenu = Menu()
+        for srChoice in self.srChoices:
+            self.srMenu.AddChoice(name = srChoice,
+                onAction = self.HandleiSCSISRChoice,
+                handle = srChoice)
+        if self.srMenu.NumChoices() == 0:
+            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
+        
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.TitleSet(Lang("New Storage Repository"))
@@ -144,6 +153,14 @@ class SRNewDialogue(Dialogue):
         pane.AddTitleField(Lang('Please select from the list of discovered LUNs.'))
 
         pane.AddMenuField(self.lunMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_ISCSI_SR(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select from the list of discovered Storage Repositories.'))
+
+        pane.AddMenuField(self.srMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
@@ -232,6 +249,9 @@ class SRNewDialogue(Dialogue):
     def HandleKeyPROBE_ISCSI_LUN(self, inKey):
         return self.lunMenu.HandleKey(inKey)
 
+    def HandleKeyPROBE_ISCSI_SR(self, inKey):
+        return self.srMenu.HandleKey(inKey)
+
     def HandleKeyCONFIRM(self, inKey):
         handled = False
         if inKey == 'KEY_F(8)':
@@ -303,6 +323,32 @@ class SRNewDialogue(Dialogue):
     def HandleLUNChoice(self, inChoice):
         self.srParams['lun'] = inChoice
         self.extraInfo.append( (Lang('LUN'), str(inChoice.LUNid)) ) # Append tuple, so double brackets
+        if self.variant == 'CREATE':
+            self.ChangeState('CONFIRM')
+        else:
+            Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
+            self.srChoices = []
+
+            xmlResult = Task.Sync(lambda x: x.xenapi.SR.probe(
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                { # device_config
+                    'target':self.srParams['remotehost'],
+                    'port':self.srParams['port'],
+                    'targetIQN':self.srParams['iqn'].iqn,
+                    'SCSIid':self.srParams['lun'].SCSIid
+                },
+                'lvmoiscsi' # type
+                )
+            )
+
+            xmlDoc = xml.dom.minidom.parseString(xmlResult)
+            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
+    
+            self.ChangeState('PROBE_ISCSI_SR')
+
+    def HandleiSCSISRChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice
+        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
         self.ChangeState('CONFIRM')
 
     def HandleNFSData(self, inParams):
@@ -331,7 +377,7 @@ class SRNewDialogue(Dialogue):
             )
             # Parse XML for UUID values
             xmlDoc = xml.dom.minidom.parseString(xmlSRList)
-            self.srChoices = [ node.firstChild.nodeValue.strip() for node in xmlDoc.getElementsByTagName("UUID") ]
+            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
                 
             self.ChangeState('PROBE_NFS')
         else:
@@ -376,29 +422,27 @@ class SRNewDialogue(Dialogue):
                 
         self.ChangeState('PROBE_ISCSI_IQN')
     
-    def CommitNFS_CREATE(self):
+    def CommitCreate(self, inType, inDeviceConfig, inOtherConfig = None):
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang('Creating SR...'))
         try:
             Task.Sync(lambda x: x.xenapi.SR.create(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
-                { # device_config
-                    'server':self.srParams['server'],
-                    'serverpath':self.srParams['serverpath'],
-                },
+                inDeviceConfig,
                 '0', # physical_size
                 self.srParams['name'], # name_label
                 self.srParams['description'], # name_description
-                'nfs', # type
+                inType, # type
                 'user', # content_type
                 True # shared
                 )
             )
+            # FIXME: Set other_config here
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
 
-    def CommitNFS_ATTACH(self):
+    def CommitAttach(self, inType, inConfig):
         for sr in HotAccessor().sr:
             if sr.uuid() == self.srParams['uuid']:
                 raise Exception(Lang('SR ID ')+self.srParams['uuid']+Lang(" is already attached to the system as '")+sr.name_label(Lang('<Unknown>'))+"'")
@@ -413,7 +457,7 @@ class SRNewDialogue(Dialogue):
                 self.srParams['uuid'], # uuid
                 self.srParams['name'], # name_label
                 self.srParams['description'], # name_description
-                'nfs', # type
+                inType, # type
                 'user', # content_type
                 True # shared
                 )
@@ -423,10 +467,7 @@ class SRNewDialogue(Dialogue):
                 pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
                     'host':host.HotOpaqueRef().OpaqueRef(), # Host ref
                     'SR':srRef, # SR ref
-                    'device_config':{ # device_config
-                        'server':self.srParams['server'],
-                        'serverpath':self.srParams['serverpath'],
-                    }
+                    'device_config':inConfig
                 })))
             
             for pbd in pbdList:
@@ -451,11 +492,33 @@ class SRNewDialogue(Dialogue):
 
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Failed"), message))
 
+    def CommitNFS_CREATE(self):
+        self.CommitCreate('nfs', { # device_config
+            'server':self.srParams['server'],
+            'serverpath':self.srParams['serverpath'],
+        })
+        
+    def CommitNFS_ATTACH(self):
+        self.CommitAttach('nfs', { # device_config
+            'server':self.srParams['server'],
+            'serverpath':self.srParams['serverpath'],
+        })
+
     def CommitISCSI_CREATE(self):
-        raise Exception('Not implemented')
+        self.CommitCreate('lvmoiscsi', { # device_config
+            'target':self.srParams['remotehost'],
+            'port':self.srParams['port'],
+            'targetIQN':self.srParams['iqn'].iqn,
+            'SCSIid':self.srParams['lun'].SCSIid
+        })
         
     def CommitISCSI_ATTACH(self):
-        raise Exception('Not implemented')
+        self.CommitAttach('lvmoiscsi', { # device_config
+            'target':self.srParams['remotehost'],
+            'port':self.srParams['port'],
+            'targetIQN':self.srParams['iqn'].iqn,
+            'SCSIid':self.srParams['lun'].SCSIid
+        })
         
 class XSFeatureSRCreate:
     @classmethod
