@@ -27,7 +27,11 @@ class SRNewDialogue(Dialogue):
         self.srParams = {}
         self.createMenu = Menu()
 
-        choices = ['ISCSI', 'NFS']
+        if self.variant == 'CREATE':
+            choices = ['NFS', 'ISCSI']
+        else:
+            choices = ['NFS_ISO', 'ISCSI', 'NFS']
+        
         #choices = ['NFS', 'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
         for type in choices:
             self.createMenu.AddChoice(name = self.srTypeNames[type],
@@ -106,6 +110,18 @@ class SRNewDialogue(Dialogue):
         pane.AddInputField(Lang('Name', 16), self.srParams.get('name', Lang('NFS Virtual Disk Storage')), 'name')
         pane.AddInputField(Lang('Description', 16), '', 'description')
         pane.AddInputField(Lang('Share Name', 16), self.srParams.get('sharename', 'server:/path'), 'sharename')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+    
+    def UpdateFieldsGATHER_NFS_ISO(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please enter a name and path for the NFS ISO Library'))
+        pane.AddInputField(Lang('Name', 20), self.srParams.get('name', Lang('NFS ISO Library')), 'name')
+        pane.AddInputField(Lang('Description', 20), '', 'description')
+        pane.AddInputField(Lang('Share Name', 20), self.srParams.get('sharename', 'server:/path'), 'sharename')
+        pane.AddInputField(Lang('Advanced Options', 20), '', 'options')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
@@ -215,6 +231,9 @@ class SRNewDialogue(Dialogue):
             handled = False
         return handled
 
+    def HandleKeyGATHER_NFS_ISO(self, inKey):
+        return self.HandleKeyGATHER_NFS(inKey)
+
     def HandleKeyGATHER_ISCSI(self, inKey):
         handled = True
         pane = self.Pane()
@@ -315,7 +334,6 @@ class SRNewDialogue(Dialogue):
                     self.lunChoices.append(record)
                         
                 except Exception, e:
-                    raise # FIXME: test
                     pass # Ignore failures
         
         self.ChangeState('PROBE_ISCSI_LUN')
@@ -353,6 +371,7 @@ class SRNewDialogue(Dialogue):
 
     def HandleNFSData(self, inParams):
         self.srParams = inParams
+
         match = re.match(r'([^:]*):([^:]*)$', self.srParams['sharename'])
         if not match:
             raise Exception(Lang('Share name must contain a single colon, e.g. server:/path'))
@@ -363,7 +382,7 @@ class SRNewDialogue(Dialogue):
             (Lang('Share Name'), self.srParams['sharename'])
             ]
 
-        if self.variant == 'CREATE':
+        if self.variant == 'CREATE' or self.createType == 'NFS_ISO':
             self.ChangeState('CONFIRM')
         elif self.variant == 'ATTACH':
             xmlSRList = Task.Sync(lambda x: x.xenapi.SR.probe(
@@ -449,7 +468,7 @@ class SRNewDialogue(Dialogue):
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
 
-    def CommitAttach(self, inType, inConfig):
+    def CommitAttach(self, inType, inDeviceConfig, inOtherConfig, inContentType):
         for sr in HotAccessor().sr:
             if sr.uuid() == self.srParams['uuid']:
                 raise Exception(Lang('SR ID ')+self.srParams['uuid']+Lang(" is already attached to the system as '")+sr.name_label(Lang('<Unknown>'))+"'")
@@ -465,7 +484,7 @@ class SRNewDialogue(Dialogue):
                 self.srParams['name'], # name_label
                 self.srParams['description'], # name_description
                 inType, # type
-                'user', # content_type
+                inContentType, # content_type
                 True # shared
                 )
             )
@@ -474,7 +493,7 @@ class SRNewDialogue(Dialogue):
                 pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
                     'host':host.HotOpaqueRef().OpaqueRef(), # Host ref
                     'SR':srRef, # SR ref
-                    'device_config':inConfig
+                    'device_config':inDeviceConfig
                 })))
             
             for pbd in pbdList:
@@ -503,13 +522,30 @@ class SRNewDialogue(Dialogue):
         self.CommitCreate('nfs', { # device_config
             'server':self.srParams['server'],
             'serverpath':self.srParams['serverpath'],
+        },
+        { # Set auto-scan to false for non-ISO SRs
+            'auto-scan':'false'
         })
         
     def CommitNFS_ATTACH(self):
         self.CommitAttach('nfs', { # device_config
             'server':self.srParams['server'],
             'serverpath':self.srParams['serverpath'],
-        })
+        },
+        {}, # other_config
+        'user')
+
+    def CommitNFS_ISO_ATTACH(self):
+        self.srParams['uuid'] = commands.getoutput('/usr/bin/uuidgen')
+        self.CommitAttach('iso', { # device_config
+            'location':self.srParams['server']+':'+self.srParams['serverpath'],
+            'options':self.srParams['options']
+        },
+        { # Set auto-scan to true for ISO SRs
+            'auto-scan':'true'
+        },
+        'iso'
+        )
 
     def CommitISCSI_CREATE(self):
         self.CommitCreate('lvmoiscsi', { # device_config
@@ -518,7 +554,7 @@ class SRNewDialogue(Dialogue):
             'targetIQN':self.srParams['iqn'].iqn,
             'SCSIid':self.srParams['lun'].SCSIid
         },
-        { # Set auto-scan to the same value as XenCenter
+        { # Set auto-scan to false for non-ISO SRs
             'auto-scan':'false'
         })
         
@@ -528,7 +564,9 @@ class SRNewDialogue(Dialogue):
             'port':self.srParams['port'],
             'targetIQN':self.srParams['iqn'].iqn,
             'SCSIid':self.srParams['lun'].SCSIid
-        })
+        },
+        {}, # other_config
+        'user')
         
 class XSFeatureSRCreate:
     @classmethod
