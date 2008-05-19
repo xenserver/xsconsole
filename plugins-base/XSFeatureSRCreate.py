@@ -426,7 +426,7 @@ class SRNewDialogue(Dialogue):
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang('Creating SR...'))
         try:
-            Task.Sync(lambda x: x.xenapi.SR.create(
+            srRef = Task.Sync(lambda x: x.xenapi.SR.create(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
                 inDeviceConfig,
                 '0', # physical_size
@@ -437,7 +437,14 @@ class SRNewDialogue(Dialogue):
                 True # shared
                 )
             )
-            # FIXME: Set other_config here
+            
+            # Set values in other_config only if the SR.create operation hasn't already set them
+            for key, value in FirstValue(inOtherConfig, {}).iteritems():
+                try:
+                    Task.Sync(lambda x:x.xenapi.SR.add_to_other_config(srRef, key, value))
+                except:
+                    pass #  Ignore failure
+
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
@@ -510,6 +517,9 @@ class SRNewDialogue(Dialogue):
             'port':self.srParams['port'],
             'targetIQN':self.srParams['iqn'].iqn,
             'SCSIid':self.srParams['lun'].SCSIid
+        },
+        { # Set auto-scan to the same value as XenCenter
+            'auto-scan':'false'
         })
         
     def CommitISCSI_ATTACH(self):
