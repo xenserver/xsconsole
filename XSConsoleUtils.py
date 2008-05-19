@@ -208,9 +208,16 @@ class IPUtils:
         return inName
 
     @classmethod
-    def AssertValidDirectoryName(cls, inName):
+    def AssertValidNFSDirectoryName(cls, inName):
         # Use POSIX filename restrictions
         if not re.match(r'[-_.0-9A-Za-z]+$', inName) or inName[0] == '-':
+            raise Exception(Lang("Invalid directory name '"+inName+"'"))
+        return inName
+
+    @classmethod
+    def AssertValidCIFSDirectoryName(cls, inName):
+        # Charecters \ / ? * disallowed by CIFS
+        if '\\' in inName or '/' in inName or '?' in inName or '*' in inName:
             raise Exception(Lang("Invalid directory name '"+inName+"'"))
         return inName
 
@@ -220,7 +227,14 @@ class IPUtils:
         if len(splitNames) <= 1:
             raise Exception(Lang("First character of NFS share name must be '/'"))
         for subName in splitNames[1:]:
-            cls.AssertValidDirectoryName(subName)
+            cls.AssertValidNFSDirectoryName(subName)
+        return inName
+        
+    @classmethod
+    def AssertValidCIFSPathName(cls, inName):
+        splitNames = inName.split('\\')
+        for subName in splitNames[1:]:
+            cls.AssertValidCIFSDirectoryName(subName)
         return inName
 
 class SizeUtils:

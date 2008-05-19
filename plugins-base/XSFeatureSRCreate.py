@@ -30,7 +30,7 @@ class SRNewDialogue(Dialogue):
         if self.variant == 'CREATE':
             choices = ['NFS', 'ISCSI']
         else:
-            choices = ['NFS_ISO', 'ISCSI', 'NFS']
+            choices = ['CIFS_ISO', 'NFS_ISO', 'ISCSI', 'NFS']
         
         #choices = ['NFS', 'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
         for type in choices:
@@ -126,6 +126,20 @@ class SRNewDialogue(Dialogue):
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
     
+    def UpdateFieldsGATHER_CIFS_ISO(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please enter a name and path for the CIFS ISO Library.  Leave the Username/Password fields blank if not required.'))
+        pane.AddInputField(Lang('Name', 20), self.srParams.get('name', Lang('CIFS ISO Library')), 'name')
+        pane.AddInputField(Lang('Description', 20), '', 'description')
+        pane.AddInputField(Lang('Share Name', 20), self.srParams.get('sharename', '\\\\server\\sharename'), 'sharename')
+        pane.AddInputField(Lang('Username', 20), '', 'username')
+        pane.AddPasswordField(Lang('Password', 20), '', 'cifspassword')
+        pane.AddInputField(Lang('Advanced Options', 20), '', 'options')
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
     def UpdateFieldsGATHER_ISCSI(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -204,24 +218,12 @@ class SRNewDialogue(Dialogue):
     def HandleKeyINITIAL(self, inKey):
         return self.createMenu.HandleKey(inKey)
 
-    def HandleKeyGATHER_NFS(self, inKey):
+    def HandleInputFieldKeys(self, inKey):
         handled = True
         pane = self.Pane()
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
-        if inKey == 'KEY_ENTER':
-            if pane.IsLastInput():
-                try:
-                    inputValues = pane.GetFieldValues()
-                    if self.variant == 'ATTACH':
-                        Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
-                    self.HandleNFSData(inputValues)
-                except Exception, e:
-                    pane.InputIndexSet(None)
-                    Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
-            else:
-                pane.ActivateNextInput()
-        elif inKey == 'KEY_TAB':
+        if inKey in ['KEY_ENTER', 'KEY_TAB']:
             pane.ActivateNextInput()
         elif inKey == 'KEY_BTAB':
             pane.ActivatePreviousInput()
@@ -231,32 +233,51 @@ class SRNewDialogue(Dialogue):
             handled = False
         return handled
 
+    def HandleKeyGATHER_NFS(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                inputValues = pane.GetFieldValues()
+                if self.variant == 'ATTACH':
+                    Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
+                self.HandleNFSData(inputValues)
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+        else:
+            handled = self.HandleInputFieldKeys(inKey)
+        return handled
+
     def HandleKeyGATHER_NFS_ISO(self, inKey):
         return self.HandleKeyGATHER_NFS(inKey)
+
+    def HandleKeyGATHER_CIFS_ISO(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                inputValues = pane.GetFieldValues()
+                self.HandleCIFSData(inputValues)
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+        else:
+            handled = self.HandleInputFieldKeys(inKey)
+        return handled
 
     def HandleKeyGATHER_ISCSI(self, inKey):
         handled = True
         pane = self.Pane()
-        if pane.CurrentInput() is None:
-            pane.InputIndexSet(0)
-        if inKey == 'KEY_ENTER':
-            if pane.IsLastInput():
-                try:
-                    inputValues = pane.GetFieldValues()
-                    self.HandleISCSIData(inputValues)
-                except Exception, e:
-                    pane.InputIndexSet(None)
-                    Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
-            else:
-                pane.ActivateNextInput()
-        elif inKey == 'KEY_TAB':
-            pane.ActivateNextInput()
-        elif inKey == 'KEY_BTAB':
-            pane.ActivatePreviousInput()
-        elif pane.CurrentInput().HandleKey(inKey):
-            pass # Leave handled as True
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                inputValues = pane.GetFieldValues()
+                self.HandleISCSIData(inputValues)
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
         else:
-            handled = False
+            handled = self.HandleInputFieldKeys(inKey)
         return handled
 
     def HandleKeyPROBE_NFS(self, inKey):
@@ -402,6 +423,21 @@ class SRNewDialogue(Dialogue):
         else:
             raise Exception('Bad self.variant') # Logic error
     
+    def HandleCIFSData(self, inParams):
+        self.srParams = inParams
+
+        match = re.match(r'\\\\([^\\]*)\\([^\\]*)$', self.srParams['sharename'])
+        if not match:
+            raise Exception(Lang('Share name must be of the form \\\\server\\path'))
+        self.srParams['server'] = IPUtils.AssertValidNetworkName(match.group(1))
+        self.srParams['serverpath'] = IPUtils.AssertValidCIFSPathName(match.group(2))
+        self.extraInfo = [ # Array of tuples
+            (Lang('Name'), self.srParams['name']),
+            (Lang('Share Name'), self.srParams['sharename'])
+            ]
+
+        self.ChangeState('CONFIRM')
+        
     def HandleISCSIData(self, inParams):
         self.srParams = inParams
         self.extraInfo = [ # Array of tuples
@@ -414,14 +450,14 @@ class SRNewDialogue(Dialogue):
         try:
             # This task will raise an exception with details of available IQNs
             Task.Sync(lambda x: x.xenapi.SR.probe(
-                    HotAccessor().local_host_ref().OpaqueRef(), # host
-                    { # device_config
-                        'target':self.srParams['remotehost'],
-                        'port':self.srParams['port']
-                    },
-                    'lvmoiscsi' # type
-                    )
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                { # device_config
+                    'target':self.srParams['remotehost'],
+                    'port':self.srParams['port']
+                },
+                'lvmoiscsi' # type
                 )
+            )
         except XenAPI.Failure, e:
             # Parse XML for UUID values
             self.iqnChoices = []
@@ -489,6 +525,13 @@ class SRNewDialogue(Dialogue):
                 )
             )
 
+            # Set values in other_config only if the SR.introduce operation hasn't already set them
+            for key, value in FirstValue(inOtherConfig, {}).iteritems():
+                try:
+                    Task.Sync(lambda x:x.xenapi.SR.add_to_other_config(srRef, key, value))
+                except:
+                    pass #  Ignore failure
+
             for host in HotAccessor().host:
                 pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
                     'host':host.HotOpaqueRef().OpaqueRef(), # Host ref
@@ -545,6 +588,26 @@ class SRNewDialogue(Dialogue):
             'auto-scan':'true'
         },
         'iso'
+        )
+
+    def CommitCIFS_ISO_ATTACH(self):
+        self.srParams['uuid'] = commands.getoutput('/usr/bin/uuidgen')
+        deviceConfig = {
+            'location':'//'+self.srParams['server']+'/'+self.srParams['serverpath'],
+            'type':'cifs',
+            'options':self.srParams['options']
+        }
+        if self.srParams['username'] != '':
+            deviceConfig.update({
+                'username' : self.srParams['username'],
+                'cifspassword' : self.srParams['cifspassword']
+            })
+        self.CommitAttach('iso', 
+            deviceConfig,
+            { # Set auto-scan to true for ISO SRs
+                'auto-scan':'true'
+            },
+            'iso'
         )
 
     def CommitISCSI_CREATE(self):
