@@ -40,11 +40,10 @@ class SRNewDialogue(Dialogue):
         self.createMenu = Menu()
 
         if self.variant == 'CREATE':
-            choices = ['NETAPP', 'NFS', 'ISCSI']
+            choices = ['NFS', 'ISCSI', 'NETAPP']
         else: # ATTACH choices
-            choices = ['CIFS_ISO', 'NFS_ISO', 'ISCSI', 'NFS']
+            choices = ['NFS',  'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
         
-        #choices = ['NFS', 'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
         for type in choices:
             self.createMenu.AddChoice(name = self.srTypeNames[type],
                 onAction = self.HandleCreateChoice,
@@ -66,7 +65,11 @@ class SRNewDialogue(Dialogue):
         return retVal
         
     def AggregateString(self, inAggregate):
-        retVal = "%-60.60s %-9.9s" % (inAggregate.name[:50], (SizeUtils.SRSizeString(inAggregate.size))[:9])
+        retVal = "%-60.60s %-9.9s" % (inAggregate.name[:60], (SizeUtils.SRSizeString(inAggregate.size))[:9])
+        return retVal
+        
+    def NetAppSRString(self, inNetAppSR):
+        retVal = "%-36.36s  %-22.22s %-9.9s" % (inNetAppSR.uuid[:36], inNetAppSR.aggregate[:22], (SizeUtils.SRSizeString(inNetAppSR.size))[:9])
         return retVal
         
     def BuildPanePROBE_NFS(self):
@@ -131,6 +134,15 @@ class SRNewDialogue(Dialogue):
                 handle = 'THIN_ASIS')
         else:
             self.provisioningMenu.AddChoice(name = Lang('<This Aggregate Does Not Support A-SIS Deduplication>'))
+
+    def BuildPanePROBE_NETAPP_SR(self):
+        self.srMenu = Menu()
+        for srChoice in self.netAppSRChoices:
+            self.srMenu.AddChoice(name = self.NetAppSRString(srChoice),
+                onAction = self.HandleNetAppSRChoice,
+                handle = srChoice)
+        if self.srMenu.NumChoices() == 0:
+            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
 
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
@@ -225,7 +237,7 @@ class SRNewDialogue(Dialogue):
         pane.AddWrappedBoldTextField(Lang('Please select the Storage Repository to ')+Lang(self.variant.lower()))
         pane.NewLine()
 
-        pane.AddMenuField(self.srMenu)
+        pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsPROBE_ISCSI_IQN(self):
@@ -247,9 +259,13 @@ class SRNewDialogue(Dialogue):
     def UpdateFieldsPROBE_ISCSI_SR(self):
         pane = self.Pane()
         pane.ResetFields()
+        pane.AddWarningField('WARNING')
+        pane.AddWrappedBoldTextField(Lang('You must ensure that the chosen SR is not in use by any server '
+            'that is not a member of this Pool.  Failure to do so may result in data loss.'))
+        pane.NewLine()
         pane.AddTitleField(Lang('Please select from the list of discovered Storage Repositories.'))
 
-        pane.AddMenuField(self.srMenu)
+        pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsPROBE_NETAPP_AGGREGATE(self):
@@ -277,6 +293,18 @@ class SRNewDialogue(Dialogue):
         pane.AddTitleField(Lang('Please select the provisioning type for this Storare Repository.'))
 
         pane.AddMenuField(self.provisioningMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_NETAPP_SR(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddWarningField('WARNING')
+        pane.AddWrappedBoldTextField(Lang('You must ensure that the chosen SR is not in use by any server '
+            'that is not a member of this Pool.  Failure to do so may result in data loss.'))
+        pane.NewLine()
+        pane.AddTitleField(Lang('Please select from the list of discovered Storare Repositories.'))
+
+        pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
@@ -372,6 +400,7 @@ class SRNewDialogue(Dialogue):
         if inKey == 'KEY_ENTER' and pane.IsLastInput():
             try:
                 inputValues = pane.GetFieldValues()
+                Layout.Inst().TransientBanner(Lang('Probing NetApp...'))
                 self.HandleNetAppData(inputValues)
             except Exception, e:
                 pane.InputIndexSet(None)
@@ -414,6 +443,9 @@ class SRNewDialogue(Dialogue):
 
     def HandleKeyPROBE_NETAPP_PROVISIONING(self, inKey):
         return self.provisioningMenu.HandleKey(inKey)
+        
+    def HandleKeyPROBE_NETAPP_SR(self, inKey):
+        return self.srMenu.HandleKey(inKey)
 
     def HandleKeyCONFIRM(self, inKey):
         handled = False
@@ -588,19 +620,19 @@ class SRNewDialogue(Dialogue):
             # This probe returns xml directly
             xmlOutput = Task.Sync(lambda x: x.xenapi.SR.probe(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
-                deviceConfig, # device_config
+                self.NetAppBaseConfig(), # device_config
                 'netapp' # type
                 )
             )
     
-            self.netAppChoices = []
+            self.netAppSRChoices = []
             xmlDoc = xml.dom.minidom.parseString(xmlOutput)
             for xmlSR in xmlDoc.getElementsByTagName('SR'):
                 try:
                     uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
                     size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
                     aggregate =  str(xmlSR.getElementsByTagName('Aggregate')[0].firstChild.nodeValue.strip())
-                    self.netAppChoices.append(Struct(
+                    self.netAppSRChoices.append(Struct(
                         uuid = uuid,
                         size = size,
                         aggregate = aggregate
@@ -696,6 +728,11 @@ class SRNewDialogue(Dialogue):
     def HandleProvisioningChoice(self, inChoice):
         self.srParams['provisioning'] = inChoice
         self.extraInfo.append( (Lang('Provisioning'), self.NetAppProvisioningName(inChoice)) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
+    def HandleNetAppSRChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice.uuid
+        self.extraInfo.append( (Lang('SR ID'), inChoice.uuid) ) # Append tuple, so double brackets
         self.ChangeState('CONFIRM')
 
     def CommitCreate(self, inType, inDeviceConfig, inOtherConfig = None):
@@ -837,10 +874,11 @@ class SRNewDialogue(Dialogue):
             'port':self.srParams['port'],
             'targetIQN':self.srParams['iqn'].iqn,
             'SCSIid':self.srParams['lun'].SCSIid
-        },
-        { # Set auto-scan to false for non-ISO SRs
-            'auto-scan':'false'
-        })
+            },
+            { # Set auto-scan to false for non-ISO SRs
+                'auto-scan':'false'
+            }
+        )
         
     def CommitISCSI_ATTACH(self):
         self.CommitAttach('lvmoiscsi', { # device_config
@@ -848,9 +886,10 @@ class SRNewDialogue(Dialogue):
             'port':self.srParams['port'],
             'targetIQN':self.srParams['iqn'].iqn,
             'SCSIid':self.srParams['lun'].SCSIid
-        },
-        {}, # other_config
-        'user')
+            },
+            {}, # other_config
+            'user' # content_type
+        )
 
     def CommitNETAPP_CREATE(self):
         deviceConfig = self.NetAppBaseConfig()
@@ -867,7 +906,13 @@ class SRNewDialogue(Dialogue):
         )
 
     def CommitNETAPP_ATTACH(self):
-        raise Exception('Not implemented')
+        deviceConfig = self.NetAppBaseConfig()
+        
+        self.CommitAttach('netapp',
+            deviceConfig, # device_config
+            {}, # other_config
+            'user' # content_type
+        )
         
 class XSFeatureSRCreate:
     @classmethod
