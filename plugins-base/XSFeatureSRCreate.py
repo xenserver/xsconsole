@@ -20,6 +20,18 @@ class SRNewDialogue(Dialogue):
         'NFS_ISO': Lang('NFS ISO Library')
     }    
     
+    netAppProvisioning = {
+        'THICK' : Struct(name=Lang('Thick Provisioning'), config={'allocation':'thick'}),
+        'THIN_NO_ASIS' :  Struct(name=Lang('Thin Provisioning Without A-SIS Deduplication'), config={'allocation':'thin','asis':'false'}),
+        'THIN_ASIS' : Struct(name=Lang('Thin Provisioning With A-SIS Deduplication'), config={'allocation':'thin', 'asis':'true'})
+    }
+    
+    def NetAppProvisioningName(self, inType):
+        return self.netAppProvisioning[inType].name
+        
+    def NetAppProvisioningConfig(self, inType):
+        return self.netAppProvisioning[inType].config
+    
     def __init__(self, inVariant):
 
         Dialogue.__init__(self)
@@ -28,8 +40,8 @@ class SRNewDialogue(Dialogue):
         self.createMenu = Menu()
 
         if self.variant == 'CREATE':
-            choices = ['NFS', 'ISCSI']
-        else:
+            choices = ['NETAPP', 'NFS', 'ISCSI']
+        else: # ATTACH choices
             choices = ['CIFS_ISO', 'NFS_ISO', 'ISCSI', 'NFS']
         
         #choices = ['NFS', 'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
@@ -51,6 +63,10 @@ class SRNewDialogue(Dialogue):
     def LUNString(self, inLUN):
         retVal = "LUN %-4.4s %s" % (inLUN.LUNid[:4], (SizeUtils.SRSizeString(inLUN.size)+ ' ('+inLUN.vendor)[:62]+')')
         
+        return retVal
+        
+    def AggregateString(self, inAggregate):
+        retVal = "%-60.60s %-9.9s" % (inAggregate.name[:50], (SizeUtils.SRSizeString(inAggregate.size))[:9])
         return retVal
         
     def BuildPanePROBE_NFS(self):
@@ -88,7 +104,34 @@ class SRNewDialogue(Dialogue):
                 handle = srChoice)
         if self.srMenu.NumChoices() == 0:
             self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
-        
+
+    def BuildPanePROBE_NETAPP_AGGREGATE(self):
+        self.aggregateMenu = Menu()
+        for aggregateChoice in self.aggregateChoices:
+            self.aggregateMenu.AddChoice(name = self.AggregateString(aggregateChoice),
+                onAction = self.HandleAggregateChoice,
+                handle = aggregateChoice)
+        if self.aggregateMenu.NumChoices() == 0:
+            self.aggregateMenu.AddChoice(name = Lang('<No Aggregates Detected>'))
+
+    def BuildPanePROBE_NETAPP_PROVISIONING(self):
+        self.provisioningMenu = Menu()
+
+        self.provisioningMenu.AddChoice(name = self.NetAppProvisioningName('THICK'),
+            onAction = self.HandleProvisioningChoice,
+            handle = 'THICK')
+
+        self.provisioningMenu.AddChoice(name = self.NetAppProvisioningName('THIN_NO_ASIS'),
+            onAction = self.HandleProvisioningChoice,
+            handle = 'THIN_NO_ASIS')
+
+        if self.srParams['aggregate'].asisdedup.lower().startswith('true'):
+            self.provisioningMenu.AddChoice(name = self.NetAppProvisioningName('THIN_ASIS'),
+                onAction = self.HandleProvisioningChoice,
+                handle = 'THIN_ASIS')
+        else:
+            self.provisioningMenu.AddChoice(name = Lang('<This Aggregate Does Not Support A-SIS Deduplication>'))
+
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.TitleSet(Lang("New Storage Repository"))
@@ -156,6 +199,22 @@ class SRNewDialogue(Dialogue):
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
     
+    def UpdateFieldsGATHER_NETAPP(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please enter the configuration details for the NetApp Storage Repository.  Leave CHAP Username/Password blank if not required.'))
+        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('NetApp Virtual Disk Storage')), 'name')
+        pane.AddInputField(Lang('Description', 26), '', 'description')
+        pane.AddInputField(Lang('NetApp Filer Address', 26), '', 'target')
+        pane.AddInputField(Lang('Username', 26), '', 'username')
+        pane.AddPasswordField(Lang('Password', 26), '', 'password')
+        pane.AddInputField(Lang('CHAP Username', 26), '', 'chapuser')
+        pane.AddPasswordField(Lang('CHAP Password', 26), '', 'chappassword')
+
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+    
     def UpdateFieldsPROBE_NFS(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -191,6 +250,33 @@ class SRNewDialogue(Dialogue):
         pane.AddTitleField(Lang('Please select from the list of discovered Storage Repositories.'))
 
         pane.AddMenuField(self.srMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_NETAPP_AGGREGATE(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select from the list of discovered Aggregates.'))
+
+        pane.AddMenuField(self.aggregateMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_NETAPP_FLEXVOLS(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please enter the number of FlexVols to assign to this Storage Repository.'))
+
+        pane.AddInputField(Lang('Number of FlexVols',24), '8', 'numflexvols')
+        
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+            
+    def UpdateFieldsPROBE_NETAPP_PROVISIONING(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select the provisioning type for this Storare Repository.'))
+
+        pane.AddMenuField(self.provisioningMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
@@ -280,6 +366,20 @@ class SRNewDialogue(Dialogue):
             handled = self.HandleInputFieldKeys(inKey)
         return handled
 
+    def HandleKeyGATHER_NETAPP(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                inputValues = pane.GetFieldValues()
+                self.HandleNetAppData(inputValues)
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+        else:
+            handled = self.HandleInputFieldKeys(inKey)
+        return handled
+
     def HandleKeyPROBE_NFS(self, inKey):
         return self.srMenu.HandleKey(inKey)
 
@@ -291,6 +391,29 @@ class SRNewDialogue(Dialogue):
 
     def HandleKeyPROBE_ISCSI_SR(self, inKey):
         return self.srMenu.HandleKey(inKey)
+
+    def HandleKeyPROBE_NETAPP_AGGREGATE(self, inKey):
+        return self.aggregateMenu.HandleKey(inKey)
+
+    def HandleKeyPROBE_NETAPP_FLEXVOLS(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                numFlexVols = int(pane.GetFieldValues()['numflexvols'])
+                if numFlexVols < 1 or numFlexVols > 32:
+                    raise Exception(Lang('The number of FlexVols must be between 1 and 32'))
+                self.srParams['numflexvols'] = numFlexVols
+                self.ChangeState('PROBE_NETAPP_PROVISIONING')
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Invalid Value"), Lang(e)))
+        else:
+            handled = self.HandleInputFieldKeys(inKey)
+        return handled
+
+    def HandleKeyPROBE_NETAPP_PROVISIONING(self, inKey):
+        return self.provisioningMenu.HandleKey(inKey)
 
     def HandleKeyCONFIRM(self, inKey):
         handled = False
@@ -314,81 +437,6 @@ class SRNewDialogue(Dialogue):
             handled = True
 
         return handled
-    
-    def HandleCreateChoice(self, inChoice):
-        self.createType = inChoice
-        
-        self.ChangeState('GATHER_'+inChoice)
-
-    def HandleProbeChoice(self, inChoice):
-        self.srParams['uuid'] = inChoice
-        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
-        self.ChangeState('CONFIRM')
-
-    def HandleIQNChoice(self, inChoice):
-        self.srParams['iqn'] = inChoice
-        self.extraInfo.append( (Lang('IQN'), inChoice.name) ) # Append tuple, so double brackets
-        Layout.Inst().TransientBanner(Lang('Probing for LUNs...'))
-        self.lunChoices = []
-        try:
-            # This task will raise an exception with details of available LUNs
-            Task.Sync(lambda x: x.xenapi.SR.probe(
-                    HotAccessor().local_host_ref().OpaqueRef(), # host
-                    { # device_config
-                        'target':self.srParams['remotehost'],
-                        'port':self.srParams['port'],
-                        'targetIQN':self.srParams['iqn'].iqn
-                    },
-                    'lvmoiscsi' # type
-                    )
-                )
-        except XenAPI.Failure, e:
-            # Parse XML for UUID values
-
-            xmlDoc = xml.dom.minidom.parseString(e.details[3])
-            for xmlLUN in xmlDoc.getElementsByTagName('LUN'):
-                try:
-                    record = Struct()
-                    for name in ('vendor', 'LUNid', 'size', 'SCSIid'):
-                        setattr(record, name, str(xmlLUN.getElementsByTagName(name)[0].firstChild.nodeValue.strip()))
-                        
-                    self.lunChoices.append(record)
-                        
-                except Exception, e:
-                    pass # Ignore failures
-        
-        self.ChangeState('PROBE_ISCSI_LUN')
-
-    def HandleLUNChoice(self, inChoice):
-        self.srParams['lun'] = inChoice
-        self.extraInfo.append( (Lang('LUN'), str(inChoice.LUNid)) ) # Append tuple, so double brackets
-        if self.variant == 'CREATE':
-            self.ChangeState('CONFIRM')
-        else:
-            Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
-            self.srChoices = []
-
-            xmlResult = Task.Sync(lambda x: x.xenapi.SR.probe(
-                HotAccessor().local_host_ref().OpaqueRef(), # host
-                { # device_config
-                    'target':self.srParams['remotehost'],
-                    'port':self.srParams['port'],
-                    'targetIQN':self.srParams['iqn'].iqn,
-                    'SCSIid':self.srParams['lun'].SCSIid
-                },
-                'lvmoiscsi' # type
-                )
-            )
-
-            xmlDoc = xml.dom.minidom.parseString(xmlResult)
-            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
-    
-            self.ChangeState('PROBE_ISCSI_SR')
-
-    def HandleiSCSISRChoice(self, inChoice):
-        self.srParams['uuid'] = inChoice
-        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
-        self.ChangeState('CONFIRM')
 
     def HandleNFSData(self, inParams):
         self.srParams = inParams
@@ -476,7 +524,180 @@ class SRNewDialogue(Dialogue):
                     pass # Ignore failures
                 
         self.ChangeState('PROBE_ISCSI_IQN')
+
+    def NetAppBaseConfig(self):
+        retVal = {
+            'target':self.srParams['target'],
+            'username':self.srParams['username'],
+            'password':self.srParams['password']        
+        }
+        if self.srParams['chapuser'] != '':
+            retVal.update({
+                'chapuser':self.srParams['chapuser'],
+                'chappassword':self.srParams['chappassword']
+            })
+        return retVal
+
+    def HandleNetAppData(self, inParams):
+        self.srParams = inParams
+        self.extraInfo = [ # Array of tuples
+            (Lang('NetApp Filer Address'), self.srParams['target']),
+            (Lang('Username'), self.srParams['username']),
+            (Lang('Password'), '*' * len(self.srParams['password'])),
+            (Lang('CHAP Username'), self.srParams['chapuser']),
+            (Lang('CHAP Password'), '*' * len(self.srParams['chappassword']))
+        ]
+
+        if self.variant == 'CREATE':
+            # To create, we need the list of aggregates, which is obtained using a fake SR.create.
+            # This will fail because we're not supplying an aggregate name
+            try:
+                srRef = Task.Sync(lambda x: x.xenapi.SR.create(
+                    HotAccessor().local_host_ref().OpaqueRef(), # host
+                    self.NetAppBaseConfig(), # device_config
+                    '0', # physical_size
+                    self.srParams['name'], # name_label
+                    self.srParams['description'], # name_description
+                    'netapp', # type
+                    'user', # content_type
+                    True # shared
+                    )
+                )
+            except XenAPI.Failure, e:
+                # Parse XML for UUID values
+                self.aggregateChoices = []
+                xmlDoc = xml.dom.minidom.parseString(e.details[3])
+                for aggregate in xmlDoc.getElementsByTagName('Aggr'):
+                    try:
+                        name = str(aggregate.getElementsByTagName('Name')[0].firstChild.nodeValue.strip())
+                        size = str(aggregate.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
+                        disks = str(aggregate.getElementsByTagName('Disks')[0].firstChild.nodeValue.strip())
+                        raidType = str(aggregate.getElementsByTagName('RAIDType')[0].firstChild.nodeValue.strip())
+                        asisdedup = str(aggregate.getElementsByTagName('asis_dedup')[0].firstChild.nodeValue.strip())
+                        self.aggregateChoices.append(Struct(
+                            name = name,
+                            size = size,
+                            disks = disks,
+                            raidType = raidType,
+                            asisdedup = asisdedup)) # NetApp's Advanced Single Instance Storage Deduplication, 'true' if supported
+                            
+                    except Exception, e:
+                        pass # Ignore failures
+            self.ChangeState('PROBE_NETAPP_AGGREGATE')
+        elif self.variant=='ATTACH':
+            # This probe returns xml directly
+            xmlOutput = Task.Sync(lambda x: x.xenapi.SR.probe(
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                deviceConfig, # device_config
+                'netapp' # type
+                )
+            )
     
+            self.netAppChoices = []
+            xmlDoc = xml.dom.minidom.parseString(xmlOutput)
+            for xmlSR in xmlDoc.getElementsByTagName('SR'):
+                try:
+                    uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
+                    size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
+                    aggregate =  str(xmlSR.getElementsByTagName('Aggregate')[0].firstChild.nodeValue.strip())
+                    self.netAppChoices.append(Struct(
+                        uuid = uuid,
+                        size = size,
+                        aggregate = aggregate
+                    ))
+                        
+                except Exception, e:
+                    pass # Ignore failures
+                    
+            self.ChangeState('PROBE_NETAPP_SR')
+        else:
+            raise Exception('bad self.variant') # Logic error
+
+    def HandleCreateChoice(self, inChoice):
+        self.createType = inChoice
+        
+        self.ChangeState('GATHER_'+inChoice)
+
+    def HandleProbeChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice
+        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
+    def HandleIQNChoice(self, inChoice):
+        self.srParams['iqn'] = inChoice
+        self.extraInfo.append( (Lang('IQN'), inChoice.name) ) # Append tuple, so double brackets
+        Layout.Inst().TransientBanner(Lang('Probing for LUNs...'))
+        self.lunChoices = []
+        try:
+            # This task will raise an exception with details of available LUNs
+            Task.Sync(lambda x: x.xenapi.SR.probe(
+                    HotAccessor().local_host_ref().OpaqueRef(), # host
+                    { # device_config
+                        'target':self.srParams['remotehost'],
+                        'port':self.srParams['port'],
+                        'targetIQN':self.srParams['iqn'].iqn
+                    },
+                    'lvmoiscsi' # type
+                    )
+                )
+        except XenAPI.Failure, e:
+            # Parse XML for UUID values
+
+            xmlDoc = xml.dom.minidom.parseString(e.details[3])
+            for xmlLUN in xmlDoc.getElementsByTagName('LUN'):
+                try:
+                    record = Struct()
+                    for name in ('vendor', 'LUNid', 'size', 'SCSIid'):
+                        setattr(record, name, str(xmlLUN.getElementsByTagName(name)[0].firstChild.nodeValue.strip()))
+                        
+                    self.lunChoices.append(record)
+                        
+                except Exception, e:
+                    pass # Ignore failures
+        
+        self.ChangeState('PROBE_ISCSI_LUN')
+
+    def HandleLUNChoice(self, inChoice):
+        self.srParams['lun'] = inChoice
+        self.extraInfo.append( (Lang('LUN'), str(inChoice.LUNid)) ) # Append tuple, so double brackets
+        if self.variant == 'CREATE':
+            self.ChangeState('CONFIRM')
+        else:
+            Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
+            self.srChoices = []
+
+            xmlResult = Task.Sync(lambda x: x.xenapi.SR.probe(
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                { # device_config
+                    'target':self.srParams['remotehost'],
+                    'port':self.srParams['port'],
+                    'targetIQN':self.srParams['iqn'].iqn,
+                    'SCSIid':self.srParams['lun'].SCSIid
+                },
+                'lvmoiscsi' # type
+                )
+            )
+
+            xmlDoc = xml.dom.minidom.parseString(xmlResult)
+            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
+    
+            self.ChangeState('PROBE_ISCSI_SR')
+
+    def HandleiSCSISRChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice
+        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
+    def HandleAggregateChoice(self, inChoice):
+        self.srParams['aggregate'] = inChoice
+        self.extraInfo.append( (Lang('Aggregate'), inChoice.name) ) # Append tuple, so double brackets
+        self.ChangeState('PROBE_NETAPP_FLEXVOLS')
+
+    def HandleProvisioningChoice(self, inChoice):
+        self.srParams['provisioning'] = inChoice
+        self.extraInfo.append( (Lang('Provisioning'), self.NetAppProvisioningName(inChoice)) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
     def CommitCreate(self, inType, inDeviceConfig, inOtherConfig = None):
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang('Creating SR...'))
@@ -630,6 +851,23 @@ class SRNewDialogue(Dialogue):
         },
         {}, # other_config
         'user')
+
+    def CommitNETAPP_CREATE(self):
+        deviceConfig = self.NetAppBaseConfig()
+        deviceConfig.update({
+            'aggregate':self.srParams['aggregate'].name,
+            'FlexVols':str(self.srParams['numflexvols'])
+        })
+        deviceConfig.update(self.NetAppProvisioningConfig(self.srParams['provisioning']))
+        self.CommitCreate('netapp',
+            deviceConfig,
+            { # Set auto-scan to false for non-ISO SRs
+                'auto-scan':'false'
+            }
+        )
+
+    def CommitNETAPP_ATTACH(self):
+        raise Exception('Not implemented')
         
 class XSFeatureSRCreate:
     @classmethod
