@@ -539,6 +539,8 @@ class SRNewDialogue(Dialogue):
                 )
             )
         except XenAPI.Failure, e:
+            if e.details[0] != 'SR_BACKEND_FAILURE_96':
+                raise
             # Parse XML for UUID values
             self.iqnChoices = []
             xmlDoc = xml.dom.minidom.parseString(e.details[3])
@@ -596,6 +598,8 @@ class SRNewDialogue(Dialogue):
                     )
                 )
             except XenAPI.Failure, e:
+                if e.details[0] != 'SR_BACKEND_FAILURE_123':
+                    raise
                 # Parse XML for UUID values
                 self.aggregateChoices = []
                 xmlDoc = xml.dom.minidom.parseString(e.details[3])
@@ -674,7 +678,8 @@ class SRNewDialogue(Dialogue):
                 )
         except XenAPI.Failure, e:
             # Parse XML for UUID values
-
+            if e.details[0] != 'SR_BACKEND_FAILURE_107':
+                raise # FIXME: Catch this
             xmlDoc = xml.dom.minidom.parseString(e.details[3])
             for xmlLUN in xmlDoc.getElementsByTagName('LUN'):
                 try:
