@@ -495,9 +495,12 @@ class SRNewDialogue(Dialogue):
                 'nfs' # type
                 )
             )
-            # Parse XML for UUID values
-            xmlDoc = xml.dom.minidom.parseString(xmlSRList)
-            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
+            if xmlSRList == '':
+                self.srChoices = []
+            else:
+                # Parse XML for UUID values
+                xmlDoc = xml.dom.minidom.parseString(xmlSRList)
+                self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
                 
             self.ChangeState('PROBE_NFS')
         else:
@@ -543,19 +546,20 @@ class SRNewDialogue(Dialogue):
                 raise
             # Parse XML for UUID values
             self.iqnChoices = []
-            xmlDoc = xml.dom.minidom.parseString(e.details[3])
-            for tgt in xmlDoc.getElementsByTagName('TGT'):
-                try:
-                    index = str(tgt.getElementsByTagName('Index')[0].firstChild.nodeValue.strip())
-                    iqn =  str(tgt.getElementsByTagName('TargetIQN')[0].firstChild.nodeValue.strip())
-                    self.iqnChoices.append(Struct(
-                        portal = self.srParams['remotehost']+':'+self.srParams['port'],
-                        tgpt=index,
-                        name=iqn,
-                        iqn=iqn))
-                        
-                except Exception, e:
-                    pass # Ignore failures
+            if e.details[3] != '':
+                xmlDoc = xml.dom.minidom.parseString(e.details[3])
+                for tgt in xmlDoc.getElementsByTagName('TGT'):
+                    try:
+                        index = str(tgt.getElementsByTagName('Index')[0].firstChild.nodeValue.strip())
+                        iqn =  str(tgt.getElementsByTagName('TargetIQN')[0].firstChild.nodeValue.strip())
+                        self.iqnChoices.append(Struct(
+                            portal = self.srParams['remotehost']+':'+self.srParams['port'],
+                            tgpt=index,
+                            name=iqn,
+                            iqn=iqn))
+                            
+                    except Exception, e:
+                        pass # Ignore failures
                 
         self.ChangeState('PROBE_ISCSI_IQN')
 
@@ -602,23 +606,24 @@ class SRNewDialogue(Dialogue):
                     raise
                 # Parse XML for UUID values
                 self.aggregateChoices = []
-                xmlDoc = xml.dom.minidom.parseString(e.details[3])
-                for aggregate in xmlDoc.getElementsByTagName('Aggr'):
-                    try:
-                        name = str(aggregate.getElementsByTagName('Name')[0].firstChild.nodeValue.strip())
-                        size = str(aggregate.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
-                        disks = str(aggregate.getElementsByTagName('Disks')[0].firstChild.nodeValue.strip())
-                        raidType = str(aggregate.getElementsByTagName('RAIDType')[0].firstChild.nodeValue.strip())
-                        asisdedup = str(aggregate.getElementsByTagName('asis_dedup')[0].firstChild.nodeValue.strip())
-                        self.aggregateChoices.append(Struct(
-                            name = name,
-                            size = size,
-                            disks = disks,
-                            raidType = raidType,
-                            asisdedup = asisdedup)) # NetApp's Advanced Single Instance Storage Deduplication, 'true' if supported
-                            
-                    except Exception, e:
-                        pass # Ignore failures
+                if e.details[3] != '':
+                    xmlDoc = xml.dom.minidom.parseString(e.details[3])
+                    for aggregate in xmlDoc.getElementsByTagName('Aggr'):
+                        try:
+                            name = str(aggregate.getElementsByTagName('Name')[0].firstChild.nodeValue.strip())
+                            size = str(aggregate.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
+                            disks = str(aggregate.getElementsByTagName('Disks')[0].firstChild.nodeValue.strip())
+                            raidType = str(aggregate.getElementsByTagName('RAIDType')[0].firstChild.nodeValue.strip())
+                            asisdedup = str(aggregate.getElementsByTagName('asis_dedup')[0].firstChild.nodeValue.strip())
+                            self.aggregateChoices.append(Struct(
+                                name = name,
+                                size = size,
+                                disks = disks,
+                                raidType = raidType,
+                                asisdedup = asisdedup)) # NetApp's Advanced Single Instance Storage Deduplication, 'true' if supported
+                                
+                        except Exception, e:
+                            pass # Ignore failures
             self.ChangeState('PROBE_NETAPP_AGGREGATE')
         elif self.variant=='ATTACH':
             # This probe returns xml directly
@@ -630,20 +635,21 @@ class SRNewDialogue(Dialogue):
             )
     
             self.netAppSRChoices = []
-            xmlDoc = xml.dom.minidom.parseString(xmlOutput)
-            for xmlSR in xmlDoc.getElementsByTagName('SR'):
-                try:
-                    uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
-                    size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
-                    aggregate =  str(xmlSR.getElementsByTagName('Aggregate')[0].firstChild.nodeValue.strip())
-                    self.netAppSRChoices.append(Struct(
-                        uuid = uuid,
-                        size = size,
-                        aggregate = aggregate
-                    ))
-                        
-                except Exception, e:
-                    pass # Ignore failures
+            if e.details[3] != '':
+                xmlDoc = xml.dom.minidom.parseString(xmlOutput)
+                for xmlSR in xmlDoc.getElementsByTagName('SR'):
+                    try:
+                        uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
+                        size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
+                        aggregate =  str(xmlSR.getElementsByTagName('Aggregate')[0].firstChild.nodeValue.strip())
+                        self.netAppSRChoices.append(Struct(
+                            uuid = uuid,
+                            size = size,
+                            aggregate = aggregate
+                        ))
+                            
+                    except Exception, e:
+                        pass # Ignore failures
                     
             self.ChangeState('PROBE_NETAPP_SR')
         else:
@@ -679,19 +685,20 @@ class SRNewDialogue(Dialogue):
         except XenAPI.Failure, e:
             # Parse XML for UUID values
             if e.details[0] != 'SR_BACKEND_FAILURE_107':
-                raise # FIXME: Catch this
-            xmlDoc = xml.dom.minidom.parseString(e.details[3])
-            for xmlLUN in xmlDoc.getElementsByTagName('LUN'):
-                try:
-                    record = Struct()
-                    for name in ('vendor', 'LUNid', 'size', 'SCSIid'):
-                        setattr(record, name, str(xmlLUN.getElementsByTagName(name)[0].firstChild.nodeValue.strip()))
-                        
-                    self.lunChoices.append(record)
-                        
-                except Exception, e:
-                    pass # Ignore failures
-        
+                raise
+            if e.details[3] != '':
+                xmlDoc = xml.dom.minidom.parseString(e.details[3])
+                for xmlLUN in xmlDoc.getElementsByTagName('LUN'):
+                    try:
+                        record = Struct()
+                        for name in ('vendor', 'LUNid', 'size', 'SCSIid'):
+                            setattr(record, name, str(xmlLUN.getElementsByTagName(name)[0].firstChild.nodeValue.strip()))
+                            
+                        self.lunChoices.append(record)
+                            
+                    except Exception, e:
+                        pass # Ignore failures
+            
         self.ChangeState('PROBE_ISCSI_LUN')
 
     def HandleLUNChoice(self, inChoice):
@@ -716,7 +723,10 @@ class SRNewDialogue(Dialogue):
             )
 
             xmlDoc = xml.dom.minidom.parseString(xmlResult)
-            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
+            if xmlDoc == '':
+                self.srChoices = []
+            else:
+                self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
     
             self.ChangeState('PROBE_ISCSI_SR')
 
