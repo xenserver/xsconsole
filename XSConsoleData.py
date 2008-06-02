@@ -109,7 +109,15 @@ class Data:
         (status, output) = commands.getstatusoutput("/bin/cat /proc/cpuinfo")
         if status == 0:
             self.ScanCPUInfo(output.split("\n"))
-        
+
+        (status, output) = commands.getstatusoutput("/usr/bin/openssl x509 -in /etc/xensource/xapi-ssl.pem -fingerprint -noout")
+        if status == 0:
+            fp = output.split("=")
+            if len(fp) >= 2:
+                self.data['sslfingerprint'] = fp[1]
+            else:
+                self.data['sslfingerprint'] = "<Unknown>"
+ 
         self.Update()
     
     def FakeMetrics(self, inPIF):

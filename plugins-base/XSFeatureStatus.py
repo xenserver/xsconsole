@@ -30,6 +30,10 @@ class XSFeatureStatus:
             inPane.AddStatusField(Lang('IP address', 16), data.ManagementIP(''))
             inPane.AddStatusField(Lang('Netmask', 16),  data.ManagementNetmask(''))
             inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
+        
+        inPane.NewLine()
+        inPane.AddTitleField(Lang("SSL Fingerprint for XenCenter"))
+        inPane.AddWrappedTextField(data.sslfingerprint(''))
     
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
