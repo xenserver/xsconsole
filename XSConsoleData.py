@@ -1086,27 +1086,14 @@ class Data:
         return output
             
     def SetVerboseBoot(self, inVerbose):
-            mountPoint = tempfile.mktemp(".xsconsole")
-            if not os.path.isdir(mountPoint):
-                os.mkdir(mountPoint, 0700)
-                
-            try:
-                status, output = commands.getstatusoutput("/bin/mount LABEL=IHVCONFIG "+mountPoint + " 2>&1")
-                if status != 0:
-                    raise Exception(output)
-                    
-                if inVerbose:
-                    name = 'noisy'
-                else:
-                    name='quiet'
-                    
-                os.system('/bin/cp -f '+mountPoint+'/'+name+'.opt '+mountPoint+'/linux.opt')
-                os.system('/bin/cp -f '+mountPoint+'/x'+name+'.opt '+mountPoint+'/xen.opt')
+        if inVerbose:
+            name = 'noisy'
+        else:
+            name = 'quiet'
 
-                State.Inst().VerboseBootSet(inVerbose)
-
-            finally:
-                commands.getstatusoutput("/bin/umount "+mountPoint + " 2>&1")
-                time.sleep(2)
-                os.rmdir(mountPoint)
-                
+        status, output = commands.getstatusoutput(
+            "(export TERM=xterm && /opt/xensource/libexec/set-boot " + name + ")")
+        if status != 0:
+            raise Exception(output)
+            
+        State.Inst().VerboseBootSet(inVerbose)
