@@ -541,6 +541,8 @@ class SRDialogue(Dialogue):
     def BuildPaneINITIAL(self):
         data = Data.Inst()
         
+        data.Update() # Make sure SR list is up to date
+        
         self.choices = SRUtils.SRList(self.Custom('mode'), self.Custom('capabilities'))
         choiceDefs = []
         for choice in self.choices:
