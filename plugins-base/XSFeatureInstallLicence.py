@@ -15,7 +15,7 @@ class InstallLicenceDialogue(FileDialogue):
 
         self.custom = {
             'title' : Lang("Install License"),
-            'searchregexp' : r'.*licen[cs]e',  # Licence files always contain the string licence or license
+            'searchregexp' : r'.*(licen[cs]e|xslic)',  # Licence files end in .xslic
             'deviceprompt' : Lang("Select The Device Containing The License File"), 
             'fileprompt' : Lang("Select The License File"),
             'confirmprompt' : Lang("Press <F8> To Install The License"),
