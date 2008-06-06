@@ -22,7 +22,7 @@ class Config:
         }
         
         self.ftpname = 'XenServer Support'
-        self.ftpserver = 'ftp://support.xensource.com/'
+        self.ftpserver = 'ftp://support.xensource.com/bugreports'
     
     @classmethod
     def Inst(cls):
