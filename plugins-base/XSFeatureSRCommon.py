@@ -15,9 +15,8 @@ class SRUtils: # FIXME: Name clash
         'forget' : Struct(name = Lang("Forget"), priority = 10),
         'plug' : Struct(name = Lang("Plug"), priority = 20),
         'unplug' : Struct(name = Lang("Unplug"), priority = 30),
-        'xsconsole-detach': Struct(name = Lang('Detach'), warning=Lang('Detaching this Storage Repository will permanently '
-            'remove the information used to connect Virtual Machines to the Virtual Disks on the '
-            'Storage Repository.  This operation cannot be undone.'), priority = 100),
+        'xsconsole-detach': Struct(name = Lang('Detach'), warning=Lang('After Detaching this Storage Repository, Virtual Disks contained within it will become inaccessible.  To reattach it, the correct device configuration will be needed.'), priority = 100),
+        'xsconsole-destroy': Struct(name = Lang('Destroy'), warning=Lang('Destroying this Storage Repository will permanently remove all associated Virtual Disks and the data contained on the Virtual Disks.  This operation cannot be undone.'), priority = 200),
 
         'none' : Struct(name = Lang("No Operation"), priority = 200),
     }
@@ -28,15 +27,32 @@ class SRUtils: # FIXME: Name clash
             # Allow a lot more in test mode
             retVal = cls.operationNames.keys()
         else:
-            retVal = ['xsconsole-detach']
+            retVal = ['forget', 'xsconsole-detach','xsconsole-destroy']
         return retVal
         
     @classmethod
     def AsyncOperation(cls, inOperation, inSRHandle, inParam0 = None):
         task = None
         if inOperation == 'xsconsole-detach': # This is a synthetic operation that unplugs then forgets
-            cls.AsyncOperation('unplug', inSRHandle)
-            cls.AsyncOperation('forget', inSRHandle)
+            cls.DoOperation('unplug', inSRHandle)
+
+            sr = HotAccessor().sr[inSRHandle]
+            storedError = None
+            for pbd in sr.PBDs:
+                try:
+                    Task.Sync(lambda x: x.xenapi.PBD.destroy(pbd.HotOpaqueRef().OpaqueRef()))
+                except Exception, e:
+                    storedError = e
+                    
+            if storedError is not None:
+                # Raise one exception, even if more than one occured
+                raise storedError
+                
+        elif inOperation == 'xsconsole-destroy': # This is a synthetic operation that unplugs then destroys
+            cls.DoOperation('unplug', inSRHandle)
+            task = cls.AsyncOperation('destroy', inSRHandle)
+        elif inOperation == 'destroy':
+            task = Task.New(lambda x: x.xenapi.Async.SR.destroy(inSRHandle.OpaqueRef()))
         elif inOperation == 'forget':
             task = Task.New(lambda x: x.xenapi.Async.SR.forget(inSRHandle.OpaqueRef()))
         elif inOperation == 'plug':
@@ -150,11 +166,16 @@ class SRControlDialogue(Dialogue):
         self.extraInfo = []
         self.opParams = []
         sr = HotAccessor().sr[self.srHandle]
-        allowedOps = sr.allowed_operations()
+        allowedOps = sr.allowed_operations([])[:]
         # Use same criteria as XenCenter for detach (from IsDetachable in SR.cs)
         if SRUtils.IsDetachable(sr):
-            allowedOps = allowedOps + ['xsconsole-detach'] # Can't use .append or += - would modify the element in the HotData cache
-        
+            if len(sr.PBDs()) != 0:
+                # Attached SR
+                allowedOps += ['xsconsole-detach', 'xsconsole-destroy'] 
+                allowedOps.remove('forget') # Allow forget for detached SRs only
+        else:
+            allowedOps.remove('forget') # Don't allow forget for non-detachable SRs
+            
         choiceList = [ name for name in allowedOps if name in SRUtils.AllowedOperations() ]
         
         choiceList.sort(lambda x, y: cmp(SRUtils.OperationPriority(x), SRUtils.OperationPriority(y)))

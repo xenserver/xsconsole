@@ -61,7 +61,7 @@ class XSFeatureCrashDumpSR:
             'CRASH_DUMP_SR', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_DISK',
-                'menupriority' : 300,
+                'menupriority' : 500,
                 'menutext' : Lang('Specify Crash Dump SR') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler

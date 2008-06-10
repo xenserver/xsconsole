@@ -62,7 +62,7 @@ class XSFeatureSuspendSR:
             'SUSPEND_SR', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_DISK',
-                'menupriority' : 200,
+                'menupriority' : 400,
                 'menutext' : Lang('Specify Suspend SR') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler

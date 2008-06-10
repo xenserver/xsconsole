@@ -390,9 +390,16 @@ class HotData:
         else:
             retVal = {}
             for sr in HotAccessor().sr: # Iterates through HotAccessors to SRs
-                for pbd in sr.PBDs(): # Iterates through HotOpaqueRefs to PBDs
-                    if pbd in HotAccessor().local_host.PBDs(): # host.PBDs() is a list of HotOpaqueRefs
-                        retVal[sr.HotOpaqueRef()] = sr
+                visible = False
+                if len(sr.PBDs()) == 0:
+                    visible = True # This is a detached SR so list it as visible
+                else:
+                    for pbd in sr.PBDs(): # Iterates through HotOpaqueRefs to PBDs
+                        if pbd in HotAccessor().local_host.PBDs(): # host.PBDs() is a list of HotOpaqueRefs
+                            visible = True
+                if visible:
+                    retVal[sr.HotOpaqueRef()] = sr
+                    
         return retVal
 
     def FetchVM(self, inOpaqueRef):

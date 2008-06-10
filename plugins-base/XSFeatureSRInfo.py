@@ -17,7 +17,7 @@ class XSFeatureSRInfo:
         inPane.AddTitleField(Lang("Storage Repository Information"))
     
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to display detailed information about Storage Repositories."))
+            "Press <Enter> to display detailed information about Storage Repositories, and to Detach, Destroy or Forget Storage Repositories."))
 
     @classmethod
     def NoSRStatusUpdateHandler(cls, inPane):
@@ -65,16 +65,20 @@ class XSFeatureSRInfo:
                     if devConfig.targetIQN() is not None:
                         inPane.AddStatusField(Lang('Target IQN', 10), devConfig.targetIQN())
             
+
             flags = srUtils.SRFlags(sr)
-            if 'default' in flags:
-                inPane.AddStatusField(Lang('Default', 10), Lang('Yes'))
-            if 'suspend' in flags:
-                inPane.AddStatusField(Lang('Suspend', 10), Lang('Yes'))
-            if 'crashdump' in flags:
-                inPane.AddStatusField(Lang('Crash Dump', 10), Lang('Yes'))
+            if 'default' in flags and 'suspend' in flags and 'crashdump' in flags:
+                default = Lang('Yes')
+            elif 'default' in flags or 'suspend' in flags or 'crashdump' in flags:
+                default = Lang('Partial')
+            else:
+                default = Lang('No')
+            inPane.AddStatusField(Lang('Default', 10), default)
 
             inPane.NewLine()
-            if not attached:
+            if len(sr.PBDs()) == 0:
+                inPane.AddWarningField(Lang('This Storage Repository is detached and not usable by this host.'))
+            elif not attached:
                 inPane.AddWarningField(Lang('This Storage Repository is unplugged and not usable by this host.'))
                 
             if sr.name_description('') != '':
@@ -123,7 +127,7 @@ class XSFeatureSRInfo:
             'MENU_DISK', # Name of the menu this item is part of
             {
                 'menuname' : 'MENU_SRINFO', # Name of the menu this item leads to when selected
-                'menutext' : Lang('Storage Repository Details'),
+                'menutext' : Lang('Current Storage Repositories'),
                 'menupriority' : 100,
                 'menuregenerator' : XSFeatureSRInfo.MenuRegenerator,
                 'activatehandler' : XSFeatureSRInfo.ActivateHandler,

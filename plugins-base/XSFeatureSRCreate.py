@@ -69,13 +69,29 @@ class SRNewDialogue(Dialogue):
         return retVal
         
     def NetAppSRString(self, inNetAppSR):
-        retVal = "%-36.36s  %-22.22s %-9.9s" % (inNetAppSR.uuid[:36], inNetAppSR.aggregate[:22], (SizeUtils.SRSizeString(inNetAppSR.size))[:9])
+        retVal = "%-36.36s  %-22.22s %-9.9s" % (self.ExtendedSRName(inNetAppSR.uuid)[:36], inNetAppSR.aggregate[:22], (SizeUtils.SRSizeString(inNetAppSR.size))[:9])
         return retVal
         
+    def ExtendedSRName(self, inUUID):
+        retVal = inUUID
+        matchingSRs = [ sr for sr in HotAccessor().sr if sr.uuid() == inUUID ]
+        if len(matchingSRs) > 0:
+            sr = matchingSRs[0]
+            retVal = sr.name_label(Lang('<Unknown>'))
+            if len(sr.PBDs()) == 0:
+                retVal += Lang(' (detached)')
+        return retVal
+
     def BuildPanePROBE_NFS(self):
         self.srMenu = Menu()
+        names = {}
+        for sr in HotAccessor().sr:
+            names[sr.uuid()] = sr.name_label(Lang('<Unknown>'))
+            if len(sr.PBDs()) == 0:
+                names[sr.uuid()] += Lang(' (detached)')
+            
         for srChoice in self.srChoices:
-            self.srMenu.AddChoice(name = srChoice,
+            self.srMenu.AddChoice(name = self.ExtendedSRName(srChoice),
                 onAction = self.HandleProbeChoice,
                 handle = srChoice)
         if self.srMenu.NumChoices() == 0:
@@ -102,7 +118,7 @@ class SRNewDialogue(Dialogue):
     def BuildPanePROBE_ISCSI_SR(self):
         self.srMenu = Menu()
         for srChoice in self.srChoices:
-            self.srMenu.AddChoice(name = srChoice,
+            self.srMenu.AddChoice(name = self.ExtendedSRName(srChoice),
                 onAction = self.HandleiSCSISRChoice,
                 handle = srChoice)
         if self.srMenu.NumChoices() == 0:
@@ -778,32 +794,40 @@ class SRNewDialogue(Dialogue):
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
 
     def CommitAttach(self, inType, inDeviceConfig, inOtherConfig, inContentType):
+        srRef = None
+        
         for sr in HotAccessor().sr:
             if sr.uuid() == self.srParams['uuid']:
-                raise Exception(Lang('SR ID ')+self.srParams['uuid']+Lang(" is already attached to the system as '")+sr.name_label(Lang('<Unknown>'))+"'")
+                # SR already exists, so check whether it's fully configured
+                if len(sr.PBDs()) == 0:
+                    # SR is detached (no PBDs).  Skip the SR.introduce stage but create the PBDs
+                    srRef = sr.HotOpaqueRef().OpaqueRef()
+                else:
+                    # SR is already fully attached
+                    raise Exception(Lang('SR ID ')+self.srParams['uuid']+Lang(" is already attached to the system as '")+sr.name_label(Lang('<Unknown>'))+"'")
 
         Layout.Inst().PopDialogue()
         Layout.Inst().TransientBanner(Lang('Attaching Storage Repository...'))
-        srRef = None
         pbdList = []
         pluggedPBDList = []
         try:
-            srRef = Task.Sync(lambda x: x.xenapi.SR.introduce(
-                self.srParams['uuid'], # uuid
-                self.srParams['name'], # name_label
-                self.srParams['description'], # name_description
-                inType, # type
-                inContentType, # content_type
-                True # shared
+            if srRef is None:
+                srRef = Task.Sync(lambda x: x.xenapi.SR.introduce(
+                    self.srParams['uuid'], # uuid
+                    self.srParams['name'], # name_label
+                    self.srParams['description'], # name_description
+                    inType, # type
+                    inContentType, # content_type
+                    True # shared
+                    )
                 )
-            )
-
-            # Set values in other_config only if the SR.introduce operation hasn't already set them
-            for key, value in FirstValue(inOtherConfig, {}).iteritems():
-                try:
-                    Task.Sync(lambda x:x.xenapi.SR.add_to_other_config(srRef, key, value))
-                except:
-                    pass #  Ignore failure
+    
+                # Set values in other_config only if the SR.introduce operation hasn't already set them
+                for key, value in FirstValue(inOtherConfig, {}).iteritems():
+                    try:
+                        Task.Sync(lambda x:x.xenapi.SR.add_to_other_config(srRef, key, value))
+                    except:
+                        pass #  Ignore failure
 
             for host in HotAccessor().host:
                 pbdList.append(Task.Sync(lambda x: x.xenapi.PBD.create({
@@ -958,7 +982,7 @@ class XSFeatureSRCreate:
             'SR_CREATE', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_DISK',
-                'menupriority' : 50,
+                'menupriority' : 200,
                 'menutext' : Lang('Create New Storage Repository') ,
                 'statusupdatehandler' : self.CreateStatusUpdateHandler,
                 'activatehandler' : self.CreateActivateHandler
@@ -970,7 +994,7 @@ class XSFeatureSRCreate:
             'SR_ATTACH', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_DISK',
-                'menupriority' : 40,
+                'menupriority' : 300,
                 'menutext' : Lang('Attach Existing Storage Repository') ,
                 'statusupdatehandler' : self.AttachStatusUpdateHandler,
                 'activatehandler' : self.AttachActivateHandler
