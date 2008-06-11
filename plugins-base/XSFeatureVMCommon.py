@@ -40,6 +40,8 @@ class VMUtils:
             task = Task.New(lambda x: x.xenapi.Async.VM.clean_reboot(inVMHandle.OpaqueRef()))
         elif inOperation == 'resume':
             task = Task.New(lambda x: x.xenapi.Async.VM.resume(inVMHandle.OpaqueRef(), False, True))
+        elif inOperation == 'resume_on':
+            task = Task.New(lambda x: x.xenapi.Async.VM.resume_on(inVMHandle.OpaqueRef(), inParam0.OpaqueRef(), False, True))
         elif inOperation == 'clean_shutdown':
             task = Task.New(lambda x: x.xenapi.Async.VM.clean_shutdown(inVMHandle.OpaqueRef()))
         elif inOperation == 'pool_migrate':
@@ -59,8 +61,8 @@ class VMUtils:
         return task
         
     @classmethod
-    def DoOperation(cls, inOperation, inVMHandle):
-        task = cls.AsyncOperation(inOperation, inVMHandle)
+    def DoOperation(cls, inOperation, inVMHandle, inParam0 = None):
+        task = cls.AsyncOperation(inOperation, inVMHandle, inParam0)
         
         if task is not None:
             while task.IsPending():
@@ -92,6 +94,18 @@ class VMUtils:
     @classmethod
     def OperationPriority(cls, inOperation):
         return cls.OperationStruct(inOperation).priority
+
+    @classmethod
+    def ReinstateVMs(cls, inHostRef, inVMRefList):
+        for vmRef in inVMRefList:
+            vm = HotAccessor().vm[vmRef]
+            powerState = vm.power_state('').lower()
+            if powerState.startswith('halted'):
+                cls.DoOperation('start_on', vmRef, inHostRef)
+            elif powerState.startswith('running'):
+                cls.DoOperation('pool_migrate', vmRef, inHostRef)
+            elif powerState.startswith('suspended'):
+                cls.DoOperation('resume_on', vmRef, inHostRef)
 
 class VMControlDialogue(Dialogue):
     def __init__(self, inVMHandle):

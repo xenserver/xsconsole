@@ -16,12 +16,29 @@ class HostEvacuateDialogue(Dialogue):
         db = HotAccessor()
         self.newMaster = None
         self.hostWasEnabled = db.local_host.enabled(False)
-        if self.hostWasEnabled and db.local_pool.master.uuid() == db.local_host.uuid():
-            # We are the pool master
-            self.ChangeState('CHOOSEMASTER')
+        self.migrateMenu = Menu()
+        self.migrateMenu.AddChoice(name = Lang('Migrate, Resume or Restart Virtual Machines on this host'),
+            onAction = self.HandleMigrateChoice,
+            handle = 'YES')
+        self.migrateMenu.AddChoice(name = Lang('Do not alter Virtual Machines'),
+            onAction = self.HandleMigrateChoice,
+            handle = 'NO')
+        
+        if self.hostWasEnabled:
+            if db.local_pool.master.uuid() == db.local_host.uuid():
+                # We are the pool master
+                self.ChangeState('CHOOSEMASTER')
+            else:
+                self.ChangeState('CONFIRM')
         else:
-            self.ChangeState('CONFIRM')
-    
+            evacuatedConfig = db.local_host.other_config({}).get('MAINTENANCE_MODE_EVACUATED_VMS', '')
+            if evacuatedConfig != '':
+                self.evacuatedVMs = [ HotOpaqueRef(opaqueRef, 'vm') for opaqueRef in evacuatedConfig.split(',') ]
+                self.ChangeState('MIGRATEBACK')
+            else:
+                self.evacuatedVMs = []
+                self.ChangeState('CONFIRM')
+
     def BuildPaneCHOOSEMASTER(self):
         self.hostMenu = Menu()
         hostList = {}
@@ -56,7 +73,24 @@ class HostEvacuateDialogue(Dialogue):
         pane.NewLine()
         pane.AddMenuField(self.hostMenu)
         
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    
+    def UpdateFieldsMIGRATEBACK(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang('The following were running on this host when it entered Maintenance Mode.  Would you like reinstate them on this host?'))
+        for i, vmRef in enumerate(self.evacuatedVMs):
+            if i > 4:
+                pane.AddWrappedTextField(Lang('...and others'))
+                break
+            pane.AddWrappedTextField(HotAccessor().vm[vmRef].name_label(Lang('<Unknown>')))
+
+        
+        pane.NewLine()
+        pane.AddMenuField(self.migrateMenu)
+        pane.AddKeyHelpField( { Lang("<Up/Down>") : Lang("Select"), Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
@@ -89,6 +123,9 @@ class HostEvacuateDialogue(Dialogue):
     
     def HandleKeyCHOOSEMASTER(self, inKey):
         return self.hostMenu.HandleKey(inKey)
+    
+    def HandleKeyMIGRATEBACK(self, inKey):
+        return self.migrateMenu.HandleKey(inKey)
 
     def HandleKeyCONFIRM(self, inKey):
         if inKey == 'KEY_F(8)':
@@ -107,6 +144,12 @@ class HostEvacuateDialogue(Dialogue):
 
     def HandleHostChoice(self, inChoice):
         self.newMaster = inChoice
+        self.ChangeState('CONFIRM')
+
+    def HandleMigrateChoice(self, inChoice):
+        if inChoice != 'YES':
+            # Clear evacuated VM list
+            self.evacuatedVMs = []
         self.ChangeState('CONFIRM')
 
     def Commit(self):
@@ -128,7 +171,10 @@ class HostEvacuateDialogue(Dialogue):
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Enter Maintenance Mode Failed To Complete"), Lang(e)))
         else:
             try:
+                Layout.Inst().TransientBanner(Lang('Exiting Maintenance Mode...'))
                 hostUtils.DoOperation('enable', HotAccessor().local_host_ref())
+                vmUtils = Importer.GetResource('VMUtils')
+                vmUtils.ReinstateVMs(HotAccessor().local_host_ref(), self.evacuatedVMs)
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Successfully Exited Maintenance Mode")))
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Exit Maintenance Mode Failed"), Lang(e)))
