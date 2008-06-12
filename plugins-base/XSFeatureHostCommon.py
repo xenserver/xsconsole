@@ -56,7 +56,7 @@ class HostUtils:
         if task is not None:
             while task.IsPending():
                 time.sleep(0.1)
-                task.RaiseIfFailed()
+            task.RaiseIfFailed()
 
     @classmethod
     def OperationStruct(cls, inOperation):

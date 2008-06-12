@@ -27,8 +27,14 @@ class HostEvacuateDialogue(Dialogue):
         if self.hostWasEnabled:
             if db.local_pool.master.uuid() == db.local_host.uuid():
                 # We are the pool master
-                self.ChangeState('CHOOSEMASTER')
+                if len(db.host()) == 1:
+                    # This is a pool of one
+                    self.ChangeState('CONFIRM')
+                else:
+                    # Host is master of a pool of more than one host
+                    self.ChangeState('CHOOSEMASTER')
             else:
+                # Host is a slave
                 self.ChangeState('CONFIRM')
         else:
             evacuatedConfig = db.local_host.other_config({}).get('MAINTENANCE_MODE_EVACUATED_VMS', '')
@@ -187,30 +193,29 @@ class XSFeatureHostEvacuate:
         if db.local_host.enabled():
             
             inPane.AddWrappedTextField(Lang('Entering Maintenance Mode will migrate all Virtual Machines running on this host '
-                'to other hosts in the Resource Pool.  It is typically used before shutting down a host for maintenance, '
-                'and is only relevant for hosts in Resource Pools.'))
+                'to other hosts in the Resource Pool.  It is used before shutting down a host for maintenance.'))
             inPane.NewLine()
             
             if db.host(None) is None:
                 pass # Info not available, so print nothing
-            elif len(db.host([])) <= 1:
-                inPane.AddWrappedTextField(Lang('This host is not in a Resource Pool, so this option is disabled.'))
-                inPane.NewLine()
-            elif db.local_pool.master.uuid() == db.local_host.uuid():
+            elif len(db.host([])) > 1 and db.local_pool.master.uuid() == db.local_host.uuid():
                 inPane.AddWrappedTextField(Lang('This host is the Pool Master, so it will be necessary to nominate a new Pool '
                     'Master as part of this operation.'))
                 inPane.NewLine()
 
-            if len(db.host([])) > 1:
-                inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Evacuate Host") } )
+
+            inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Evacuate Host") } )
         else:
             inPane.AddWrappedTextField(Lang('This host is already in Maintenance Mode.  Press <Enter> to '
-                'exit Maintenance Mode and return to normal operation.  This operation will not automatically migrate '
-                'Virtual Machines back to this host or reassign the Pool Master, but these can be done manually.'))
+                'exit Maintenance Mode and return to normal operation.'))
     
     @classmethod
     def ActivateHandler(cls):
-        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(HostEvacuateDialogue()))
+        db=HotAccessor()
+        if len(db.host()) == 1 and len(db.local_host.resident_VMs()) > 1: # If we are in a pool of one and VMs are running
+            Layout.Inst().PushDialogue(InfoDialogue(Lang('This host has running Virtual Machines.  Please suspend or shutdown the Virtual Machines before entering Maintenance Mode.')))
+        else:
+            DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(HostEvacuateDialogue()))
     
     def Register(self):
         Importer.RegisterNamedPlugIn(
