@@ -44,7 +44,6 @@ SCRIPTS += XSConsoleUtils.py
 PLUGINS_BASE :=
 PLUGINS_BASE += XSFeatureChangePassword.py
 PLUGINS_BASE += XSFeatureChangeTimeout.py
-PLUGINS_BASE += XSFeatureClaimSR.py
 PLUGINS_BASE += XSFeatureCrashDumpSR.py
 PLUGINS_BASE += XSFeatureDNS.py
 PLUGINS_BASE += XSFeatureHostCommon.py
@@ -70,7 +69,6 @@ PLUGINS_BASE += XSFeatureSyslog.py
 PLUGINS_BASE += XSFeatureSystem.py
 PLUGINS_BASE += XSFeatureTestNetwork.py
 PLUGINS_BASE += XSFeatureTimezone.py
-PLUGINS_BASE += XSFeatureUpdate.py
 PLUGINS_BASE += XSFeatureUploadBugReport.py
 PLUGINS_BASE += XSFeatureValidate.py
 PLUGINS_BASE += XSFeatureVMCommon.py
@@ -78,13 +76,16 @@ PLUGINS_BASE += XSFeatureVMInfo.py
 PLUGINS_BASE += XSMenuLayout.py
 
 PLUGINS_OEM :=
+PLUGINS_OEM += XSFeatureClaimSR.py
 PLUGINS_OEM += XSFeatureManagementHelp.py
 PLUGINS_OEM += XSFeatureOEMBackup.py
 PLUGINS_OEM += XSFeatureOEMRestore.py
 PLUGINS_OEM += XSFeatureOEMRevert.py
 PLUGINS_OEM += XSFeatureRemoteDB.py
 PLUGINS_OEM += XSFeatureReset.py
+PLUGINS_OEM += XSFeatureUpdate.py
 PLUGINS_OEM += XSFeatureVerboseBoot.py
+PLUGINS_OEM += XSMenuOEMLayout.py
 
 PLUGINS_EXTRAS :=
 
