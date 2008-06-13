@@ -157,6 +157,7 @@ class App:
             if gotKey == "\012": gotKey = "KEY_ENTER"
             if gotKey == "\033": gotKey = "KEY_ESCAPE"
             if gotKey == "\177": gotKey = "KEY_BACKSPACE"
+            if gotKey == '\xc2': gotKey = "KEY_F(5)" # Handle function key mistranslation on vncterm
             if gotKey == '\xc5': gotKey = "KEY_F(8)" # Handle function key mistranslation on vncterm
             
             if gotKey == 'KEY_RESIZE':
@@ -202,6 +203,10 @@ class App:
                         data.Update()
                         self.layout.UpdateRootFields()
                         needsRefresh = True
+                    elif gotKey == '\014': # Ctrl-L
+                        Layout.Inst().Clear() # Full redraw
+                        needsRefresh = True
+                        
                 except Exception, e:
                     if Auth.Inst().IsTestMode():
                         raise
