@@ -61,6 +61,8 @@ class ChangePasswordDialogue(Dialogue):
                         
                     if inputValues['newpassword1'] != inputValues['newpassword2']:
                         raise Exception(Lang('New passwords do not match'))
+                    if len(inputValues['newpassword1']) < 6:
+                        raise Exception(Lang('New password is too short (minimum length is 6 characters)'))
 
                     Auth.Inst().ChangePassword(inputValues.get('oldpassword', ''), inputValues['newpassword1'])
                     
