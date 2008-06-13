@@ -333,13 +333,13 @@ class Data:
                     self.data['derived']['dom0_vm'] = vm
      
         # Calculate the full version string
-        self.data['derived']['fullversion'] = (
-            self.host.software_version.product_version('') + '-' +
-            self.host.software_version.build_number('') + '-' +
-            self.host.software_version.oem_build_number('')
-        )
-        if self.data['derived']['fullversion'] == '--':
-            self.data['derived']['fullversion'] = Lang("<Unknown>")
+        version = self.host.software_version.product_version('') + '-' + self.host.software_version.build_number('')
+        oemBuildNumber = self.host.software_version.oem_build_number('')
+        if oemBuildNumber != '':
+            version += '-'+oemBuildNumber
+        if version.startswith('-'):
+            version = Lang("<Unknown>")
+        self.data['derived']['fullversion'] = version
 
     def Dump(self):
         pprint(self.data)
