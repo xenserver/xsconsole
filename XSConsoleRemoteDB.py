@@ -11,6 +11,7 @@ from pprint import pprint
 from XSConsoleBases import *
 
 oldPath = sys.path
+sys.path = ['/opt/xensource/sm'] + sys.path
 if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
     try:
         import shared_db_util
