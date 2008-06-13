@@ -20,19 +20,18 @@ class SyslogDialogue(InputDialogue):
         InputDialogue.__init__(self)
 
     def HandleCommit(self, inValues):
-        Layout.Inst().PushDialogue(BannerDialogue( Lang("Setting Logging Destination...")))
-        Layout.Inst().Refresh()
-        Layout.Inst().DoUpdate()
-        
-        Data.Inst().LoggingDestinationSet(inValues['destination'])
+        Layout.Inst().TransientBanner(Lang("Setting Logging Destination..."))
+
+        hostname = inValues['destination']
+        if hostname != '':
+            IPUtils.AssertValidHostname(hostname)
+        Data.Inst().LoggingDestinationSet(hostname)
         Data.Inst().Update()
-        
-        Layout.Inst().PopDialogue()
-        
-        if inValues['destination'] == '':
+
+        if hostname == '':
             message = Lang("Remote logging disabled.")
         else:
-            message = Lang("Logging destination set to '")+inValues['destination'] + "'."
+            message = Lang("Logging destination set to '")+hostname + "'."
         return Lang('Logging Destination Change Successful'), message        
 
 
