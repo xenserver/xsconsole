@@ -347,8 +347,10 @@ class Data:
     def HostnameSet(self, inHostname):
         Auth.Inst().AssertAuthenticated()
 
+        # Protect from shell escapes
         if not re.match(r'[-A-Za-z0-9.]+$', inHostname):
             raise Exception("Invalid hostname '"+inHostname+"'")
+        IPUtils.AssertValidHostname(inHostname)
         
         self.RequireSession()
         
@@ -358,9 +360,7 @@ class Data:
         self.data['sysconfig']['network']['hostname'] = inHostname
         self.SaveToSysconfig()
 
-        status, output = commands.getstatusoutput("/bin/hostname '"+inHostname+"'")
-        if status != 0:
-            raise Exception(output)
+        ShellPipe("/bin/hostname", inHostname).Call()
 
     def NameLabelSet(self, inNameLabel):
         self.RequireSession()
