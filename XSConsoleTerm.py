@@ -253,7 +253,7 @@ class App:
                 self.layout.TransientBanner(Lang("Restarting xapi...."))
                 Data.Inst().StartXAPI()
             except Exception, e:
-                self.layout.PushDialogue(InfoDialogue(Lang("Failed: ")+Lang(e)))
+                self.layout.PushDialogue(InfoDialogue(Lang('Restart Failed'), Lang('Xapi did not restart successfully.  More information may be available in the file /var/log/messages.')))
 
     @classmethod
     def TransientBannerHandler(self, inMessage):
