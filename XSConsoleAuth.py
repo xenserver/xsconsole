@@ -36,10 +36,10 @@ class Auth:
             self.testMode = True
             testingFile = open(testFilename)
             for line in testingFile:
-                match = re.match(r'host=(\w+)', line)
+                match = re.match(r'host=([a-zA-Z0-9-]+)', line)
                 if match:
                     self.testingHost = match.group(1)
-                match = re.match(r'password=(\w+)', line)
+                match = re.match(r'password=([a-zA-Z0-9-]+)', line)
                 if match:
                     self.defaultPassword = match.group(1)
 

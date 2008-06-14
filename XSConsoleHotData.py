@@ -386,7 +386,7 @@ class HotData:
     def FetchVisibleSR(self, inOpaqueRef):
         if inOpaqueRef is not None:
             # Make sr[ref] and visible_sr[ref] do the same thing, i.e. don't check the the SR is visible
-            retVal = FetchSR(sr) 
+            retVal = self.FetchSR(inOpaqueRef) 
         else:
             retVal = {}
             for sr in HotAccessor().sr: # Iterates through HotAccessors to SRs
