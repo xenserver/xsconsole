@@ -114,7 +114,11 @@ class HotData:
         if cls.instance is not None:
             del cls.instance
             cls.instance = None
-            
+    
+    def DeleteCache(self):
+        self.data = {}
+        self.timestamps = {}
+    
     def Fetch(self, inName, inRef):
         # Top-level object are cached by name, referenced objects by reference
         cacheName = FirstValue(inRef, inName)

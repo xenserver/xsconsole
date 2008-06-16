@@ -7,6 +7,7 @@
 
 from XSConsoleBases import *
 from XSConsoleCurses import *
+from XSConsoleHotData import *
 
 class Layout:
     WIN_MAIN = 0
@@ -75,6 +76,10 @@ class Layout:
             raise Exception("Stack underflow in PopDialogue")
         self.TopDialogue().Destroy()
         self.dialogues.pop()
+        if len(self.dialogues) == 1:
+            # When the display returns to the root screen, it's possible that data has changed, so
+            # selete the HotData cache to force a refetch
+            HotData.Inst().DeleteCache()
         self.TopDialogue().UpdateFields()
         self.Refresh()
     
