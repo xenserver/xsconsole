@@ -29,7 +29,7 @@ class UpdateDialogue(FileDialogue):
         Layout.Inst().PopDialogue()
         
         Layout.Inst().PushDialogue(BannerDialogue(
-            Lang("Applying update... This make take several minutes.  Press <Ctrl-C> to abort.")))
+            Lang("Applying update... This may take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:
