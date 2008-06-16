@@ -16,6 +16,7 @@ class SRNewDialogue(Dialogue):
         'NFS': Lang('NFS Storage'),
         'ISCSI': Lang('iSCSI Storage'),
         'NETAPP': Lang('NetApp'),
+        'EQUAL': Lang('Dell EqualLogic'),
         'CIFS_ISO': Lang('Windows File Sharing (CIFS) ISO Library'),
         'NFS_ISO': Lang('NFS ISO Library')
     }    
@@ -40,9 +41,9 @@ class SRNewDialogue(Dialogue):
         self.createMenu = Menu()
 
         if self.variant == 'CREATE':
-            choices = ['NFS', 'ISCSI', 'NETAPP']
+            choices = ['NFS', 'ISCSI', 'NETAPP', 'EQUAL']
         else: # ATTACH choices
-            choices = ['NFS',  'ISCSI', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
+            choices = ['NFS',  'ISCSI', 'NETAPP', 'EQUAL', 'CIFS_ISO', 'NFS_ISO']
         
         for type in choices:
             self.createMenu.AddChoice(name = self.srTypeNames[type],
@@ -70,6 +71,21 @@ class SRNewDialogue(Dialogue):
         
     def NetAppSRString(self, inNetAppSR):
         retVal = "%-36.36s  %-22.22s %-9.9s" % (self.ExtendedSRName(inNetAppSR.uuid)[:36], inNetAppSR.aggregate[:22], (SizeUtils.SRSizeString(inNetAppSR.size))[:9])
+        return retVal
+        
+    def EqualSizeStr(self, inSize):
+        if re.match(r'.*B$', inSize):
+            retVal = inSize
+        else:
+            retVal = SizeUtils.SRSizeString(inSize)
+        return retVal
+        
+    def StoragePoolString(self, inStoragePool):
+        retVal = "%-39.39s %32.32s" % (inStoragePool.name[:39], (self.EqualSizeStr(inStoragePool.capacity))[:12] + (' ('+self.EqualSizeStr(inStoragePool.freespace)[:12]+Lang(' free)'))[:32])
+        return retVal
+        
+    def EqualSRString(self, inSR):
+        retVal = "%-56.56s %-12.12s" % (self.ExtendedSRName(inSR.uuid)[:56], (SizeUtils.SRSizeString(inSR.size))[:12])
         return retVal
         
     def ExtendedSRName(self, inUUID):
@@ -160,6 +176,24 @@ class SRNewDialogue(Dialogue):
         if self.srMenu.NumChoices() == 0:
             self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
 
+    def BuildPanePROBE_EQUAL_STORAGEPOOL(self):
+        self.storagePoolMenu = Menu()
+        for storagePoolChoice in self.storagePoolChoices:
+            self.storagePoolMenu.AddChoice(name = self.StoragePoolString(storagePoolChoice),
+                onAction = self.HandleStoragePoolChoice,
+                handle = storagePoolChoice)
+        if self.storagePoolMenu.NumChoices() == 0:
+            self.storagePoolMenu.AddChoice(name = Lang('<No Storage Pools Detected>'))
+
+    def BuildPanePROBE_EQUAL_SR(self):
+        self.srMenu = Menu()
+        for srChoice in self.equalSRChoices:
+            self.srMenu.AddChoice(name = self.EqualSRString(srChoice),
+                onAction = self.HandleEqualSRChoice,
+                handle = srChoice)
+        if self.srMenu.NumChoices() == 0:
+            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
+
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.TitleSet(Lang("New Storage Repository"))
@@ -178,7 +212,7 @@ class SRNewDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         pane.AddTitleField(Lang('Please enter a name and path for the NFS Storage Repository'))
-        pane.AddInputField(Lang('Name', 16), self.srParams.get('name', Lang('NFS Virtual Disk Storage')), 'name')
+        pane.AddInputField(Lang('Name', 16), self.srParams.get('name', Lang('NFS virtual disk storage')), 'name')
         pane.AddInputField(Lang('Description', 16), '', 'description')
         pane.AddInputField(Lang('Share Name', 16), self.srParams.get('sharename', 'server:/path'), 'sharename')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
@@ -215,7 +249,7 @@ class SRNewDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         pane.AddTitleField(Lang('Please enter the configuration details for the iSCSI Storage Repository'))
-        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('iSCSI Virtual Disk Storage')), 'name')
+        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('iSCSI virtual disk storage')), 'name')
         pane.AddInputField(Lang('Description', 26), '', 'description')
         pane.AddInputField(Lang('Initiator IQN', 26), HotAccessor().local_host.other_config.iscsi_iqn(''), 'localiqn')
         pane.AddInputField(Lang('Port Number', 26), '3260', 'port')
@@ -231,9 +265,25 @@ class SRNewDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         pane.AddTitleField(Lang('Please enter the configuration details for the NetApp Storage Repository.  Leave CHAP Username/Password blank if not required.'))
-        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('NetApp Virtual Disk Storage')), 'name')
+        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('NetApp virtual disk storage')), 'name')
         pane.AddInputField(Lang('Description', 26), '', 'description')
         pane.AddInputField(Lang('NetApp Filer Address', 26), '', 'target')
+        pane.AddInputField(Lang('Username', 26), '', 'username')
+        pane.AddPasswordField(Lang('Password', 26), '', 'password')
+        pane.AddInputField(Lang('CHAP Username', 26), '', 'chapuser')
+        pane.AddPasswordField(Lang('CHAP Password', 26), '', 'chappassword')
+
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+    
+    def UpdateFieldsGATHER_EQUAL(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please enter the configuration details for the Dell EqualLogic Storage Repository.  Leave CHAP Username/Password blank if not required.'))
+        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('Dell EqualLogic virtual disk storage')), 'name')
+        pane.AddInputField(Lang('Description', 26), '', 'description')
+        pane.AddInputField(Lang('Filer Address', 26), '', 'target')
         pane.AddInputField(Lang('Username', 26), '', 'username')
         pane.AddPasswordField(Lang('Password', 26), '', 'password')
         pane.AddInputField(Lang('CHAP Username', 26), '', 'chapuser')
@@ -318,7 +368,27 @@ class SRNewDialogue(Dialogue):
         pane.AddWrappedBoldTextField(Lang('You must ensure that the chosen SR is not in use by any server '
             'that is not a member of this Pool.  Failure to do so may result in data loss.'))
         pane.NewLine()
-        pane.AddTitleField(Lang('Please select from the list of discovered Storare Repositories.'))
+        pane.AddTitleField(Lang('Please select from the list of discovered Storage Repositories.'))
+
+        pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_EQUAL_STORAGEPOOL(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select from the list of discovered Storage Pools.'))
+
+        pane.AddMenuField(self.storagePoolMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_EQUAL_SR(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddWarningField('WARNING')
+        pane.AddWrappedBoldTextField(Lang('You must ensure that the chosen SR is not in use by any server '
+            'that is not a member of this Pool.  Failure to do so may result in data loss.'))
+        pane.NewLine()
+        pane.AddTitleField(Lang('Please select from the list of discovered Storage Repositories.'))
 
         pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
@@ -425,6 +495,21 @@ class SRNewDialogue(Dialogue):
             handled = self.HandleInputFieldKeys(inKey)
         return handled
 
+    def HandleKeyGATHER_EQUAL(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                inputValues = pane.GetFieldValues()
+                Layout.Inst().TransientBanner(Lang('Probing Dell EqualLogic Server...'))
+                self.HandleEqualData(inputValues)
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+        else:
+            handled = self.HandleInputFieldKeys(inKey)
+        return handled
+
     def HandleKeyPROBE_NFS(self, inKey):
         return self.srMenu.HandleKey(inKey)
 
@@ -461,6 +546,12 @@ class SRNewDialogue(Dialogue):
         return self.provisioningMenu.HandleKey(inKey)
         
     def HandleKeyPROBE_NETAPP_SR(self, inKey):
+        return self.srMenu.HandleKey(inKey)
+
+    def HandleKeyPROBE_EQUAL_STORAGEPOOL(self, inKey):
+        return self.storagePoolMenu.HandleKey(inKey)
+
+    def HandleKeyPROBE_EQUAL_SR(self, inKey):
         return self.srMenu.HandleKey(inKey)
 
     def HandleKeyCONFIRM(self, inKey):
@@ -651,25 +742,107 @@ class SRNewDialogue(Dialogue):
             )
     
             self.netAppSRChoices = []
-            if e.details[3] != '':
-                xmlDoc = xml.dom.minidom.parseString(xmlOutput)
-                for xmlSR in xmlDoc.getElementsByTagName('SR'):
-                    try:
-                        uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
-                        size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
-                        aggregate =  str(xmlSR.getElementsByTagName('Aggregate')[0].firstChild.nodeValue.strip())
-                        self.netAppSRChoices.append(Struct(
-                            uuid = uuid,
-                            size = size,
-                            aggregate = aggregate
-                        ))
-                            
-                    except Exception, e:
-                        pass # Ignore failures
+            xmlDoc = xml.dom.minidom.parseString(xmlOutput)
+            for xmlSR in xmlDoc.getElementsByTagName('SR'):
+                try:
+                    uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
+                    size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
+                    aggregate =  str(xmlSR.getElementsByTagName('Aggregate')[0].firstChild.nodeValue.strip())
+                    self.netAppSRChoices.append(Struct(
+                        uuid = uuid,
+                        size = size,
+                        aggregate = aggregate
+                    ))
+                        
+                except Exception, e:
+                    pass # Ignore failures
                     
             self.ChangeState('PROBE_NETAPP_SR')
         else:
             raise Exception('bad self.variant') # Logic error
+
+    def EqualBaseConfig(self):
+        retVal = {
+            'target':self.srParams['target'],
+            'username':self.srParams['username'],
+            'password':self.srParams['password']        
+        }
+        if self.srParams['chapuser'] != '':
+            retVal.update({
+                'chapuser':self.srParams['chapuser'],
+                'chappassword':self.srParams['chappassword']
+            })
+        return retVal
+
+    def HandleEqualData(self, inParams):
+        self.srParams = inParams
+        self.extraInfo = [ # Array of tuples
+            (Lang('Filer Address'), self.srParams['target']),
+            (Lang('Username'), self.srParams['username']),
+            (Lang('Password'), '*' * len(self.srParams['password'])),
+            (Lang('CHAP Username'), self.srParams['chapuser']),
+            (Lang('CHAP Password'), '*' * len(self.srParams['chappassword']))
+        ]
+
+        if self.variant == 'CREATE':
+            # To create, we need the list of aggregates, which is obtained using a fake SR.create.
+            # This will fail because we're not supplying an aggregate name
+            try:
+                srRef = Task.Sync(lambda x: x.xenapi.SR.create(
+                    HotAccessor().local_host_ref().OpaqueRef(), # host
+                    self.NetAppBaseConfig(), # device_config
+                    '0', # physical_size
+                    self.srParams['name'], # name_label
+                    self.srParams['description'], # name_description
+                    'equal', # type
+                    'user', # content_type
+                    True # shared
+                    )
+                )
+            except XenAPI.Failure, e:
+                if e.details[0] != 'SR_BACKEND_FAILURE_163':
+                    raise
+                # Parse XML for UUID values
+                self.storagePoolChoices = []
+                if e.details[3] != '':
+                    xmlDoc = xml.dom.minidom.parseString(e.details[3])
+                    for storagePool in xmlDoc.getElementsByTagName('StoragePool'):
+                        try:
+                            storageInfo = Struct()
+                            for name in ('Name', 'Default', 'Members', 'Volumes', 'Capacity', 'FreeSpace'):
+                                setattr(storageInfo, name.lower(), storagePool.getElementsByTagName(name)[0].firstChild.nodeValue.strip())
+                            self.storagePoolChoices.append(storageInfo) 
+                                
+                        except Exception, e:
+                            pass # Ignore failures
+            self.ChangeState('PROBE_EQUAL_STORAGEPOOL')
+        elif self.variant=='ATTACH':
+            # This probe returns xml directly
+            xmlOutput = Task.Sync(lambda x: x.xenapi.SR.probe(
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                self.EqualBaseConfig(), # device_config
+                'equal' # type
+                )
+            )
+    
+            self.equalSRChoices = []
+            xmlDoc = xml.dom.minidom.parseString(xmlOutput)
+            for xmlSR in xmlDoc.getElementsByTagName('SR'):
+                try:
+                    uuid = str(xmlSR.getElementsByTagName('UUID')[0].firstChild.nodeValue.strip())
+                    size =  str(xmlSR.getElementsByTagName('Size')[0].firstChild.nodeValue.strip())
+                    self.equalSRChoices.append(Struct(
+                        uuid = uuid,
+                        size = size
+                    ))
+                        
+                except Exception, e:
+                    pass # Ignore failures
+                
+            self.ChangeState('PROBE_EQUAL_SR')
+        else:
+            raise Exception('bad self.variant') # Logic error
+
 
     def HandleCreateChoice(self, inChoice):
         self.createType = inChoice
@@ -762,6 +935,16 @@ class SRNewDialogue(Dialogue):
         self.ChangeState('CONFIRM')
 
     def HandleNetAppSRChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice.uuid
+        self.extraInfo.append( (Lang('SR ID'), inChoice.uuid) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
+    def HandleStoragePoolChoice(self, inChoice):
+        self.srParams['storagepool'] = inChoice.name
+        self.extraInfo.append( (Lang('Storage Pool'), inChoice.name) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
+    def HandleEqualSRChoice(self, inChoice):
         self.srParams['uuid'] = inChoice.uuid
         self.extraInfo.append( (Lang('SR ID'), inChoice.uuid) ) # Append tuple, so double brackets
         self.ChangeState('CONFIRM')
@@ -953,6 +1136,28 @@ class SRNewDialogue(Dialogue):
             'user' # content_type
         )
         
+    def CommitEQUAL_CREATE(self):
+        deviceConfig = self.EqualBaseConfig()
+        deviceConfig.update({
+            'storagepool':self.srParams['storagepool']
+        })
+        self.CommitCreate('equal',
+            deviceConfig,
+            { # Set auto-scan to false for non-ISO SRs
+                'auto-scan':'false'
+            }
+        )
+
+    def CommitEQUAL_ATTACH(self):
+        deviceConfig = self.EqualBaseConfig()
+        
+        self.CommitAttach('equal',
+            deviceConfig, # device_config
+            {}, # other_config
+            'user' # content_type
+        )
+
+
 class XSFeatureSRCreate:
     @classmethod
     def CreateStatusUpdateHandler(cls, inPane):

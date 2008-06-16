@@ -14,6 +14,7 @@ if ARGV.size != 1:
 end
 
 header = [
+"# coding: UTF-8",
 "# Copyright (c) Citrix Systems 2008. All rights reserved.",
 "# xsconsole is proprietary software.",
 "#",
