@@ -22,6 +22,7 @@ class DRBackupDialogue(SRDialogue):
         SRDialogue.__init__(self) # Must fill in self.custom before calling __init__
 
     def DoAction(self, inSR):
+        Layout.Inst().PopDialogue()
         try:
             # determine if there is a backup VDI or not, and if not just create one
             sr_uuid = inSR['uuid']
@@ -42,7 +43,7 @@ class DRBackupDialogue(SRDialogue):
             else:
                 raise Exception(output)
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue( Lang("Metadata Backup failed: ")+str(e)))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Backup failed: ")+str(e)))
         Data.Inst().Update()
 
 class XSFeatureDRBackup:
