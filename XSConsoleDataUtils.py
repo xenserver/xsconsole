@@ -9,6 +9,7 @@ import os, popen2, re, tempfile
 
 from XSConsoleBases import *
 from XSConsoleData import *
+from XSConsoleHotData import *
 from XSConsoleLang import *
 
 # Utils that do not need to access XSConsoleData should go in XSConsoleUtils,
@@ -444,19 +445,17 @@ class SRUtils:
     def SRList(cls, inMode = None, inCapabilities = None):
         
         retVal = []
-        for sr in Data.Inst().sr([]):
-            name = ''
-            if sr['islocal']:
-                name += Lang('(local) ')
-            else:
-                name += Lang('(remote) ')
-                
-            name += sr['name_label']
+        for sr in HotAccessor().visible_sr:
+
+            name = sr.name_label(Lang('<Unknown>'))
             
-            if inMode != 'rw' or sr['content_type'] not in ['iso']:
-                if inCapabilities is None or inCapabilities in sr.get('allowed_operations', []):
-                    retVal.append( Struct(name = name, sr = sr) )
-            
+            if inMode != 'rw' or sr.content_type('') not in ['iso']:
+                if inCapabilities is None or inCapabilities in sr.allowed_operations([]):
+                    # Generate a Data-style record from the HotData one (backwards compatibility)
+                    dataSR = copy.copy(sr()) # Shallow copy
+                    dataSR['opaqueref'] = sr.HotOpaqueRef().OpaqueRef()
+                    retVal.append( Struct(name = name, sr = dataSR) )
+
         retVal.sort(lambda x, y : cmp(x.name, y.name))
 
         return retVal
