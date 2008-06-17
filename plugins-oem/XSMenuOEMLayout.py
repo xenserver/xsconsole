@@ -11,12 +11,6 @@ if __name__ == "__main__":
 from XSConsoleStandard import *
 
 class XSMenuOEMLayout:
-    def UpdateFieldsBUR(self, inPane):
-        inPane.AddTitleField(Lang("Backup, Restore and Update"))
-    
-        inPane.AddWrappedTextField(Lang(
-            "From this menu you can backup and restore the system database, and apply "
-            "software updates to the system."))
             
     def ActivateHandler(self, inName):
         Layout.Inst().TopDialogue().ChangeMenu(inName)
@@ -25,8 +19,6 @@ class XSMenuOEMLayout:
         data = Data.Inst()
         
         rootMenuDefs = [
-            [ 'MENU_BUR', Lang("Backup, Restore and Update"),
-                lambda: self.ActivateHandler('MENU_BUR'), self.UpdateFieldsBUR ],
         ]
         
         priority = 850
