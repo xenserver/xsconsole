@@ -34,7 +34,7 @@ class DRRestoreSelection(Dialogue):
         self.methodMenu = Menu(self, None, "", [
            ChoiceDef("Only VMs on this SR", lambda: self.HandleMethodChoice('sr', False)),
            ChoiceDef("All VM Metadata", lambda: self.HandleMethodChoice('all', False)),
-           ChoiceDef("Only VMs on this SR (dry run)", lambda: self.HandleMethodChoice('all', True)),
+           ChoiceDef("Only VMs on this SR (dry run)", lambda: self.HandleMethodChoice('sr', True)),
            ChoiceDef("All VM Metadata (dry run)", lambda: self.HandleMethodChoice('all', True)),
         ])
         self.state = 'LISTDATES'
