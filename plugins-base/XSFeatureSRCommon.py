@@ -172,9 +172,11 @@ class SRControlDialogue(Dialogue):
             if len(sr.PBDs()) != 0:
                 # Attached SR
                 allowedOps += ['xsconsole-detach', 'xsconsole-destroy'] 
-                allowedOps.remove('forget') # Allow forget for detached SRs only
+                if 'forget' in allowedOps:
+                    allowedOps.remove('forget') # Allow forget for detached SRs only
         else:
-            allowedOps.remove('forget') # Don't allow forget for non-detachable SRs
+            if 'forget' in allowedOps:
+                allowedOps.remove('forget') # Don't allow forget for non-detachable SRs
             
         choiceList = [ name for name in allowedOps if name in SRUtils.AllowedOperations() ]
         
