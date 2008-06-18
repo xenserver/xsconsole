@@ -27,6 +27,7 @@ class DRBackupDialogue(SRDialogue):
             # determine if there is a backup VDI or not, and if not just create one
             sr_uuid = inSR['uuid']
             command = "/opt/xensource/bin/xe-backup-metadata -n -u " + sr_uuid
+            
             status, output = commands.getstatusoutput(command)
             status = os.WEXITSTATUS(status)
             initalize_vdi = ""

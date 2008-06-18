@@ -143,7 +143,6 @@ class App:
         lastScreenUpdateSeconds = startSeconds
         resized = False
         data = Data.Inst()
-        db = HotAccessor()
         errorCount = 0
         
         self.layout.DoUpdate()
@@ -217,15 +216,10 @@ class App:
                         errorCount += 1
                         Layout.Inst().PushDialogue(InfoDialogue(Lang("Error"), message))
 
-                    
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             
             bannerStr = Language.Inst().Branding(data.host.software_version.product_brand('')) + ' ' + data.host.software_version.product_version('')
-            if db.local_pool.master.uuid() == db.local_host.uuid():
-                bannerStr += ' (Master)'
-            else:
-                bannerStr += ' (Slave)'
             
             if Auth.Inst().IsAuthenticated():
                 hostStr = Auth.Inst().LoggedInUsername()+'@'+data.host.hostname('')

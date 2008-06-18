@@ -80,12 +80,22 @@ class InfoDialogue(Dialogue):
             pane.NewLine()
             pane.AddWrappedTextField(self.info)
 
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
+        helpKeys = { Lang("<Enter>") : Lang("OK") }
+        if pane.NeedsScroll():
+            helpKeys.update({
+                Lang("<Page Up/Page Down>") : Lang("Scroll")
+            })
+
+        pane.AddKeyHelpField( helpKeys )
         
     def HandleKey(self, inKey):
         handled = True
         if inKey == 'KEY_ESCAPE' or inKey == 'KEY_ENTER':
             Layout.Inst().PopDialogue()
+        elif inKey == 'KEY_PPAGE':
+            self.Pane().ScrollPageUp()
+        elif inKey == 'KEY_NPAGE':
+            self.Pane().ScrollPageDown()
         else:
             handled = False
         return True

@@ -116,14 +116,14 @@ class DialoguePane:
         self.title = inTitle
     
     def NeedsScroll(self):
-        return self.arranger.YSize() + 1 >= self.Win().YSize()
+        return self.arranger.YSize() + 2 >= self.Win().YSize()
 
     def ScrollPageUp(self):
         if self.yScrollPos > 0:
             self.yScrollPos -= 1
         
     def ScrollPageDown(self):
-        if self.yScrollPos + self.Win().YSize() <= self.arranger.YSize() + 1:
+        if self.yScrollPos + self.Win().YSize() <= self.arranger.YSize() + 2:
             self.yScrollPos += 1
 
     def ResetScroll(self):
@@ -206,22 +206,33 @@ class DialoguePane:
         win.DefaultColourSet(self.baseColour)
         win.Erase()
         
+        if self.hasBox:
+            yMin = 2
+        else:
+            yMin = 0
+        win.YClipMinSet(yMin)
+        
         if len(self.fieldGroup.StaticFields()) == 0:
-            ySize = win.YSize()
+            yMax = win.YSize()
         else:
             # Shrink the clip window to allow space for the static fields
-            ySize = win.YSize() - 2
-        win.YClipMaxSet(ySize)
+            if self.hasBox:
+                yMax = max(0, win.YSize() - 3)
+            else:
+                yMax = max(0, win.YSize() - 2)
+        win.YClipMaxSet(yMax)
         
         bodyLayout = self.arranger.BodyLayout()
         
         for field in self.fieldGroup.BodyFields():
             layout = bodyLayout.pop(0)
             # Check whether visible - first whether off the top, then whether off the bottom
-            if layout.ypos + field.Height() > self.yScrollPos and layout.ypos <= self.yScrollPos + ySize:
+            if layout.ypos + field.Height() > self.yScrollPos and layout.ypos <= self.yScrollPos + yMax:
 
                 field.Render(win, layout.xpos, layout.ypos - self.yScrollPos)
         
+        
+        win.YClipMinSet(0)
         win.YClipMaxSet(win.YSize())
         
         staticLayout = self.arranger.StaticLayout()
