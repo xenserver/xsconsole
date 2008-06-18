@@ -67,7 +67,7 @@ class XSFeatureDRBackup:
             'DRBACKUP', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_BUR',
-                'menupriority' : 90,
+                'menupriority' : 80,
                 'menutext' : Lang('Backup Virtual Machine Metadata') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler

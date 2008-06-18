@@ -15,10 +15,6 @@ class DRRestoreSelection(Dialogue):
     def __init__(self, date_choices, vdi_uuid, sr_uuid):
         Dialogue.__init__(self)
     
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.TitleSet("")
-        pane.AddBox()
-       
         choices = []
         self.vdi_uuid = vdi_uuid
         self.sr_uuid = sr_uuid
@@ -37,8 +33,12 @@ class DRRestoreSelection(Dialogue):
            ChoiceDef("Only VMs on this SR (dry run)", lambda: self.HandleMethodChoice('sr', True)),
            ChoiceDef("All VM Metadata (dry run)", lambda: self.HandleMethodChoice('all', True)),
         ])
-        self.state = 'LISTDATES'
-        self.UpdateFields()
+        self.ChangeState('LISTDATES')
+    
+    def BuildPane(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang('Restore Virtual Machine Metadata'))
+        pane.AddBox()
     
     def UpdateFieldsLISTDATES(self):
         pane = self.Pane()
@@ -62,10 +62,14 @@ class DRRestoreSelection(Dialogue):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
 
+    def ChangeState(self, inState):
+        self.state = inState
+        self.BuildPane()
+        self.UpdateFields()
+
     def HandleTestChoice(self,  inChoice):
         self.chosen_date = self.date_choices[inChoice]
-        self.state = 'CHOOSERESTORE'
-        self.UpdateFields()
+        self.ChangeState('CHOOSERESTORE')
 
     def HandleMethodChoice(self, inChoice, dryRun):
         if inChoice != 'sr' and inChoice != 'all':
