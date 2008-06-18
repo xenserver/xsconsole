@@ -160,8 +160,7 @@ class XSFeatureDRRestore:
         
     @classmethod
     def ActivateHandler(cls):
-        # DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DRRestoreDialogue()))
-        Layout.Inst().PushDialogue(DRRestoreDialogue())
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DRRestoreDialogue()))
         
     def Register(self):
         Importer.RegisterNamedPlugIn(

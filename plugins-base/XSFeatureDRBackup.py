@@ -58,8 +58,7 @@ class XSFeatureDRBackup:
         
     @classmethod
     def ActivateHandler(cls):
-        # DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DRBackupDialogue()))
-        Layout.Inst().PushDialogue(DRBackupDialogue())
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(DRBackupDialogue()))
         
     def Register(self):
         Importer.RegisterNamedPlugIn(
