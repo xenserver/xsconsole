@@ -440,7 +440,7 @@ class MountVDIDirectly:
     def SizeString(self, inFilename, inDefault = None):
         return FileUtils.SizeString(self.MountedPath(inFilename), inDefault)                
         
-class SRUtils:
+class SRDataUtils:
     @classmethod
     def SRList(cls, inMode = None, inCapabilities = None):
         

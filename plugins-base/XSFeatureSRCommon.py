@@ -10,7 +10,7 @@ if __name__ == "__main__":
     
 from XSConsoleStandard import *
 
-class SRUtils: # FIXME: Name clash
+class SRUtils:
     operationNames = {
         'forget' : Struct(name = Lang("Forget"), priority = 10),
         'plug' : Struct(name = Lang("Plug"), priority = 20),
@@ -18,7 +18,7 @@ class SRUtils: # FIXME: Name clash
         'xsconsole-detach': Struct(name = Lang('Detach'), warning=Lang('After Detaching this Storage Repository, Virtual Disks contained within it will become inaccessible.  To reattach it, the correct device configuration will be needed.'), priority = 100),
         'xsconsole-destroy': Struct(name = Lang('Destroy'), warning=Lang('Destroying this Storage Repository will permanently remove all associated Virtual Disks and the data contained on the Virtual Disks.  This operation cannot be undone.'), priority = 200),
 
-        'none' : Struct(name = Lang("No Operation"), priority = 200),
+        'none' : Struct(name = Lang("No Operation"), priority = 300),
     }
     
     @classmethod

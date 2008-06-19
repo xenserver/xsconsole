@@ -553,7 +553,7 @@ class SRDialogue(Dialogue):
         
         data.Update() # Make sure SR list is up to date
         
-        self.choices = SRUtils.SRList(self.Custom('mode'), self.Custom('capabilities'))
+        self.choices = SRDataUtils.SRList(self.Custom('mode'), self.Custom('capabilities'))
         choiceDefs = []
         for choice in self.choices:
             choiceDefs.append(ChoiceDef(choice.name, lambda: self.HandleSRChoice(self.srMenu.ChoiceIndex()) ) )
