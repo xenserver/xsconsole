@@ -580,7 +580,7 @@ class SRDialogue(Dialogue):
         
         pane.AddTitleField(self.Custom('prompt'))
         pane.AddMenuField(self.srMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), Lang("<F5>") : Lang("Refresh") } )
 
     def HandleKey(self, inKey):
         handled = False
