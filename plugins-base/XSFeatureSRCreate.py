@@ -16,6 +16,7 @@ class SRNewDialogue(Dialogue):
         'NFS': Lang('NFS Storage'),
         'ISCSI': Lang('iSCSI Storage'),
         'NETAPP': Lang('NetApp'),
+        'HBA': Lang('Hardware HBA (Fibre Channel)'),
         'EQUAL': Lang('Dell EqualLogic'),
         'CIFS_ISO': Lang('Windows File Sharing (CIFS) ISO Library'),
         'NFS_ISO': Lang('NFS ISO Library')
@@ -41,9 +42,9 @@ class SRNewDialogue(Dialogue):
         self.createMenu = Menu()
 
         if self.variant == 'CREATE':
-            choices = ['NFS', 'ISCSI', 'NETAPP', 'EQUAL']
+            choices = ['NFS', 'ISCSI', 'NETAPP', 'HBA', 'EQUAL']
         else: # ATTACH choices
-            choices = ['NFS',  'ISCSI', 'NETAPP', 'EQUAL', 'CIFS_ISO', 'NFS_ISO']
+            choices = ['NFS',  'ISCSI', 'NETAPP', 'HBA', 'EQUAL', 'CIFS_ISO', 'NFS_ISO']
         
         for type in choices:
             self.createMenu.AddChoice(name = self.srTypeNames[type],
@@ -72,6 +73,18 @@ class SRNewDialogue(Dialogue):
     def NetAppSRString(self, inNetAppSR):
         retVal = "%-36.36s  %-22.22s %-9.9s" % (self.ExtendedSRName(inNetAppSR.uuid)[:36], inNetAppSR.aggregate[:22], (SizeUtils.SRSizeString(inNetAppSR.size))[:9])
         return retVal
+
+    def DeviceString(self, inDevice):
+        idLen=72
+        idPrefix = inDevice.vendor[:10]+' ' + ('%7s' % SizeUtils.SRSizeString(inDevice.size)) + ' '
+        idString = idPrefix + inDevice.serial + '  ' + inDevice.path
+        if len(idString) > idLen:
+            idString = idPrefix + inDevice.serial + '  ' + inDevice.path[:5]+'...'
+            spaceLeft = idLen - len(idString)
+            if spaceLeft > 0:
+                idString += inDevice.path[-spaceLeft:]
+        retVal = idString[:72]
+        return retVal
         
     def EqualSizeStr(self, inSize):
         if re.match(r'.*B$', inSize):
@@ -83,7 +96,7 @@ class SRNewDialogue(Dialogue):
     def StoragePoolString(self, inStoragePool):
         retVal = "%-39.39s %32.32s" % (inStoragePool.name[:39], (self.EqualSizeStr(inStoragePool.capacity))[:12] + (' ('+self.EqualSizeStr(inStoragePool.freespace)[:12]+Lang(' free)'))[:32])
         return retVal
-        
+    
     def EqualSRString(self, inSR):
         retVal = "%-56.56s %-12.12s" % (self.ExtendedSRName(inSR.uuid)[:56], (SizeUtils.SRSizeString(inSR.size))[:12])
         return retVal
@@ -172,6 +185,24 @@ class SRNewDialogue(Dialogue):
         for srChoice in self.netAppSRChoices:
             self.srMenu.AddChoice(name = self.NetAppSRString(srChoice),
                 onAction = self.HandleNetAppSRChoice,
+                handle = srChoice)
+        if self.srMenu.NumChoices() == 0:
+            self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
+
+    def BuildPanePROBE_HBA_DEVICE(self):
+        self.deviceMenu = Menu()
+        for deviceChoice in self.deviceChoices:
+            self.deviceMenu.AddChoice(name = self.DeviceString(deviceChoice),
+                onAction = self.HandleDeviceChoice,
+                handle = deviceChoice)
+        if self.deviceMenu.NumChoices() == 0:
+            self.deviceMenu.AddChoice(name = Lang('<No Devices Detected>'))
+
+    def BuildPanePROBE_HBA_SR(self):
+        self.srMenu = Menu()
+        for srChoice in self.srChoices:
+            self.srMenu.AddChoice(name = self.ExtendedSRName(srChoice),
+                onAction = self.HandleHBASRChoice,
                 handle = srChoice)
         if self.srMenu.NumChoices() == 0:
             self.srMenu.AddChoice(name = Lang('<No Storage Repositories Detected>'))
@@ -277,6 +308,21 @@ class SRNewDialogue(Dialogue):
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
     
+    def UpdateFieldsGATHER_HBA(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Hardware HBA (Fibre Channel)'))
+        # Text copied from XenCenter
+        pane.AddWrappedTextField(Lang('XenServer Hosts support Fibre Channel (FC) storage area networks (SANs) '
+            'through Emulex or QLogic host bus adapters (HBAs).  All FC configuration required to expose a FC LUN '
+            'to the host must be completed manually, including storage devices, network devices, '
+            'and the HBA within the XenServer host.  Once all FC configuration is completed the HBA will expose '
+            'a SCSI device backed by the FC LUN to the host.  The SCSI device can then be used to access the '
+            'FC LUN as if it were a locally attached SCSI device.'))
+        pane.NewLine()
+        pane.AddWrappedTextField(Lang('Press <Enter> to scan for HBA devices.'))
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFieldsGATHER_EQUAL(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -333,7 +379,7 @@ class SRNewDialogue(Dialogue):
 
         pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
-    
+        
     def UpdateFieldsPROBE_NETAPP_AGGREGATE(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -362,6 +408,39 @@ class SRNewDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsPROBE_NETAPP_SR(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddWarningField('WARNING')
+        pane.AddWrappedBoldTextField(Lang('You must ensure that the chosen SR is not in use by any server '
+            'that is not a member of this Pool.  Failure to do so may result in data loss.'))
+        pane.NewLine()
+        pane.AddTitleField(Lang('Please select from the list of discovered Storage Repositories.'))
+
+        pane.AddMenuField(self.srMenu, 7) # Only room for 7 menu items
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_HBA_DEVICE(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        pane.AddTitleField(Lang('Please select from the list of discovered HBA devices.'))
+
+        pane.AddMenuField(self.deviceMenu)
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
+    def UpdateFieldsPROBE_HBA_NAME(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        if self.hbaWarn:
+            pane.AddWarningField(Lang('This device already contains a Storage Repository, and this Create operation will overwrite it.  Choose Attach Existing Storage Repository to retain the original contents.'))
+        pane.AddTitleField(Lang('Please enter the name and description for the HBA Storage Repository.'))
+        pane.AddInputField(Lang('Name', 26), self.srParams.get('name', Lang('Hardware HBA virtual disk storage')), 'name')
+        pane.AddInputField(Lang('Description', 26), '', 'description')
+
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.CurrentInput() is None:
+            pane.InputIndexSet(0)
+    
+    def UpdateFieldsPROBE_HBA_SR(self):
         pane = self.Pane()
         pane.ResetFields()
         pane.AddWarningField('WARNING')
@@ -495,6 +574,43 @@ class SRNewDialogue(Dialogue):
             handled = self.HandleInputFieldKeys(inKey)
         return handled
 
+    def HandleKeyGATHER_HBA(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER':
+            try:
+                # No input fields for HBA
+                Layout.Inst().TransientBanner(Lang('Probing for HBA Devices...'))
+                self.HandleHBAData({})
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+        else:
+            handled = False
+        return handled
+    
+    def HandleKeyPROBE_HBA_NAME(self, inKey):
+        handled = True
+        pane = self.Pane()
+        if inKey == 'KEY_ENTER' and pane.IsLastInput():
+            try:
+                inputValues = pane.GetFieldValues()
+                self.srParams['name'] = inputValues['name']
+                self.srParams['description'] = inputValues['description']
+                self.extraInfo += [ # Array of tuples
+                    (Lang('Name'), self.srParams['name']),
+                    (Lang('Description'), self.srParams['description'])
+                ]
+                if self.variant == 'ATTACH':                    
+                    self.ChangeState('PROBE_HBA_SR')
+                else:
+                    self.ChangeState('CONFIRM')
+            except Exception, e:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Operation Failed"), Lang(e)))
+        else:
+            handled = self.HandleInputFieldKeys(inKey)
+        return handled
+    
     def HandleKeyGATHER_EQUAL(self, inKey):
         handled = True
         pane = self.Pane()
@@ -548,6 +664,12 @@ class SRNewDialogue(Dialogue):
     def HandleKeyPROBE_NETAPP_SR(self, inKey):
         return self.srMenu.HandleKey(inKey)
 
+    def HandleKeyPROBE_HBA_DEVICE(self, inKey):
+        return self.deviceMenu.HandleKey(inKey)
+
+    def HandleKeyPROBE_HBA_SR(self, inKey):
+        return self.srMenu.HandleKey(inKey)
+        
     def HandleKeyPROBE_EQUAL_STORAGEPOOL(self, inKey):
         return self.storagePoolMenu.HandleKey(inKey)
 
@@ -761,6 +883,35 @@ class SRNewDialogue(Dialogue):
         else:
             raise Exception('bad self.variant') # Logic error
 
+    def HandleHBAData(self, inParams):
+        self.extraInfo = []
+        # To create, we need the list of devices, which is obtained using SR.probe.
+        # This will fail because we're not supplying a device name
+        try:
+            srRef = Task.Sync(lambda x: x.xenapi.SR.probe(
+                HotAccessor().local_host_ref().OpaqueRef(), # host
+                {}, # device_config
+                'lvmohba', # type
+                )
+            )
+        except XenAPI.Failure, e:
+            if e.details[0] != 'SR_BACKEND_FAILURE_90':
+                raise
+            # Parse XML for UUID values
+            self.deviceChoices = []
+            if e.details[3] != '':
+                xmlDoc = xml.dom.minidom.parseString(e.details[3])
+                for device in xmlDoc.getElementsByTagName('BlockDevice'):
+                    try:
+                        deviceInfo = Struct()
+                        for name in ('path', 'SCSIid', 'vendor', 'serial', 'size', 'adapter', 'channel', 'id', 'lun', 'hba'):
+                            setattr(deviceInfo, name.lower(), str(device.getElementsByTagName(name)[0].firstChild.nodeValue.strip()))
+                        self.deviceChoices.append(deviceInfo) 
+                            
+                    except Exception, e:
+                        pass # Ignore failures
+        self.ChangeState('PROBE_HBA_DEVICE')
+
     def EqualBaseConfig(self):
         retVal = {
             'target':self.srParams['target'],
@@ -939,6 +1090,30 @@ class SRNewDialogue(Dialogue):
         self.extraInfo.append( (Lang('SR ID'), inChoice.uuid) ) # Append tuple, so double brackets
         self.ChangeState('CONFIRM')
 
+    def HandleDeviceChoice(self, inChoice):
+        self.srParams['device'] = inChoice.path
+        self.extraInfo.append( (Lang('Device'), inChoice.vendor + ' ' + inChoice.serial) ) # Append tuple, so double brackets
+        xmlResult = Task.Sync(lambda x: x.xenapi.SR.probe(
+            HotAccessor().local_host_ref().OpaqueRef(), # host
+            { 'device' : self.srParams['device'] }, # device_config
+            'lvmohba' # type
+            )
+        )
+        xmlDoc = xml.dom.minidom.parseString(xmlResult)
+        if xmlDoc == '':
+            self.srChoices = []
+        else:
+            self.srChoices = [ str(node.firstChild.nodeValue.strip()) for node in xmlDoc.getElementsByTagName("UUID") ]
+
+        self.hbaWarn = ( self.variant == 'CREATE' and len(self.srChoices) != 0 )
+            
+        self.ChangeState('PROBE_HBA_NAME')
+
+    def HandleHBASRChoice(self, inChoice):
+        self.srParams['uuid'] = inChoice
+        self.extraInfo.append( (Lang('SR ID'), inChoice) ) # Append tuple, so double brackets
+        self.ChangeState('CONFIRM')
+
     def HandleStoragePoolChoice(self, inChoice):
         self.srParams['storagepool'] = inChoice.name
         self.extraInfo.append( (Lang('Storage Pool'), inChoice.name) ) # Append tuple, so double brackets
@@ -951,7 +1126,7 @@ class SRNewDialogue(Dialogue):
 
     def CommitCreate(self, inType, inDeviceConfig, inOtherConfig = None):
         Layout.Inst().PopDialogue()
-        Layout.Inst().TransientBanner(Lang('Creating SR...'))
+        Layout.Inst().TransientBanner(Lang('Creating Storage Repository...'))
         try:
             srRef = Task.Sync(lambda x: x.xenapi.SR.create(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
@@ -1136,6 +1311,24 @@ class SRNewDialogue(Dialogue):
             'user' # content_type
         )
         
+    def CommitHBA_CREATE(self):
+        deviceConfig = { 'device' : self.srParams['device'] }
+        self.CommitCreate('lvmohba',
+            deviceConfig,
+            { # Set auto-scan to false for non-ISO SRs
+                'auto-scan':'false'
+            }
+        )
+    
+    def CommitHBA_ATTACH(self):
+        deviceConfig = { 'device' : self.srParams['device'] }
+        
+        self.CommitAttach('lvmohba',
+            deviceConfig, # device_config
+            {}, # other_config
+            'user' # content_type
+        )
+    
     def CommitEQUAL_CREATE(self):
         deviceConfig = self.EqualBaseConfig()
         deviceConfig.update({
