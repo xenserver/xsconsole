@@ -8,6 +8,7 @@
 import re, signal, string, subprocess, time, types
 from pprint import pprint
 
+from XSConsoleBases import *
 from XSConsoleLang import *
 
 # Utils that need to access Data must go in XSConsoleDataUtils,
@@ -239,29 +240,61 @@ class IPUtils:
 
 class SizeUtils:
     @classmethod
-    def MemorySizeString(cls, inBytes):
+    def BinarySizeString(cls, inBytes, inInFix = None):
         if inBytes is None:
             retVal = Lang('<Unknown>')
         else:
+            inFix = FirstValue(inInFix, '')
             bytes = int(inBytes)
             
-            # Memory is always KiB/MiB/GiB
             if bytes is None or bytes < 0:
                 retVal = Lang('<Unknown>')
             elif bytes >= 1073741824: # 1GiB
                 if bytes < 10737418240: # 10GiB
-                    retVal = ('%.1f' % (int(bytes / 107374182.4) / 10.0)) + Lang('GB') # e.g. 2.3GiB
+                    retVal = ('%.1f' % (int(bytes / 107374182.4) / 10.0)) + Lang('G'+inFix+'B') # e.g. 2.3GiB
                 else:
-                    retVal = str(int(bytes / 1073741824))+Lang('GB')
+                    retVal = str(int(bytes / 1073741824))+Lang('G'+inFix+'B')
             elif bytes >= 2097152:
-                retVal = str(int(bytes / 1048576))+Lang('MB')
+                retVal = str(int(bytes / 1048576))+Lang('M'+inFix+'B')
             elif bytes >= 2048:
-                retVal = str(int(bytes / 1024))+Lang('KB')
+                retVal = str(int(bytes / 1024))+Lang('K'+inFix+'B')
             else:
                 retVal = str(int(bytes))+Lang(' bytes')
 
         return retVal
 
     @classmethod
+    def DecimalSizeString(cls, inBytes, inPrefix = None):
+        if inBytes is None:
+            retVal = Lang('<Unknown>')
+        else:
+            bytes = int(inBytes)
+            prefix = FirstValue(inPrefix, '')
+            if bytes is None or bytes < 0:
+                retVal = Lang('<Unknown>')
+            elif bytes >= 1000000000: # 1GiB
+                if bytes < 10000000000: # 10GiB
+                    retVal = ('%.1f' % (int(bytes / 100000000.0) / 10.0)) + prefix + Lang('GB') # e.g. 2.3GB
+                else:
+                    retVal = str(int(bytes / 1000000000))+ prefix + Lang('GB')
+            elif bytes >= 2000000:
+                retVal = str(int(bytes / 1000000))+ prefix + Lang('MB')
+            elif bytes >= 2000:
+                retVal = str(int(bytes / 1000))+ prefix + Lang('KB')
+            else:
+                retVal = str(int(bytes))+Lang(' bytes')
+
+        return retVal
+
+    @classmethod
+    def MemorySizeString(cls, inBytes):
+        return cls.BinarySizeString(inBytes)
+        
+    @classmethod
     def SRSizeString(cls, inBytes):
-        return cls.MemorySizeString(inBytes)
+        return cls.BinarySizeString(inBytes)
+
+    @classmethod
+    def DiskSizeString(cls, inBytes):
+        return cls.BinarySizeString(inBytes)+' ('+cls.DecimalSizeString(inBytes)+')'
+        

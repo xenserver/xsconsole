@@ -21,11 +21,10 @@ class ClaimSRDialogue(Dialogue):
         self.ChangeState('INITIAL')
 
     def DeviceString(self, inDevice):
-        retVal = "%-6.6s%-44.44s%-10.10s%10.10s" % (
+        retVal = "%-6.6s%-46.46s%20.20s" % (
             FirstValue(inDevice.bus, '')[:6],
-            FirstValue(inDevice.name, '')[:44],
-            FirstValue(inDevice.device, '')[:10],
-            FirstValue(FileUtils.SizeString(inDevice.size), '')
+            FirstValue(inDevice.name, '')[:46],
+            SizeUtils.DiskSizeString(inDevice.size)[:20]
         )
         return retVal
         
@@ -94,6 +93,7 @@ class ClaimSRDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Select a disk to erase and claim as a Storage Repository."))
         pane.AddMenuField(self.deviceMenu)
+        pane.AddWrappedTextField(Lang('Sizes shown are in binary (1kB = 1024) and decimal (1kB = 1000) units.'))
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), 
             "<F5>" : Lang("Rescan") } )
 
@@ -239,10 +239,15 @@ class ClaimSRDialogue(Dialogue):
         retVal = False
         for pbd in Data.Inst().host.PBDs([]):
             device = pbd.get('device_config', {}).get('device', '')
-            match = re.match(r'([^0-9]+)[0-9]*$', device)
-            if match: # Remove trailing partition numbers
-                device = match.group(1)
-            if device == inDevice:
+            matchCandidates = [ device ]
+            # Remove trailing partition numbers, so /dev/sda3 -> /dev/sda and /dev/disk/by-id....13432-part3 -> /dev/disk/by-id....13432
+            match = re.match(r'([^0-9]+?)[0-9]*$', device)
+            if match:
+                matchCandidates.append(match.group(1))
+            match = re.match(r'(.*?)-part[0-9]*$', device)
+            if match:
+                matchCandidates.append(match.group(1))
+            if inDevice in matchCandidates:
                 # This is the PBD we want to claim.  Does it have an SR?
                 srName = pbd.get('SR', {}).get('name_label', None)
                 if srName is not None:

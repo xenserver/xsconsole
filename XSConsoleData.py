@@ -827,10 +827,16 @@ class Data:
         retVal = None
         for pbd in self.host.PBDs([]):
             device = pbd.get('device_config', {}).get('device', '')
-            match = re.match(r'([^0-9]+)[0-9]*$', device)
-            if match: # Remove trailing partition numbers
-                device = match.group(1)
-            if device == inDevice:
+            matchCandidates = [ device ]
+            # Remove trailing partition numbers, so /dev/sda3 -> /dev/sda and /dev/disk/by-id....13432-part3 -> /dev/disk/by-id....13432
+            match = re.match(r'([^0-9]+?)[0-9]*$', device)
+            if match:
+                matchCandidates.append(match.group(1))
+            match = re.match(r'(.*?)-part[0-9]*$', device)
+            if match:
+                matchCandidates.append(match.group(1))
+
+            if inDevice in matchCandidates:
                 # This is the PBD containing the device.  Does it have an SR?
                 sr = pbd.get('SR', None)
                 if sr.get('name_label', None) is not None:
@@ -855,12 +861,12 @@ class Data:
 
     def GetPoolForThisHost(self):
         self.RequireSession()
-        hostUuid = self.host.uuid(None)
         retVal = None
         for pool in self.pools({}).values():
-            if hostUuid == pool.get('master_uuid', None):
-                retVal = pool
-                
+            # Currently there is only one pool
+            retVal = pool
+            break
+            
         return retVal
     
     def ReconfigureManagement(self, inPIF, inMode,  inIP,  inNetmask,  inGateway, inDNS = None):
