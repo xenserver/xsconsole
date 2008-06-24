@@ -141,6 +141,7 @@ class App:
         startSeconds = time.time()
         lastDataUpdateSeconds = startSeconds
         lastScreenUpdateSeconds = startSeconds
+        lastGarbageCollectSeconds = startSeconds
         resized = False
         data = Data.Inst()
         errorCount = 0
@@ -240,6 +241,10 @@ class App:
                 self.layout.Refresh()
                 
             self.layout.DoUpdate()
+            
+            if secondsNow - lastGarbageCollectSeconds >= 60:
+                lastGarbageCollectSeconds = secondsNow
+                Task.Inst().GarbageCollect()
 
     def HandleRestartChoice(self, inChoice):
         if inChoice == 'y':
