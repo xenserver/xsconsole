@@ -48,6 +48,8 @@ class HostUtils:
             task = Task.New(lambda x: x.xenapi.Async.pool.join(*inParams))
         elif inOperation == 'join_force':
             task = Task.New(lambda x: x.xenapi.Async.pool.join_force(*inParams))
+        elif inOperation == 'eject':
+            task = Task.New(lambda x: x.xenapi.Async.pool.eject(inHostHandle.OpaqueRef()))
         else:
             raise Exception("Unknown Host operation "+str(inOperation))
         

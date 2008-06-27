@@ -132,7 +132,9 @@ class XSMenuLayout:
         data = Data.Inst()
         inPane.AddTitleField(Lang("Resource Pool Configuration"))
     
-        inPane.AddWrappedTextField(Lang("Press <Enter> to add this server to a Resource Pool."))
+        inPane.AddWrappedTextField(Lang('A Resource Pool allows a number of hosts to share resources '
+            'and migrate Virtual Machines between them.  Press <Enter> to add this host a Resource Pool, '
+            'or remove it from its current Pool.'))
         inPane.NewLine()
     
     def UpdateFieldsXENDETAILS(self, inPane):

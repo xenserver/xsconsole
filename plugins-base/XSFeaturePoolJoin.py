@@ -132,7 +132,7 @@ class PoolJoinDialogue(Dialogue):
                 op = 'join'
             task = hostUtils.AsyncOperation(op, HotAccessor().local_host_ref(),
                 self.params['hostname'], self.params['username'], self.params['password'])
-            Layout.Inst().PushDialogue(ProgressDialogue(task, Lang("Joining Pool with master '")+self.params['hostname']+"'"))
+            Layout.Inst().PushDialogue(ProgressDialogue(task, Lang("Joining Pool with Master '")+self.params['hostname']+"'"))
     
         except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Failed To Join The Pool"), Lang(e)))
@@ -172,11 +172,19 @@ class XSFeaturePoolJoin:
                     
     @classmethod
     def ActivateHandler(cls):
-        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PoolJoinDialogue(False)))
+        if len(HotAccessor().host([])) > 1:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'),
+                Lang('This host is already part of a Pool and cannot join another.')))
+        else:
+            DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PoolJoinDialogue(False)))
     
     @classmethod
     def ForceActivateHandler(cls):
-        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PoolJoinDialogue(True)))
+        if len(db.host([])) > 1:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'),
+                Lang('This host is already part of a Pool and cannot join another.')))
+        else:
+            DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PoolJoinDialogue(True)))
     
     def Register(self):
         Importer.RegisterNamedPlugIn(
