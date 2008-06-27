@@ -97,16 +97,44 @@ class XSMenuLayout:
 
         inPane.AddTitleField(Lang("Virtual Machines"))
         
-        inPane.AddWrappedTextField(Lang("Press <Enter> to access the Virtual Machines menu."))
+        inPane.AddWrappedTextField(Lang('Press <Enter> to view the Virtual Machines menu.  This menu '
+            'can start, stop and migrate exisiting Virtual Machines on this host, and display '
+            'performance information.'))
         inPane.NewLine()
-        inPane.AddStatusField(Lang("Running", 16), str(hotData.guest_vm_derived.num_running(Lang('<Unknown>'))))
-        inPane.AddStatusField(Lang("Suspended", 16), str(hotData.guest_vm_derived.num_suspended(Lang('<Unknown>'))))
-        inPane.AddStatusField(Lang("Halted", 16), str(hotData.guest_vm_derived.num_halted(Lang('<Unknown>'))))
-        if hotData.guest_vm_derived.num_paused(0) > 0:
-            inPane.AddStatusField(Lang("Paused", 16), str(hotData.guest_vm_derived.num_paused(Lang('<Unknown>'))))
 
-        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
-
+    def UpdateFieldsDISK(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Disks and Storage Repositories"))
+    
+        inPane.AddWrappedTextField(Lang("Press <Enter> to select local disks to use as storage repositories, "
+            "and specify destinations for Suspend and Crash Dump images."))
+        inPane.NewLine()
+    
+        inPane.AddWrappedBoldTextField(Lang('Suspend Image SR'))
+        if data.host.suspend_image_sr(False):
+            inPane.AddWrappedTextField(data.host.suspend_image_sr.name_label())
+        else:
+            inPane.AddWrappedTextField(Lang('<Not Configured>'))
+            
+        inPane.NewLine()
+            
+        inPane.AddWrappedBoldTextField(Lang('Crash Dump SR'))
+        if data.host.crash_dump_sr(False):
+            inPane.AddWrappedTextField(data.host.crash_dump_sr.name_label())
+        else:
+            inPane.AddWrappedTextField(Lang('<Not Configured>'))
+            
+        inPane.AddKeyHelpField( {
+            Lang("<F5>") : Lang("Refresh")
+        })
+    
+    def UpdateFieldsPOOL(self, inPane):
+        data = Data.Inst()
+        inPane.AddTitleField(Lang("Resource Pool Configuration"))
+    
+        inPane.AddWrappedTextField(Lang("Press <Enter> to add this server to a Resource Pool."))
+        inPane.NewLine()
+    
     def UpdateFieldsXENDETAILS(self, inPane):
         data = Data.Inst()
 
@@ -135,7 +163,7 @@ class XSMenuLayout:
         inPane.AddTitleField(Lang("Reboot/Shutdown"))
     
         inPane.AddWrappedTextField(Lang(
-            "This option can reboot or shutdown this server."))
+            "This option can reboot or shutdown this server, and enter or exit Maintenance Mode."))
         
     def UpdateFieldsTECHNICAL(self, inPane):
         inPane.AddTitleField(Lang("Technical Support"))
@@ -143,32 +171,6 @@ class XSMenuLayout:
         inPane.AddWrappedTextField(Lang(
             "From this menu you can enable remote shells (ssh), "
             "validate the configuration of this server and upload or save bug reports."))
- 
-    def UpdateFieldsDISK(self, inPane):
-        data = Data.Inst()
-        inPane.AddTitleField(Lang("Disks and Storage Repositories"))
-    
-        inPane.AddWrappedTextField(Lang("Press <Enter> to select local disks to use as storage repositories, "
-            "and specify destinations for Suspend and Crash Dump images."))
-        inPane.NewLine()
-    
-        inPane.AddWrappedBoldTextField(Lang('Suspend Image SR'))
-        if data.host.suspend_image_sr(False):
-            inPane.AddWrappedTextField(data.host.suspend_image_sr.name_label())
-        else:
-            inPane.AddWrappedTextField(Lang('<Not Configured>'))
-            
-        inPane.NewLine()
-            
-        inPane.AddWrappedBoldTextField(Lang('Crash Dump SR'))
-        if data.host.crash_dump_sr(False):
-            inPane.AddWrappedTextField(data.host.crash_dump_sr.name_label())
-        else:
-            inPane.AddWrappedTextField(Lang('<Not Configured>'))
-            
-        inPane.AddKeyHelpField( {
-            Lang("<F5>") : Lang("Refresh")
-        })
 
     def UpdateFieldsREMOTE(self, inPane):
         data = Data.Inst()
@@ -197,14 +199,16 @@ class XSMenuLayout:
                 lambda: self.ActivateHandler('MENU_AUTH'), self.UpdateFieldsAUTH ],
             [ 'MENU_VM', Lang("Virtual Machines"),
                 lambda: self.ActivateHandler('MENU_VM'), self.UpdateFieldsVM ],
+            [ 'MENU_DISK', Lang("Disks and Storage Repositories"),
+                lambda: self.ActivateHandler('MENU_DISK'), self.UpdateFieldsDISK ],
+            [ 'MENU_POOL', Lang("Resource Pool Configuration"),
+                lambda: self.ActivateHandler('MENU_POOL'), self.UpdateFieldsPOOL],
             [ 'MENU_XENDETAILS', Lang("XenServer Details and Licensing"),
                 lambda: self.ActivateHandler('MENU_XENDETAILS'), self.UpdateFieldsXENDETAILS ],
             [ 'MENU_PROPERTIES', Lang("Hardware and BIOS Information"),
                 lambda: self.ActivateHandler('MENU_PROPERTIES'), self.UpdateFieldsPROPERTIES ],
             [ 'MENU_MANAGEMENT', Lang("Keyboard and Timezone"),
                 lambda: self.ActivateHandler('MENU_MANAGEMENT'), self.UpdateFieldsMANAGEMENT ],
-            [ 'MENU_DISK', Lang("Disks and Storage Repositories"),
-                lambda: self.ActivateHandler('MENU_DISK'), self.UpdateFieldsDISK ],
             [ 'MENU_REMOTE', Lang("Remote Service Configuration"),
                 lambda: self.ActivateHandler('MENU_REMOTE'), self.UpdateFieldsREMOTE ],
             [ 'MENU_BUR', Lang("Backup, Restore and Update"),

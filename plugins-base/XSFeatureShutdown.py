@@ -42,7 +42,7 @@ class XSFeatureShutdown:
             'SHUTDOWN', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_REBOOTSHUTDOWN',
-                'menupriority' : 200,
+                'menupriority' : 300,
                 'menutext' : Lang('Shutdown Server'),
                 'statusupdatehandler' : XSFeatureShutdown.StatusUpdateHandler,
                 'activatehandler' : XSFeatureShutdown.ActivateHandler

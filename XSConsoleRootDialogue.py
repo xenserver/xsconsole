@@ -41,7 +41,7 @@ class RootDialogue(Dialogue):
         menuPane.ResetPosition()
         menuPane.AddTitleField(currentMenu.Title())
 
-        menuPane.AddMenuField(currentMenu, 15) # Allow extra height for this menu
+        menuPane.AddMenuField(currentMenu, 16) # Allow extra height for this menu
         
         statusPane = self.Pane('status')
 

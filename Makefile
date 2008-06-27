@@ -59,6 +59,7 @@ PLUGINS_BASE += XSFeatureLocalShell.py
 PLUGINS_BASE += XSFeatureLogInOut.py
 PLUGINS_BASE += XSFeatureNTP.py
 PLUGINS_BASE += XSFeatureQuit.py
+PLUGINS_BASE += XSFeaturePoolJoin.py
 PLUGINS_BASE += XSFeatureReboot.py
 PLUGINS_BASE += XSFeatureRemoteShell.py
 PLUGINS_BASE += XSFeatureSRCommon.py

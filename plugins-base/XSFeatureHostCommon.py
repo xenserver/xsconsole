@@ -31,7 +31,7 @@ class HostUtils:
         Task.Sync(lambda x: x.xenapi.host.add_to_other_config(inHostHandle.OpaqueRef(), inName, inValue))
     
     @classmethod
-    def AsyncOperation(cls, inOperation, inHostHandle, inParam0 = None):
+    def AsyncOperation(cls, inOperation, inHostHandle, *inParams):
         if inOperation == 'evacuate':
             # Gather the list of VMs to restart on exit of maintenance mode
             runningVMs = [ vm.HotOpaqueRef().OpaqueRef() for vm in HotAccessor().local_host.resident_VMs if not vm.is_control_domain() ]
@@ -42,8 +42,12 @@ class HostUtils:
             cls.OtherConfigRemove(inHostHandle, 'MAINTENANCE_MODE')
             cls.OtherConfigRemove(inHostHandle, 'MAINTENANCE_MODE_EVACUATED_VMS')
             task = Task.New(lambda x: x.xenapi.Async.host.enable(inHostHandle.OpaqueRef()))
-        elif inOperation == 'designate_new_master': # FIXME: really a pool operation
+        elif inOperation == 'designate_new_master':
             task = Task.New(lambda x: x.xenapi.Async.pool.designate_new_master(inHostHandle.OpaqueRef()))
+        elif inOperation == 'join':
+            task = Task.New(lambda x: x.xenapi.Async.pool.join(*inParams))
+        elif inOperation == 'join_force':
+            task = Task.New(lambda x: x.xenapi.Async.pool.join_force(*inParams))
         else:
             raise Exception("Unknown Host operation "+str(inOperation))
         

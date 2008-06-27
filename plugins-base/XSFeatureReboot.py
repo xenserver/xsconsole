@@ -43,7 +43,7 @@ class XSFeatureReboot:
             'REBOOT', # Key of this plugin for replacement, etc.
             {
                 'menuname' : 'MENU_REBOOTSHUTDOWN',
-                'menupriority' : 100,
+                'menupriority' : 200,
                 'menutext' : Lang('Reboot Server'),
                 'statusupdatehandler' : XSFeatureReboot.StatusUpdateHandler,
                 'activatehandler' : XSFeatureReboot.ActivateHandler

@@ -222,8 +222,8 @@ class XSFeatureHostEvacuate:
             self,
             'HOST_EVACUATE', # Key of this plugin for replacement, etc.
             {
-                'menuname' : 'MENU_VM',
-                'menupriority' : 400,
+                'menuname' : 'MENU_REBOOTSHUTDOWN',
+                'menupriority' : 100,
                 'menutext' : Lang('Enter/Exit Maintenance Mode') ,
                 'activatehandler' : XSFeatureHostEvacuate.ActivateHandler,
                 'statusupdatehandler' : XSFeatureHostEvacuate.StatusUpdateHandler
