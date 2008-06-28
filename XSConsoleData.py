@@ -823,20 +823,27 @@ class Data:
         self.RequireSession()
         self.session.xenapi.host.set_crash_dump_sr(self.host.opaqueref(None), inSR['opaqueref'])
     
+    def RemovePartitionSuffix(self, inDevice):
+        regExpList = [
+            r'(/dev/disk/by-id.*?)-part[0-9]+$',
+            r'(/dev/cciss/.*?)p[0-9]+$',
+            r'(/dev/.*?)[0-9]+$'
+        ]
+            
+        retVal = inDevice
+        for regExp in regExpList:
+            match = re.match(regExp, inDevice)
+            if match:
+                retVal = match.group(1)
+                break
+        return retVal
+        
     def GetSRFromDevice(self, inDevice):
         retVal = None
+
         for pbd in self.host.PBDs([]):
             device = pbd.get('device_config', {}).get('device', '')
-            matchCandidates = [ device ]
-            # Remove trailing partition numbers, so /dev/sda3 -> /dev/sda and /dev/disk/by-id....13432-part3 -> /dev/disk/by-id....13432
-            match = re.match(r'([^0-9]+?)[0-9]*$', device)
-            if match:
-                matchCandidates.append(match.group(1))
-            match = re.match(r'(.*?)-part[0-9]*$', device)
-            if match:
-                matchCandidates.append(match.group(1))
-
-            if inDevice in matchCandidates:
+            if self.RemovePartitionSuffix(device) == inDevice:
                 # This is the PBD containing the device.  Does it have an SR?
                 sr = pbd.get('SR', None)
                 if sr.get('name_label', None) is not None:

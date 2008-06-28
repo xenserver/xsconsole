@@ -19,7 +19,7 @@ class ClaimSRDialogue(Dialogue):
         self.srSize = None
         
         self.ChangeState('INITIAL')
-
+        
     def DeviceString(self, inDevice):
         retVal = "%-6.6s%-46.46s%20.20s" % (
             FirstValue(inDevice.bus, '')[:6],
@@ -239,15 +239,7 @@ class ClaimSRDialogue(Dialogue):
         retVal = False
         for pbd in Data.Inst().host.PBDs([]):
             device = pbd.get('device_config', {}).get('device', '')
-            matchCandidates = [ device ]
-            # Remove trailing partition numbers, so /dev/sda3 -> /dev/sda and /dev/disk/by-id....13432-part3 -> /dev/disk/by-id....13432
-            match = re.match(r'([^0-9]+?)[0-9]*$', device)
-            if match:
-                matchCandidates.append(match.group(1))
-            match = re.match(r'(.*?)-part[0-9]*$', device)
-            if match:
-                matchCandidates.append(match.group(1))
-            if inDevice in matchCandidates:
+            if Data.Inst().RemovePartitionSuffix(device) == inDevice:
                 # This is the PBD we want to claim.  Does it have an SR?
                 srName = pbd.get('SR', {}).get('name_label', None)
                 if srName is not None:
