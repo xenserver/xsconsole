@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.0.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2008-06-27, 16:15:18 -->
+<!-- Saved: 2008-06-28, 12:50:57 -->
 <!-- Copyright (C) 2008 ,  -->
 <Project version="4.0">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -274,6 +274,10 @@
       <Dir>plugins-base</Dir>
       <Name>XSFeaturePoolEject.py</Name>
     </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSFeaturePoolNewMaster.py</Name>
+    </Source>
   </Sources>
   <Forms>
   </Forms>
@@ -322,19 +326,25 @@
           <bool>True</bool>
         </value>
         <key>
-          <string>enableExceptions</string>
-        </key>
-        <value>
-          <bool>True</bool>
-        </value>
-        <key>
           <string>enableFormat</string>
         </key>
         <value>
           <bool>True</bool>
         </value>
         <key>
-          <string>enableBasic</string>
+          <string>enableRPython</string>
+        </key>
+        <value>
+          <bool>False</bool>
+        </value>
+        <key>
+          <string>enableVariables</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
+          <string>enableDesign</string>
         </key>
         <value>
           <bool>True</bool>
@@ -352,10 +362,10 @@
           <bool>True</bool>
         </value>
         <key>
-          <string>enableVariables</string>
+          <string>configFile</string>
         </key>
         <value>
-          <bool>True</bool>
+          <unicode>/home/asouthgate/build.hg/myrepos/xsconsole.hg/pylint.conf</unicode>
         </value>
         <key>
           <string>htmlReport</string>
@@ -364,28 +374,16 @@
           <bool>True</bool>
         </value>
         <key>
-          <string>configFile</string>
-        </key>
-        <value>
-          <unicode>/home/asouthgate/build.hg/myrepos/xsconsole.hg/pylint.conf</unicode>
-        </value>
-        <key>
-          <string>enableDesign</string>
+          <string>enableSimilarities</string>
         </key>
         <value>
           <bool>True</bool>
         </value>
         <key>
-          <string>enableNewstyle</string>
+          <string>enableBasic</string>
         </key>
         <value>
           <bool>True</bool>
-        </value>
-        <key>
-          <string>enableRPython</string>
-        </key>
-        <value>
-          <bool>False</bool>
         </value>
         <key>
           <string>txtReport</string>
@@ -394,13 +392,19 @@
           <bool>False</bool>
         </value>
         <key>
+          <string>enableExceptions</string>
+        </key>
+        <value>
+          <bool>True</bool>
+        </value>
+        <key>
           <string>enableTypecheck</string>
         </key>
         <value>
           <bool>True</bool>
         </value>
         <key>
-          <string>enableSimilarities</string>
+          <string>enableNewstyle</string>
         </key>
         <value>
           <bool>True</bool>

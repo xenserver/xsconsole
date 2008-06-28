@@ -61,6 +61,7 @@ PLUGINS_BASE += XSFeatureNTP.py
 PLUGINS_BASE += XSFeatureQuit.py
 PLUGINS_BASE += XSFeaturePoolEject.py
 PLUGINS_BASE += XSFeaturePoolJoin.py
+PLUGINS_BASE += XSFeaturePoolNewMaster.py
 PLUGINS_BASE += XSFeatureReboot.py
 PLUGINS_BASE += XSFeatureRemoteShell.py
 PLUGINS_BASE += XSFeatureSRCommon.py
