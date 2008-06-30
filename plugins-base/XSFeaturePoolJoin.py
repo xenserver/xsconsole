@@ -180,7 +180,7 @@ class XSFeaturePoolJoin:
     
     @classmethod
     def ForceActivateHandler(cls):
-        if len(db.host([])) > 1:
+        if len(HotAccessor().host([])) > 1:
             Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'),
                 Lang('This host is already part of a Pool and cannot join another.')))
         else:

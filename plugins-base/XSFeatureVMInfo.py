@@ -122,6 +122,7 @@ class XSFeatureVMInfo:
     
     @classmethod
     def AllMenuRegenerator(cls, inName, inMenu):
+        # Fetching all guest_vm is an expensive operation (implies xenapi.vm.get_all_records)
         return cls.MenuRegenerator(HotAccessor().guest_vm({}).keys(), inMenu)
     
     def Register(self):

@@ -465,8 +465,6 @@ class HotData:
                             print('Missed OpaqueRef Dict in HotData item: '+key)
                             break
 
-
-                    
         return ioObj
 
     def Session(self):
