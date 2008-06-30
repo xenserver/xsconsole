@@ -164,7 +164,7 @@ class Auth:
             
         if session is None and self.testingHost is not None:
             # Local session couldn't connect, so try remote.
-            session = XenAPI.Session("http://"+self.testingHost) # FIXME
+            session = XenAPI.Session("https://"+self.testingHost)
             try:
                 session.login_with_password('root', self.defaultPassword)
                 
