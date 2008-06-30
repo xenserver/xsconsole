@@ -32,10 +32,22 @@ class XSFeatureStatus:
             inPane.AddStatusField(Lang('Gateway', 16),  data.ManagementGateway(''))
         
         inPane.NewLine()
-        inPane.AddTitleField(Lang("SSL Fingerprint for XenCenter"))
-        inPane.AddWrappedTextField(data.sslfingerprint(''))
+        inPane.AddWrappedTextField(Lang('Press <Enter> to display the SSL key fingerprints for this host'))
     
-        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
+        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh"), Lang("<Enter>") : Lang("Fingerprints")})
+
+    @classmethod
+    def ActivateHandler(cls):
+        data = Data.Inst()
+        appName = data.derived.app_name('')
+
+        message = ''
+        message += Lang('Key fingerprint shown when connecting from '+appName+' (https)\n\n')
+        message += data.sslfingerprint('')+'\n\n'
+        message += Lang('Key fingerprint shown when logging in remotely (ssh)\n\n')
+        message += data.sshfingerprint('')
+
+        Layout.Inst().PushDialogue(InfoDialogue(Lang("SSL Key Fingerprints"), message))
 
     def Register(self):
         Importer.RegisterNamedPlugIn(
@@ -45,7 +57,8 @@ class XSFeatureStatus:
                 'menuname' : 'MENU_ROOT',
                 'menupriority' : 50,
                 'menutext' : Lang('Status Display'),
-                'statusupdatehandler' : XSFeatureStatus.StatusUpdateHandler
+                'statusupdatehandler' : XSFeatureStatus.StatusUpdateHandler,
+                'activatehandler' : XSFeatureStatus.ActivateHandler
             }
         )
 

@@ -118,6 +118,11 @@ class Data:
             else:
                 self.data['sslfingerprint'] = "<Unknown>"
  
+        try:
+            self.data['sshfingerprint'] = ShellPipe('/usr/bin/ssh-keygen', '-lf', '/etc/ssh/ssh_host_rsa_key.pub').AllOutput()[0].split(' ')[1]
+        except:
+            self.data['sshfingerprint'] = Lang('<Unknown>')
+        
         self.Update()
     
     def FakeMetrics(self, inPIF):
