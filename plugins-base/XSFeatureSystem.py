@@ -16,15 +16,23 @@ class XSFeatureSystem:
         data = Data.Inst()
 
         inPane.AddTitleField(Lang("System Manufacturer"))
-        inPane.AddWrappedTextField(data.host.software_version.oem_manufacturer())
+        manufacturer = data.host.software_version.oem_manufacturer('')
+        if manufacturer == '':
+            manufacturer = data.dmi.system_manufacturer()
+        inPane.AddWrappedTextField(manufacturer)
         inPane.NewLine()
         
+        model = data.host.software_version.oem_model('')
+        if model == '':
+            model = data.dmi.system_product_name()
         inPane.AddTitleField(Lang("System Model"))
-        inPane.AddWrappedTextField(data.host.software_version.oem_model())
+        inPane.AddWrappedTextField(model)
         inPane.NewLine()
         
         inPane.AddTitleField(data.host.software_version.machine_serial_name(Lang("Serial Number")))
         serialNumber = data.host.software_version.machine_serial_number('')
+        if serialNumber == '':
+            serialNumber = data.dmi.system_serial_number('')
         if serialNumber == '':
             serialNumber = Lang("<Not Set>")
         inPane.AddWrappedTextField(serialNumber)
