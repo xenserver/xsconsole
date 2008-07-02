@@ -118,8 +118,6 @@ class VMControlDialogue(Dialogue):
         allowedOps = vm.allowed_operations()
 
         choiceList = [ name for name in allowedOps if name in VMUtils.AllowedOperations() ]
-        if len(choiceList) == 0:
-            choiceList.append('none')
         
         choiceList.sort(lambda x, y: cmp(VMUtils.OperationPriority(x), VMUtils.OperationPriority(y)))
         
@@ -128,6 +126,8 @@ class VMControlDialogue(Dialogue):
             self.controlMenu.AddChoice(name = VMUtils.OperationName(choice),
                 onAction = self.HandleControlChoice,
                 handle = choice)
+        if self.controlMenu.NumChoices() == 0:
+            self.controlMenu.AddChoice(name = Lang('<No Operations Available>'))
             
         self.ChangeState('INITIAL')
         

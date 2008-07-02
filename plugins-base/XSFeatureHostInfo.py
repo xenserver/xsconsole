@@ -35,8 +35,6 @@ class XSFeatureHostInfo:
 
         inPane.AddStatusField(Lang("CPU Usage", 16), cpuUsageStr)
         inPane.AddStatusField(Lang("Memory Usage", 16), memoryUsageStr)
-
-        inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Control This Host") } )
     
     @classmethod
     def ActivateHandler(cls):
