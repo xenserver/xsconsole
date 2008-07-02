@@ -24,7 +24,7 @@ class SyslogDialogue(InputDialogue):
 
         hostname = inValues['destination']
         if hostname != '':
-            IPUtils.AssertValidHostname(hostname)
+            IPUtils.AssertValidNetworkName(hostname)
         Data.Inst().LoggingDestinationSet(hostname)
         Data.Inst().Update()
 
