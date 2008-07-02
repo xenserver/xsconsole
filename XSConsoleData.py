@@ -1059,8 +1059,14 @@ class Data:
                 pass # Fail silently
     
     def IsXAPIRunning(self):
-        status = ShellPipe('/sbin/pidof', '-s',  '/opt/xensource/bin/xapi').CallRC()
-        return status == 0
+        try:
+            if ShellPipe('/sbin/pidof', '-s',  '/opt/xensource/bin/xapi').CallRC() == 0:
+                retVal = True
+            else:
+                retVal = False
+        except:
+            retVal = False
+        return retVal
         
     def StopXAPI(self):
         if self.IsXAPIRunning():
