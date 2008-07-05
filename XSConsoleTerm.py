@@ -142,14 +142,30 @@ class App:
         lastDataUpdateSeconds = startSeconds
         lastScreenUpdateSeconds = startSeconds
         lastGarbageCollectSeconds = startSeconds
+        lastWakeSeconds = startSeconds
         resized = False
         data = Data.Inst()
         errorCount = 0
         
         self.layout.DoUpdate()
         while not doQuit:
+            needsRefresh = False
+            
+            secondsNow = time.time()
             try:
-                gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
+                if secondsNow - lastWakeSeconds > State.Inst().SleepSeconds():
+                    gotKey = None
+                    Layout.Inst().PushDialogue(BannerDialogue(Lang("Press any key to access this console")))
+                    Layout.Inst().Refresh()
+                    Layout.Inst().DoUpdate()
+                    self.layout.Window(Layout.WIN_MAIN).GetKeyBlocking()
+
+                    lastWakeSeconds = time.time()
+                    needsRefresh = True
+                    Layout.Inst().PopDialogue()
+                else:
+                    gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
+                    
             except Exception, e:
                 gotKey = None # Catch timeout
 
@@ -159,6 +175,7 @@ class App:
             if gotKey == "\177": gotKey = "KEY_BACKSPACE"
             if gotKey == '\xc2': gotKey = "KEY_F(5)" # Handle function key mistranslation on vncterm
             if gotKey == '\xc5': gotKey = "KEY_F(8)" # Handle function key mistranslation on vncterm
+            
             
             if gotKey == 'KEY_RESIZE':
                 resized = True
@@ -171,9 +188,8 @@ class App:
                 if char >="\177": # Characters 128 and greater
                     gotKey = None
                     break
-    
-            needsRefresh = False
-            secondsNow = time.time()
+                    
+            secondsNow = time.time()    
             secondsRunning = secondsNow - startSeconds
 
             if data.host.address('') == '':
@@ -192,6 +208,7 @@ class App:
             if gotKey is not None:
                 try:
                     Auth.Inst().KeepAlive()
+                    lastWakeSeconds = secondsNow
                     if self.layout.TopDialogue().HandleKey(gotKey):
                         State.Inst().SaveIfRequired()
                         needsRefresh = True

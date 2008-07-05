@@ -14,7 +14,7 @@ class State:
     instance = None
     savePath = '/etc/xsconsole'
     saveLeafname = 'state.txt'
-    thisVersion = 8
+    thisVersion = 9
     
     #***
     #*** Increment thisVersion (above) when adding attributes to this object
@@ -28,6 +28,7 @@ class State:
         self.weStoppedXAPI = False
         self.verboseBoot = False
         self.keymap = None
+        self.sleepSeconds = 30*60
         
     @classmethod
     def SaveFilename(self):
@@ -110,6 +111,9 @@ class State:
         
     def AuthTimeoutMinutes(self):
         return int((self.AuthTimeoutSeconds() + 30) / 60)
+    
+    def SleepSeconds(self):
+        return self.sleepSeconds
     
     def MakeSane(self):
         self.authTimeoutSeconds = int(self.authTimeoutSeconds)

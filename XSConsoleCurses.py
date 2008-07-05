@@ -214,6 +214,11 @@ class CursesPane:
         return self.win.getch()
     
     def GetKey(self):
+        self.win.timeout(1000) # Return from getkey after x milliseconds if no key pressed
+        return self.win.getkey()
+        
+    def GetKeyBlocking(self):
+        self.win.timeout(-1) # Wait for ever
         return self.win.getkey()
     
     def DefaultColourSet(self, inName):
