@@ -208,6 +208,9 @@ class SRControlDialogue(Dialogue):
         else:
             pane.AddTitleField(Lang("Please select an operation to perform on '"+srName+"'"))
         pane.AddMenuField(self.controlMenu)
+        if sr.type() == 'lvm':
+            pane.AddWrappedTextField(Lang('Local Storage cannot be detached or destroyed because XenServer configuration information is also stored on the local disk.'))
+        
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
     def UpdateFieldsCONFIRM(self):
