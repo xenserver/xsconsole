@@ -120,6 +120,8 @@ class InterfaceDialogue(Dialogue):
         pane.AddInputField(Lang("Gateway",  14),  self.gateway, 'gateway')
         pane.AddInputField(Lang("Hostname",  14),  self.hostname, 'hostname')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        if pane.InputIndex() is None:
+            pane.InputIndexSet(0) # Activate first field for input
         
     def UpdateFieldsHOSTNAME(self):
         pane = self.Pane()
@@ -127,7 +129,9 @@ class InterfaceDialogue(Dialogue):
         pane.AddTitleField(Lang("Enter the hostname for this server"))
         pane.AddInputField(Lang("Hostname",  14),  Data.Inst().host.hostname(''), 'hostname')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )        
-    
+        if pane.InputIndex() is None:
+            pane.InputIndexSet(0) # Activate first field for input
+            
     def UpdateFieldsPRECOMMIT(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -198,7 +202,9 @@ class InterfaceDialogue(Dialogue):
         pane.AddTitleField(Lang("Enter the ")+data.derived.app_name()+Lang(" name for this server"))
         pane.AddInputField(Lang("Name",  8),  data.host.hostname(''), 'namelabel')
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )     
-    
+        if pane.InputIndex() is None:
+            pane.InputIndexSet(0) # Activate first field for input
+            
     def UpdateFields(self):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
@@ -224,8 +230,20 @@ class InterfaceDialogue(Dialogue):
                 self.netmask = inputValues['netmask']
                 self.gateway = inputValues['gateway']
                 self.hostname = inputValues['hostname']
-                self.ChangeState('PRECOMMIT')
-                self.UpdateFields()
+                try:
+                    failedName = Lang('IP Address')
+                    IPUtils.AssertValidIP(self.IP)
+                    failedName = Lang('Netmask')
+                    IPUtils.AssertValidNetmask(self.netmask)
+                    failedName = Lang('Gateway')
+                    IPUtils.AssertValidIP(self.gateway)
+                    failedName = Lang('Hostname')
+                    IPUtils.AssertValidHostname(self.hostname)
+                    self.ChangeState('PRECOMMIT')
+                except:
+                    pane.InputIndexSet(None)
+                    Layout.Inst().PushDialogue(InfoDialogue(Lang('Invalid ')+failedName))
+
             else:
                 pane.ActivateNextInput()
         elif inKey == 'KEY_TAB':
@@ -244,7 +262,13 @@ class InterfaceDialogue(Dialogue):
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
             self.hostname = inputValues['hostname']
-            self.ChangeState('PRECOMMIT')
+            try:
+                IPUtils.AssertValidHostname(self.hostname)
+                self.ChangeState('PRECOMMIT')
+            except:
+                pane.InputIndexSet(None)
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Invalid hostname')))
+                
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
@@ -327,12 +351,10 @@ class InterfaceDialogue(Dialogue):
         elif inChoice == 'DHCPMANUAL': # DHCP with manually assigned hostname
             self.mode = 'DHCP'
             self.ChangeState('HOSTNAME')
-            self.Pane().InputIndexSet(0)
         elif inChoice == 'STATIC':
             self.hostname = Data.Inst().host.hostname('')
             self.mode = 'Static'
             self.ChangeState('STATICIP')
-            self.Pane().InputIndexSet(0)
 
     def HandlePostDHCPChoice(self,  inChoice):
         if inChoice == 'CONTINUE':
@@ -341,7 +363,6 @@ class InterfaceDialogue(Dialogue):
             self.converting = True
             self.mode = 'Static'
             self.ChangeState('STATICIP')
-            self.Pane().InputIndexSet(0)
 
     def HandlePostHostnameChoice(self,  inChoice):
         data = Data.Inst()
@@ -352,7 +373,6 @@ class InterfaceDialogue(Dialogue):
             self.Complete() # We're done
         elif inChoice == 'NEW':
             self.ChangeState('NAMELABEL')
-            self.Pane().InputIndexSet(0)
 
     def Commit(self):
         data = Data.Inst()

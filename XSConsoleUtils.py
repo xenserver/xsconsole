@@ -191,7 +191,30 @@ class IPUtils:
             largest = max(largest, i)
         if largest is 0: return False
         return True
-    
+        
+    @classmethod
+    def ValidateNetmask(cls, text):
+        rc = re.match("^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$", text)
+        if not rc:
+            return False
+        ints = map(int, rc.groups())
+        for i in ints:
+            if i > 255:
+                return False
+        return True
+
+    @classmethod
+    def AssertValidNetmask(cls, inIP):
+        if not cls.ValidateNetmask(inIP):
+            raise Exception(Lang("Invalid netmask '"+inIP+"'"))
+        return inIP
+
+    @classmethod
+    def AssertValidIP(cls, inIP):
+        if not cls.ValidateIP(inIP):
+            raise Exception(Lang("Invalid IP address '"+inIP+"'"))
+        return inIP
+
     @classmethod
     def AssertValidHostname(cls, inName):
         # Allow 0-9, A-Z, a-z and hyphen, but disallow hyphen at start and end
