@@ -91,7 +91,13 @@ class PoolJoinDialogue(Dialogue):
                 pane.ActivateNextInput()
             else:
                 self.params = pane.GetFieldValues()
-                self.ChangeState('CONFIRM')
+                try:
+                    IPUtils.AssertValidNetworkName(self.params['hostname'])
+                    self.ChangeState('CONFIRM')
+                except Exception, e:
+                    pane.InputIndexSet(None)
+                    Layout.Inst().PushDialogue(InfoDialogue(Lang(e)))
+                
         elif inKey == 'KEY_TAB':
             pane.ActivateNextInput()
         elif inKey == 'KEY_BTAB':
