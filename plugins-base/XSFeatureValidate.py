@@ -54,7 +54,10 @@ class ValidateDialogue(Dialogue):
         pane.AddStatusField(Lang("VT enabled on CPU", 50), self.vtResult)
         pane.AddStatusField(Lang("Local default Storage Repository", 50), self.srResult)
         pane.AddStatusField(Lang("Management network interface", 50), self.netResult)
-        
+        if self.srResult != 'OK':
+            pane.NewLine()
+            pane.AddWrappedTextField(Lang('A local Storage Repository is useful but not essential for XenServer operation'))
+            
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
 
     def HandleKey(self, inKey):
