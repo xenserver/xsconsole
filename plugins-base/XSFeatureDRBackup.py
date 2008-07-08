@@ -51,7 +51,7 @@ class XSFeatureDRBackup:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Backup VM Metadata"))
+        inPane.AddTitleField(Lang("Backup Virtual Machine Metadata"))
 
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to backup Virtual Machine metadata to a Storage Repository.  This will back up the information associated with the VM configuration to a special backup disk on the Storage Repository.  You can subsequently restore this metadata if you migrate the Storage Repository to another XenServer pool."))
