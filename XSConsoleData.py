@@ -920,13 +920,13 @@ class Data:
             raise Exception(output)
     
     def Ping(self,  inDest):
-        # Must be careful that no unsanitised data is passed to the shell
-        if not re.match(r'([-0-9a-zA-Z.]+)$',  inDest):
+        # Must be careful that no unsanitised data is passed to the command
+        if not re.match(r'[0-9a-zA-Z][-0-9a-zA-Z.]*$',  inDest):
             raise Exception("Invalid destination '"+inDest+"'")
-        
-        command = "/bin/ping -c 1 -w 2 '"+inDest+"'"
-        (status,  output) = commands.getstatusoutput(command)
-        return (status == 0,  output)
+        IPUtils.AssertValidNetworkName(inDest)
+        pipe = ShellPipe('/bin/ping', '-c',  '1',  '-w', '2', inDest)
+        status = pipe.CallRC()
+        return (status == 0, "\n".join(pipe.AllOutput()))
     
     def ManagementIP(self, inDefault = None):
         retVal = inDefault

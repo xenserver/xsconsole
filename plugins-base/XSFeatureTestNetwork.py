@@ -116,6 +116,7 @@ class TestNetworkDialogue(Dialogue):
             
         if inAddress is not None:
             try:
+                Layout.Inst().TransientBanner(Lang('Pinging...'))
                 (success,  output) = Data.Inst().Ping(inAddress)
             except Exception,  e:
                 output = Lang(e)
@@ -138,7 +139,7 @@ class XSFeatureTestNetwork:
         
     @classmethod
     def ActivateHandler(cls):
-        Layout.Inst().PushDialogue(TestNetworkDialogue())
+        DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(TestNetworkDialogue()))
         
     def Register(self):
         Importer.RegisterNamedPlugIn(
