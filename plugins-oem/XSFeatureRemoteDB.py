@@ -212,6 +212,7 @@ class RemoteDBDialogue(Dialogue):
                         self.probedIQNs = RemoteDB.Inst().ProbeIQNs(self.newConf)
                         self.ChangeState('CHOOSEIQN')
                     except Exception, e:
+                        pane.InputIndexSet(None)
                         Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
                     
         elif inKey == 'KEY_TAB':

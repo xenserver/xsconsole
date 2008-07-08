@@ -392,7 +392,7 @@ class InterfaceDialogue(Dialogue):
             # get the hostname from DHCP, otherwise keep the current hostname.  So we set the hostname
             # here to control the action of DHCP when ReconfigureManagement runs
             if self.hostname == '':
-                 # DHCP will override if the DHCP server offsets a hostname, otherwise we'll keep this one
+                 # DHCP will override if the DHCP server offers a hostname, otherwise we'll keep this one
                 data.HostnameSet('localhost')
             else:                
                 data.HostnameSet(self.hostname)
