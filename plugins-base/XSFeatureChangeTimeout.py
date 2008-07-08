@@ -14,7 +14,7 @@ class ChangeTimeoutDialogue(InputDialogue):
     def __init__(self):
         self.custom = {
             'title' : Lang("Change Auto-Logout Timeout"),
-            'fields' : [ [Lang("Timeout (minutes)", 20), FirstValue(State.Inst().AuthTimeoutMinutes(), 5), 'timeout'] ]
+            'fields' : [ [ Lang("Timeout (minutes)", 20), FirstValue(State.Inst().AuthTimeoutMinutes(), 5), 'timeout', 16 ] ],
             }
         InputDialogue.__init__(self)
 

@@ -39,7 +39,7 @@ class SeparatorField(Field):
 class InputField(Field):
     MIN_WIDTH = 40 # Minimum width for input fields
     
-    def __init__(self, text, colour, selectedColour, flow):
+    def __init__(self, text, colour, selectedColour, flow, lengthLimit):
         ParamsToAttr()
         self.activated = False
         self.cursorPos = len(self.text)
@@ -47,10 +47,12 @@ class InputField(Field):
         self.selected = True
         self.scrollPos = 0
         self.width = self.MIN_WIDTH
+        if self.lengthLimit is None:
+            self.lengthLimit = 4096
         
     def HideText(self):
         self.hideText = True
-        
+    
     def Activate(self):
         self.activated = True
         self.cursorPos = len(self.text)
@@ -132,8 +134,9 @@ class InputField(Field):
                 self.cursorPos -= 1
                 self.text = self.text[:self.cursorPos] + self.text[self.cursorPos+1:] # Delete on left
         elif len(inKey) == 1 and inKey[0] >= ' ':
-            self.text = self.text[:self.cursorPos] + inKey[0] + self.text[self.cursorPos:] # Insert char
-            self.cursorPos += 1
+            if len(self.text) < self.lengthLimit:
+                self.text = self.text[:self.cursorPos] + inKey[0] + self.text[self.cursorPos:] # Insert char
+                self.cursorPos += 1
         else:
             handled = False
         return handled
