@@ -96,11 +96,15 @@ class NTPDialogue(Dialogue):
         if inKey == 'KEY_ENTER':
             inputValues = pane.GetFieldValues()
             Layout.Inst().PopDialogue()
-            data=Data.Inst()
-            servers = data.ntp.servers([])
-            servers.append(inputValues['name'])
-            data.NTPServersSet(servers)
-            self.Commit(Lang("NTP server")+" "+inputValues['name']+" "+Lang("added"))
+            try:
+                IPUtils.AssertValidNetworkName(inputValues['name'])
+                data=Data.Inst()
+                servers = data.ntp.servers([])
+                servers.append(inputValues['name'])
+                data.NTPServersSet(servers)
+                self.Commit(Lang("NTP server")+" "+inputValues['name']+" "+Lang("added"))
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang(e)))
         elif pane.CurrentInput().HandleKey(inKey):
             pass # Leave handled as True
         else:
