@@ -123,6 +123,11 @@ class Data:
         except:
             self.data['sshfingerprint'] = Lang('<Unknown>')
         
+        try:
+            self.data['state_on_usb_media'] = ( ShellPipe('/bin/bash', '-c', 'source /opt/xensource/libexec/oem-functions; if state_on_usb_media; then exit 1; else exit 0; fi').CallRC() != 0 )
+        except:
+            self.data['state_on_usb_media'] = True
+            
         self.Update()
     
     def FakeMetrics(self, inPIF):

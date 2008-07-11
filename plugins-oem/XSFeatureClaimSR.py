@@ -17,7 +17,7 @@ class ClaimSRDialogue(Dialogue):
         self.deviceToErase = None
         self.srName = None
         self.srSize = None
-        
+        self.typeChoice = 'SRONLY' # Default for HD installations
         self.ChangeState('INITIAL')
         
     def DeviceString(self, inDevice):
@@ -68,6 +68,19 @@ class ClaimSRDialogue(Dialogue):
         self.UpdateFields()
     
     def BuildPaneREBOOT(self):
+        self.BuildPaneBase()
+        self.UpdateFields()
+    
+    def BuildPaneCHOOSETYPE(self):
+        self.typeMenu = Menu()
+        self.typeMenu.AddChoice(name = Lang('Claim Disk For Storage Repository and XenServer Use'),
+            onAction = self.HandleTypeChoice,
+            handle = 'CLAIM'
+        )
+        self.typeMenu.AddChoice(name = Lang('Use Disk as Storage Repository Only'),
+            onAction = self.HandleTypeChoice,
+            handle = 'SRONLY'
+        )
         self.BuildPaneBase()
         self.UpdateFields()
     
@@ -122,7 +135,17 @@ class ClaimSRDialogue(Dialogue):
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Exit") } )
         if pane.CurrentInput() is None:
             pane.InputIndexSet(0)
-            
+    
+    def UpdateFieldsCHOOSETYPE(self):
+        pane = self.Pane()
+        pane.ResetFields()
+        
+        pane.AddTitleField(Lang("Please choose the assignment for this disk."))
+        pane.AddMenuField(self.typeMenu)
+        pane.AddWrappedTextField(Lang('For disks that are not going to be removed, the Storage Repository and '
+            'XenServer Use option is strongly recommended.'))
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+    
     def UpdateFieldsCONFIRM(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -186,10 +209,16 @@ class ClaimSRDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
-            self.ChangeState('CONFIRM')
+            if Data.Inst().state_on_usb_media(True):
+                self.ChangeState('CHOOSETYPE')
+            else:
+                self.ChangeState('CONFIRM')
             handled = True
             
         return handled
+
+    def HandleKeyCHOOSETYPE(self, inKey):
+        return self.typeMenu.HandleKey(inKey)
 
     def HandleKeyCUSTOM(self, inKey):
         handled = True
@@ -233,7 +262,14 @@ class ClaimSRDialogue(Dialogue):
             if self.IsKnownSROnDisk(self.deviceToErase.device):
                 self.ChangeState('ALREADYTHERE')
             else:
-                self.ChangeState('CONFIRM')
+                if Data.Inst().state_on_usb_media(True):
+                    self.ChangeState('CHOOSETYPE')
+                else:
+                    self.ChangeState('CONFIRM')
+
+    def HandleTypeChoice(self, inChoice):
+        self.typeChoice = inChoice
+        self.ChangeState('CONFIRM')
 
     def IsKnownSROnDisk(self, inDevice):
         retVal = False
@@ -251,8 +287,12 @@ class ClaimSRDialogue(Dialogue):
     def DoAction(self):
         Layout.Inst().TransientBanner(Lang("Claiming and Configuring Disk..."))
 
+        if self.typeChoice == 'SRONLY':
+            options = '--sr-only '
+        else:
+            options = ''
         status, output = commands.getstatusoutput(
-            "/opt/xensource/libexec/delete-partitions-and-claim-disk "+self.deviceToErase.device+" 2>&1")
+            "/opt/xensource/libexec/delete-partitions-and-claim-disk "+options+self.deviceToErase.device+" 2>&1")
         
         time.sleep(4) # Allow xapi to pick up the new SR
         Data.Inst().Update() # Read information about the new SR
@@ -261,12 +301,18 @@ class ClaimSRDialogue(Dialogue):
             Layout.Inst().PopDialogue()
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
         else:
+            if self.typeChoice == 'SRONLY':
+                Layout.Inst().PopDialogue()
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Disk Claimed Successfully')))
+            else:
+                self.ChangeState('REBOOT')
+            
             try:
                 Data.Inst().SetPoolSRsFromDeviceIfNotSet(self.deviceToErase.device)
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claimed, but could not set as default SR: ") + Lang(e)))
                 # Continue to reboot dialogue
-            self.ChangeState('REBOOT')
+
 
 class XSFeatureClaimSR:
     @classmethod
