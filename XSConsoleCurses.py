@@ -226,7 +226,10 @@ class CursesPane:
         self.win.bkgdset(ord(' '), CursesPalette.ColourAttr(self.defaultColour))
 
     def CursorOn(self, inXPos = None, inYPos = None):
-        curses.curs_set(2)
+        try:
+            curses.curs_set(2)
+        except:
+            pass
         if inXPos is not None and inYPos is not None:
             clippedXPos = max(min(inXPos,  self.xSize-1),  0)
             clippedYPos = max(min(inYPos,  self.ySize-1),  0)
@@ -234,7 +237,10 @@ class CursesPane:
             self.win.cursyncup()
             
     def CursorOff(self):
-        curses.curs_set(0)
+        try: 
+            curses.curs_set(0)
+        except:
+            pass
         self.win.cursyncup()
 
 class CursesWindow(CursesPane):
@@ -267,7 +273,10 @@ class CursesScreen(CursesPane):
         if curses.has_colors():
             curses.start_color()
             CursesPalette.DefineColours()
-        curses.curs_set(0) # Make cursor invisible
+        try:
+            curses.curs_set(0) # Make cursor invisible
+        except:
+            pass
         self.win.keypad(1)
         self.win.timeout(1000) # Return from getkey after x milliseconds if no key pressed
                 
