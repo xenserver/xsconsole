@@ -129,7 +129,7 @@ class DRRestoreDialogue(SRDialogue):
 
     def DoAction(self, inSR):
         Layout.Inst().PopDialogue()
-        Layout.Inst().TransientBanner(Lang("Searching for backup VDI..."))
+        Layout.Inst().TransientBanner(Lang("Searching for backup VDI...\n\nCtrl-C to abort"))
         sr_uuid = inSR['uuid']
         try:
             # probe for the restore VDI UUID

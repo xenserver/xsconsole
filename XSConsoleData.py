@@ -215,8 +215,9 @@ class Data:
                         retPBD['SR'] = self.session.xenapi.SR.get_record(retPBD['SR'])
                     except:
                         retPBD['SR'] = None # retPBD['SR'] is OpaqueRef:NULL
-                        
-                    if retPBD['SR'] is not None:
+                    
+                    # Get VDIs for udev SRs only - a pool may have thousands of non-udev VDIs
+                    if retPBD['SR'] is not None and retPBD['SR'].get('type', '') == 'udev':
                         retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
                         for vdi in retPBD['SR']['VDIs']:
                             vdi['SR'] = retPBD['SR']
