@@ -106,7 +106,7 @@ class XSMenuLayout:
         data = Data.Inst()
         inPane.AddTitleField(Lang("Disks and Storage Repositories"))
     
-        inPane.AddWrappedTextField(Lang("Press <Enter> to create and attach Storgae Repositories, select local  "
+        inPane.AddWrappedTextField(Lang("Press <Enter> to create and attach Storage Repositories, select local  "
             "disks to use as Storage Repositories, "
             "and specify destinations for Suspend and Crash Dump images for this host."))
         inPane.NewLine()

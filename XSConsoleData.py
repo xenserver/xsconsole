@@ -217,12 +217,13 @@ class Data:
                         retPBD['SR'] = None # retPBD['SR'] is OpaqueRef:NULL
                     
                     # Get VDIs for udev SRs only - a pool may have thousands of non-udev VDIs
-                    if retPBD['SR'] is not None and retPBD['SR'].get('type', '') == 'udev':
-                        retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
-                        for vdi in retPBD['SR']['VDIs']:
-                            vdi['SR'] = retPBD['SR']
+                    if retPBD['SR'] is not None:
                         retPBD['SR']['opaqueref'] = srRef
-
+                        if retPBD['SR'].get('type', '') == 'udev':
+                            retPBD['SR']['VDIs'] = map(convertVDI, retPBD['SR']['VDIs'])
+                            for vdi in retPBD['SR']['VDIs']:
+                                vdi['SR'] = retPBD['SR']
+                    
                     retPBD['opaqueref'] = inPBD
                     return retPBD
                     
@@ -861,21 +862,24 @@ class Data:
                     retVal = sr
         return retVal
     
-    def SetPoolSRsFromDeviceIfNotSet(self, inDevice):
+    def SetPoolSRIfRequired(self, inOpaqueRef):
         Auth.Inst().AssertAuthenticated()
         self.RequireSession()
         pool = self.GetPoolForThisHost()
         if pool is not None:
-            sr = self.GetSRFromDevice(inDevice)
-            if sr is None:
-                raise Exception(Lang("Device does not have an associated SR"))
-
             if pool['default_SR_uuid'] is None:
-                self.session.xenapi.pool.set_default_SR(pool['opaqueref'], sr['opaqueref'])
+                self.session.xenapi.pool.set_default_SR(pool['opaqueref'], inOpaqueRef)
             if pool['suspend_image_SR_uuid'] is None:
-                self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], sr['opaqueref'])
+                self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], inOpaqueRef)
             if pool['crash_dump_SR_uuid'] is None:
-                self.session.xenapi.pool.set_crash_dump_SR(pool['opaqueref'], sr['opaqueref'])
+                self.session.xenapi.pool.set_crash_dump_SR(pool['opaqueref'], inOpaqueRef)
+    
+    def SetPoolSRsFromDeviceIfNotSet(self, inDevice):
+        sr = self.GetSRFromDevice(inDevice)
+        if sr is None:
+            raise Exception(Lang("Device does not have an associated SR"))
+
+        self.SetPoolSRIfRequired(sr['opaqueref'])
 
     def GetPoolForThisHost(self):
         self.RequireSession()

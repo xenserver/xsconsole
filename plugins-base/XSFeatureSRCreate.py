@@ -1147,7 +1147,10 @@ class SRNewDialogue(Dialogue):
                 except:
                     pass #  Ignore failure
 
+            Data.Inst().Update()
+            Data.Inst().SetPoolSRIfRequired(srRef)
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Successful")))
+            
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Creation Failed"), Lang(e)))
 
@@ -1197,7 +1200,9 @@ class SRNewDialogue(Dialogue):
             for pbd in pbdList:
                 Task.Sync(lambda x: x.xenapi.PBD.plug(pbd))
                 pluggedPBDList.append(pbd)
-                
+            
+            Data.Inst().Update()
+            Data.Inst().SetPoolSRIfRequired(srRef)
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Successful")))
 
         except Exception, e:
