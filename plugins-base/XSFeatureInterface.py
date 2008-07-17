@@ -84,6 +84,11 @@ class InterfaceDialogue(Dialogue):
             self.modeMenu.CurrentChoiceSet(2)
         else:
             self.modeMenu.CurrentChoiceSet(0)
+            
+        if self.mode.lower().startswith('dhcp') and self.nic is not None:
+            self.nicMenu.AddChoice(name = Lang('Renew DHCP Lease On Current Interface'),
+                onAction = lambda: self.HandleRenewChoice()
+                )
     
         self.ChangeState('INITIAL')
         
@@ -374,6 +379,29 @@ class InterfaceDialogue(Dialogue):
         elif inChoice == 'NEW':
             self.ChangeState('NAMELABEL')
 
+    def HandleRenewChoice(self):
+        data = Data.Inst()
+        pif = data.host.PIFs()[self.nic]
+        
+        Layout.Inst().PopDialogue()
+        Layout.Inst().TransientBanner(Lang('Renewing DHCP Lease...'))
+        
+        try:
+            data.ReconfigureManagement(pif, 'DHCP', '', '', '')
+            data.Update()
+            ipAddress = data.host.address('')
+            if ipAddress == '':
+                # Try again using disable/reenable
+                data.DisableManagement()
+                data.ReconfigureManagement(pif, 'DHCP', '', '', '')
+                data.Update()
+                ipAddress = data.host.address('')
+            if ipAddress == '':
+                ipAddress = Lang('<Unknown>')
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("DHCP Renewed with IP address ")+ipAddress))
+        except Exception, e:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Renewal Failed"), Lang(e)))
+            
     def Commit(self):
         data = Data.Inst()
         if self.nic is None:

@@ -324,7 +324,7 @@ class XSFeatureClaimSR:
             "for use by virtual machines.  Press <Enter> to list the disks available."))
 
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Claim Disk as SRs")
+            Lang("<Enter>") : Lang("Claim Disk as SR")
         })
 
     @classmethod
