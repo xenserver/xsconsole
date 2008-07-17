@@ -59,8 +59,13 @@ class App:
             try:
                 try:
                     sys.stdout.write("\033%@") # Select default character set, ISO 8859-1 (ISO 2022)
-                    if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
-                    
+                    if os.path.isfile("/bin/setfont"):
+                        os.system("/bin/setfont") # Restore the default font
+                    if '-f' in sys.argv:
+                        # -f means that this is the automatically started xsonsole on tty1, so set it up to suit xsconsole
+                        os.system('/bin/stty quit ^-') # Disable Print Screen key as quit
+                        os.system('/bin/stty stop ^-') # Disable Ctrl-S as suspend
+
                     os.environ["ESCDELAY"] = "50" # Speed up processing of the escape key
                     
                     self.cursesScreen = CursesScreen()
