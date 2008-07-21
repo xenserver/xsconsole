@@ -9,13 +9,21 @@
 
 import sys
 
+from XSConsoleConfig import *
 from XSConsoleTerm import *
 from XSConsoleLang import *
 
 def main():
-    app = App()
-    app.Build( ['plugins-base', 'plugins-oem', 'plugins-extras'] )
-    app.Enter()
+    if '--shelltimeout' in sys.argv:
+        # Print a shell timeout value, suitable for TMOUT=`xsconsole --shelltimeout`
+        if Config.Inst().AllShellsTimeout():
+            print State.Inst().AuthTimeoutSeconds()
+        else:
+            print
+    else:
+        app = App()
+        app.Build( ['plugins-base', 'plugins-oem', 'plugins-extras'] )
+        app.Enter()
 
 if __name__ == "__main__":
     try:

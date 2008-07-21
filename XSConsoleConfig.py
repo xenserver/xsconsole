@@ -45,7 +45,9 @@ class Config:
     
     def BrandingMap(self):
         return {}
-        
+    
+    def AllShellsTimeout(self):
+        return True
     
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):

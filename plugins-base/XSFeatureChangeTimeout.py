@@ -38,7 +38,7 @@ class XSFeatureChangeTimeout:
         message += Language.Quantity("minute", timeout) + ".  "
         message += Lang("Users will be automatically logged out after there has been no keyboard "
             "activity for this time.  This timeout applies to this console and to "
-            "local shells started from this console.")
+            "local shells.")
     
         inPane.AddWrappedTextField(message)
         
