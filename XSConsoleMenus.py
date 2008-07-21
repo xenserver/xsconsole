@@ -120,6 +120,7 @@ class Menu:
         return True
 
     def HandleKey(self, inKey):
+        handled = False
         if inKey == 'KEY_DOWN':
             handled = self.HandleArrowDown()
         elif inKey == 'KEY_UP':
@@ -128,8 +129,20 @@ class Menu:
             handled = self.HandleArrowLeft()
         elif inKey == 'KEY_ENTER' or inKey == 'KEY_RIGHT':
             handled = self.HandleSelect()
-        else:
-            handled = False
+        elif len(inKey) == 1:
+            # Move to next menu item starting with the key pressed
+            keyPressed = inKey[0].lower()
+            if keyPressed >= 'a' and keyPressed <= 'z':
+                numChoices = len(self.choiceDefs)
+                nextChoice = self.choiceIndex
+                for i in range(numChoices):
+                    nextChoice = (nextChoice + 1) % numChoices
+                    choiceName = self.choiceDefs[nextChoice].name
+                    if len(choiceName) > 0 and choiceName[0].lower() == keyPressed:
+                        self.choiceIndex = nextChoice
+                        self.HandleEnter()
+                        handled = True
+                        break
         
         return handled
         
