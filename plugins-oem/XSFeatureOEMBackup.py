@@ -70,6 +70,8 @@ class OEMBackupDialogue(FileDialogue):
                     Lang("Backup Successful")))
 
             except Exception, e:
+                try: os.unlink(filename)
+                except: pass
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Backup Failed"), Lang(e)))
                 
