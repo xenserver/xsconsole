@@ -14,14 +14,14 @@ class XSFeatureOEMRevert:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Revert to a Pre-Update Version"))
+        inPane.AddTitleField(Lang("Revert To A Pre-Update Version"))
 
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to revert to a version prior to an applied update."))
         inPane.NewLine()
         
-        inPane.AddStatusField(Lang('Current Label', 16), data.backup.currentlabel(''))
-        inPane.AddStatusField(Lang('Previous Label', 16), data.backup.previouslabel(''))
+        inPane.AddStatusField(Lang('Current Version', 17), data.host.software_version.build_number(''))
+        inPane.AddStatusField(Lang('Previous Version', 17), data.backup.alternateversion(''))
             
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Revert") } ) 
  
@@ -37,17 +37,17 @@ class XSFeatureOEMRevert:
     @classmethod
     def ActivateHandler(cls):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
-                Lang("Do you want to revert this upgrade?"), lambda x: cls.RevertReplyHandler(x))))
+                Lang("Do you want to revert this update?"), lambda x: cls.RevertReplyHandler(x))))
         
     def Register(self):
-        if Data.Inst().backup.canrevert(False):
+        if Data.Inst().CanRevert():
             Importer.RegisterNamedPlugIn(
                 self,
                 'REVERT', # Key of this plugin for replacement, etc.
                 {
                     'menuname' : 'MENU_BUR',
                     'menupriority' : 400,
-                    'menutext' : Lang('Revert Server State From Backup') ,
+                    'menutext' : Lang('Revert To A Pre-Update Version') ,
                     'statusupdatehandler' : self.StatusUpdateHandler,
                     'activatehandler' : self.ActivateHandler
                 }

@@ -127,7 +127,10 @@ class Data:
             self.data['state_on_usb_media'] = ( ShellPipe('/bin/bash', '-c', 'source /opt/xensource/libexec/oem-functions; if state_on_usb_media; then exit 1; else exit 0; fi').CallRC() != 0 )
         except:
             self.data['state_on_usb_media'] = True
-            
+    
+
+
+        self.UpdateFromPatchVersions()
         self.Update()
     
     def FakeMetrics(self, inPIF):
@@ -298,7 +301,6 @@ class Data:
         self.UpdateFromSysconfig()
         self.UpdateFromNTPConf()
         self.UpdateFromRemoteDBConf()
-        self.UpdateFromPatchVersions()
         self.UpdateFromTimezone()
         self.UpdateFromKeymap()
         
@@ -449,43 +451,62 @@ class Data:
         return retVal
 
     def UpdateFromPatchVersions(self):
-        command = '/sbin/findfs LABEL='+self.RootLabel()
-        status, output = commands.getstatusoutput(command)
-        bootDevice = None
-        if status == 0:
-            match = re.match(r'(.*)\d+$', output)
-            if match:
-                bootDevice = match.group(1)
+        self.data['backup'] = {}
+
+        alternateVersion = None
+        try:
+            alternateDev = ShellPipe('/opt/xensource/libexec/find-partition', 'alternate').Stdout()[0].split(',')[0]
+            alternateMount = tempfile.mktemp(".xsconsole")
+            if not os.path.isdir(alternateMount):
+                os.mkdir(alternateMount, 0700)
+
+            ShellPipe('/bin/mount', '-t', 'auto', '-o', 'ro', alternateDev, alternateMount).Call()
             
-        self.data['backup'] = {
-            'bootdevice' : bootDevice,
-            'canrevert' : False
-        }
-        
-        if bootDevice is not None:
-            sda1Version = self.GetVersion(commands.getoutput("/sbin/e2label "+bootDevice+"1"))
-            sda2Version = self.GetVersion(commands.getoutput("/sbin/e2label "+bootDevice+"2"))
-            currentVersion = self.GetVersion(self.RootLabel())
-            self.data['backup']['currentlabel'] = currentVersion
+            rootfsDev = alternateMount + '/rootfs'
+            rootfsMount = tempfile.mktemp(".xsconsole")
+            if not os.path.isdir(rootfsMount):
+                os.mkdir(rootfsMount, 0700)
+
+            ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
             
-            if currentVersion == sda1Version and sda2Version < sda1Version:
-                self.data['backup']['canrevert'] = True
-                self.data['backup']['revertto'] = 2
-                self.data['backup']['previouslabel'] = sda2Version
-            elif currentVersion == sda2Version and sda1Version < sda2Version:
-                self.data['backup']['canrevert'] = True
-                self.data['backup']['revertto'] = 1
-                self.data['backup']['previouslabel'] = sda1Version
+            inventoryFile = open(rootfsMount+'/etc/xensource-inventory')
+
+            for line in inventoryFile:
+                match = re.match(r"\s*BUILD_NUMBER\s*=\s*'([^']*)'", line)
+                if match:
+                    alternateVersion = match.group(1)
+                    break
+        finally:
+            # Undefined variables raise exceptions, so this code will only undo operations that succeeded
+            try: inventoryFile.close()
+            except: pass
+            try: ShellPipe('/bin/umount', '-d', rootfsMount).Call() # -d for loopback device
+            except: pass
+            try: os.rmdir(rootfsMount)
+            except: pass
+            try: ShellPipe('/bin/umount', alternateMount).Call()
+            except: pass
+            try: os.rmdir(alternateMount)
+            except: pass
+
+        self.data['backup']['alternateversion'] = alternateVersion
+
+    def CanRevert(self):
+        # Revert if the alternate version is earlier than the current version.
+        try:
+            numCurrent = int(re.match(r'([0-9]+)', self.host.software_version.build_number()).group(1))
+            numAlternate = int(re.match(r'([0-9]+)', self.backup.alternateversion()).group(1))
+            retVal = (numAlternate < numCurrent)
+        except:
+            retVal = False
+        return retVal
 
     def Revert(self):
-        if self.backup.canrevert(False):
-            status, output = commands.getstatusoutput("/opt/xensource/libexec/bootable.sh "+
-                self.backup.bootdevice()+" "+str(self.backup.revertto()))
-            if status != 0:
-                raise Exception(output)
+        if self.CanRevert():
+            ShellPipe('/opt/xensource/libexec/set-boot', 'alternate').Call()
         else:
             raise Exception("Unable to revert")
-            
+
     def SaveToResolvConf(self):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
