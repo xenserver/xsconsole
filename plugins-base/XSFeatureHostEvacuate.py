@@ -27,7 +27,7 @@ class HostEvacuateDialogue(Dialogue):
         if self.hostWasEnabled:
             if db.local_pool.master.uuid() == db.local_host.uuid():
                 # We are the pool master
-                if len(db.host()) == 1:
+                if len(db.host([])) == 1:
                     # This is a pool of one
                     self.ChangeState('CONFIRM')
                 else:
@@ -212,7 +212,7 @@ class XSFeatureHostEvacuate:
     @classmethod
     def ActivateHandler(cls):
         db=HotAccessor()
-        if len(db.host()) == 1 and len(db.local_host.resident_VMs()) > 1: # If we are in a pool of one and VMs are running
+        if len(db.host([])) == 1 and len(db.local_host.resident_VMs([])) > 1: # If we are in a pool of one and VMs are running
             Layout.Inst().PushDialogue(InfoDialogue(Lang('This host has running Virtual Machines.  Please suspend or shutdown the Virtual Machines before entering Maintenance Mode.')))
         else:
             DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(HostEvacuateDialogue()))
