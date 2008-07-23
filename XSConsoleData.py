@@ -455,27 +455,30 @@ class Data:
 
         alternateVersion = None
         try:
-            alternateDev = ShellPipe('/opt/xensource/libexec/find-partition', 'alternate').Stdout()[0].split(',')[0]
-            alternateMount = tempfile.mktemp(".xsconsole")
-            if not os.path.isdir(alternateMount):
-                os.mkdir(alternateMount, 0700)
-
-            ShellPipe('/bin/mount', '-t', 'auto', '-o', 'ro', alternateDev, alternateMount).Call()
-            
-            rootfsDev = alternateMount + '/rootfs'
-            rootfsMount = tempfile.mktemp(".xsconsole")
-            if not os.path.isdir(rootfsMount):
-                os.mkdir(rootfsMount, 0700)
-
-            ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
-            
-            inventoryFile = open(rootfsMount+'/etc/xensource-inventory')
-
-            for line in inventoryFile:
-                match = re.match(r"\s*BUILD_NUMBER\s*=\s*'([^']*)'", line)
-                if match:
-                    alternateVersion = match.group(1)
-                    break
+            try:
+                alternateDev = ShellPipe('/opt/xensource/libexec/find-partition', 'alternate').Stdout()[0].split(',')[0]
+                alternateMount = tempfile.mktemp(".xsconsole")
+                if not os.path.isdir(alternateMount):
+                    os.mkdir(alternateMount, 0700)
+    
+                ShellPipe('/bin/mount', '-t', 'auto', '-o', 'ro', alternateDev, alternateMount).Call()
+                
+                rootfsDev = alternateMount + '/rootfs'
+                rootfsMount = tempfile.mktemp(".xsconsole")
+                if not os.path.isdir(rootfsMount):
+                    os.mkdir(rootfsMount, 0700)
+    
+                ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
+                
+                inventoryFile = open(rootfsMount+'/etc/xensource-inventory')
+    
+                for line in inventoryFile:
+                    match = re.match(r"\s*BUILD_NUMBER\s*=\s*'([^']*)'", line)
+                    if match:
+                        alternateVersion = match.group(1)
+                        break
+            except:
+                pass # Ignore missing files error on non-OEM, etc
         finally:
             # Undefined variables raise exceptions, so this code will only undo operations that succeeded
             try: inventoryFile.close()
