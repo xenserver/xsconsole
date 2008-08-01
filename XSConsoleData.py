@@ -507,6 +507,7 @@ class Data:
     def Revert(self):
         if self.CanRevert():
             ShellPipe('/opt/xensource/libexec/set-boot', 'alternate').Call()
+            RemoteDB.Inst().ConfigureNoDB()
         else:
             raise Exception("Unable to revert")
 

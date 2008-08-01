@@ -334,7 +334,8 @@ class RemoteDBDialogue(Dialogue):
             Data.Inst().StopXAPI()
             try:
                 try:
-                    self.dbPresent = RemoteDB.Inst().ConfigureNoDB()
+                    RemoteDB.Inst().ConfigureNoDB()
+                    self.dbPresent = None
                     Layout.Inst().PopDialogue()
                     Layout.Inst().PushDialogue(InfoDialogue(
                         Lang("Configuration Successful")))
