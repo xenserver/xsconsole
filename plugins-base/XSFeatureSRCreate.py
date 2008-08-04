@@ -1202,7 +1202,8 @@ class SRNewDialogue(Dialogue):
                 pluggedPBDList.append(pbd)
             
             Data.Inst().Update()
-            Data.Inst().SetPoolSRIfRequired(srRef)
+            if inContentType != 'iso':
+                Data.Inst().SetPoolSRIfRequired(srRef)
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Successful")))
 
         except Exception, e:
