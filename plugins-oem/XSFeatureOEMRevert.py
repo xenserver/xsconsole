@@ -37,7 +37,7 @@ class XSFeatureOEMRevert:
     @classmethod
     def ActivateHandler(cls):
         DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
-                Lang("Do you want to revert this update?"), lambda x: cls.RevertReplyHandler(x))))
+                Lang("Do you want to revert this update?  Host and Virtual Machine metadata will revert to the point prior to the update, and Virtual Machines created after the update will be lost.  Changes within Storage Repositories will persist and may not match reverted metadata."), lambda x: cls.RevertReplyHandler(x))))
         
     def Register(self):
         if Data.Inst().CanRevert():
