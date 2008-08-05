@@ -43,7 +43,7 @@ class UploadBugReportDialogue(InputDialogue):
         if status != 0:
             raise Exception(Lang('The bug report upload failed.  Please check that the ftp directory is correct, and that the server accepts anonymous uploads to that directory and is reachable from this network.')) 
 
-        return (Lang("Bug Report Uploaded Sucessfully"), None)
+        return (Lang("Bug Report Uploaded Successfully"), None)
         
 
 class XSFeatureUploadBugReport:
