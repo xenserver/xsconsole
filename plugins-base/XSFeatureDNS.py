@@ -19,11 +19,11 @@ class DNSDialogue(Dialogue):
         pane.AddBox()
         
         choiceDefs = [
-            ChoiceDef(Lang("Add a nameserver"), lambda: self.HandleAddRemoveChoice('ADD') ) ]
+            ChoiceDef(Lang("Add a Nameserver"), lambda: self.HandleAddRemoveChoice('ADD') ) ]
         
         if len(data.dns.nameservers([])) > 0:
-            choiceDefs.append(ChoiceDef(Lang("Remove a single nameserver"), lambda: self.HandleAddRemoveChoice('REMOVE') ))
-            choiceDefs.append(ChoiceDef(Lang("Remove all nameservers"), lambda: self.HandleAddRemoveChoice('REMOVEALL') ))
+            choiceDefs.append(ChoiceDef(Lang("Remove a Single Nameserver"), lambda: self.HandleAddRemoveChoice('REMOVE') ))
+            choiceDefs.append(ChoiceDef(Lang("Remove All Nameservers"), lambda: self.HandleAddRemoveChoice('REMOVEALL') ))
         
         self.addRemoveMenu = Menu(self, None, Lang("Add or Remove Nameserver Entries"), choiceDefs)
         
@@ -60,7 +60,7 @@ class DNSDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select Nameserver Entry To Remove"))
+        pane.AddTitleField(Lang("Select Nameserver Entry to Remove"))
         pane.AddMenuField(self.removeMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") , Lang("<Esc>") : Lang("Cancel") } )
         

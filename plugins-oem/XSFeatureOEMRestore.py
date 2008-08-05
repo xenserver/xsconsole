@@ -17,8 +17,8 @@ class OEMRestoreDialogue(FileDialogue):
             'title' : Lang("Restore Server State"),
             'searchregexp' : r'.*\.xbk$',  # Type of backup file is .xbk
             'deviceprompt' : Lang("Select the device containing the backup file"), 
-            'fileprompt' : Lang("Select The Backup File"),
-            'confirmprompt' : Lang("Press <F8> To Begin The Restore Process"),
+            'fileprompt' : Lang("Select the Backup File"),
+            'confirmprompt' : Lang("Press <F8> to Begin the Restore Process"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self) # Must fill in self.custom before calling __init__
@@ -84,7 +84,7 @@ class XSFeatureOEMRestore:
             {
                 'menuname' : 'MENU_BUR',
                 'menupriority' : 300,
-                'menutext' : Lang('Restore Server State From Backup') ,
+                'menutext' : Lang('Restore Server State from Backup') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler
             }

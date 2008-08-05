@@ -15,10 +15,10 @@ class SaveBugReportDialogue(FileDialogue):
         self.custom = {
             'title' : Lang("Save Bug Report"),
             'searchregexp' : r'.*',  # Type of bugtool file is .tar
-            'deviceprompt' : Lang("Select The Destination Device"), 
-            'fileprompt' : Lang("Choose A Destination Filename"),
+            'deviceprompt' : Lang("Select the Destination Device"), 
+            'fileprompt' : Lang("Choose a Destination Filename"),
             'filename' : FileUtils.BugReportFilename(),
-            'confirmprompt' : Lang("Press <F8> To Save The Bug Report"),
+            'confirmprompt' : Lang("Press <F8> to Save the Bug Report"),
             'mode' : 'rw'
         }
         FileDialogue.__init__(self) # Must fill in self.custom before calling __init__

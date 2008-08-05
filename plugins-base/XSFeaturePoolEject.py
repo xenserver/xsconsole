@@ -18,7 +18,7 @@ class PoolEjectDialogue(Dialogue):
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.ResetPosition()
-        pane.TitleSet(Lang("Remove Host From Pool"))
+        pane.TitleSet(Lang("Remove Host from Pool"))
         pane.AddBox()
         if hasattr(self, 'BuildPane'+self.state):
             handled = getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
@@ -84,18 +84,18 @@ class PoolEjectDialogue(Dialogue):
         Layout.Inst().PopDialogue()
 
         try:
-            Layout.Inst().TransientBanner(Lang('Removing This Host From The Pool...'))
+            Layout.Inst().TransientBanner(Lang('Removing This Host from the Pool...'))
             hostUtils.DoOperation('eject', HotAccessor().local_host_ref())
             Layout.Inst().ExitBannerSet(Lang('Removal Successful.  This Host Will Now Reboot...'))
             Layout.Inst().ExitCommandSet('/bin/sleep 120')
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed To Remove Host From Pool"), Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed to Remove Host from Pool"), Lang(e)))
             
 class XSFeaturePoolEject:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         db = HotAccessor()
-        inPane.AddTitleField(Lang('Remove This Host From The Pool'))
+        inPane.AddTitleField(Lang('Remove This Host from the Pool'))
         inPane.AddWrappedTextField(Lang('Removing this host from its Pool will permanently delete and reinitialize '
             'all local Storage Repositories on this host.  The data in local Storage Repositories will be lost, and '
             'this host will immediately reboot.'))
@@ -108,7 +108,7 @@ class XSFeaturePoolEject:
                 inPane.AddWrappedTextField(Lang('This host is the Master of the Pool and cannot be removed until '
                     'another host is designated as Master.'))
             else:
-                inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Remove Host From Pool") } )
+                inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Remove Host from Pool") } )
         else:
             inPane.AddWrappedTextField(Lang('This host is not a member of a Pool so cannot be removed.'))
 
@@ -130,7 +130,7 @@ class XSFeaturePoolEject:
             {
                 'menuname' : 'MENU_POOL',
                 'menupriority' : 300,
-                'menutext' : Lang('Remove This Host From The Pool') ,
+                'menutext' : Lang('Remove This Host from the Pool') ,
                 'activatehandler' : XSFeaturePoolEject.ActivateHandler,
                 'statusupdatehandler' : XSFeaturePoolEject.StatusUpdateHandler
             }

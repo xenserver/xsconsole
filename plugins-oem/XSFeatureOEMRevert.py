@@ -14,7 +14,7 @@ class XSFeatureOEMRevert:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Revert To A Pre-Update Version"))
+        inPane.AddTitleField(Lang("Revert to a Pre-Update Version"))
 
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to revert to a version prior to an applied update."))
@@ -47,7 +47,7 @@ class XSFeatureOEMRevert:
                 {
                     'menuname' : 'MENU_BUR',
                     'menupriority' : 400,
-                    'menutext' : Lang('Revert To A Pre-Update Version') ,
+                    'menutext' : Lang('Revert to a Pre-Update Version') ,
                     'statusupdatehandler' : self.StatusUpdateHandler,
                     'activatehandler' : self.ActivateHandler
                 }

@@ -15,8 +15,8 @@ class RemoteDBDialogue(Dialogue):
         Dialogue.__init__(self)
 
         self.useMenu = Menu(self, None, Lang("Choose Option"), [
-            ChoiceDef(Lang("Use existing database"), lambda: self.HandleUseChoice('USE')),
-            ChoiceDef(Lang("Format disk and create new database"), lambda: self.HandleUseChoice('FORMAT')),
+            ChoiceDef(Lang("Use Existing Database"), lambda: self.HandleUseChoice('USE')),
+            ChoiceDef(Lang("Format Disk and Create New Database"), lambda: self.HandleUseChoice('FORMAT')),
             ChoiceDef(Lang("Cancel"), lambda: self.HandleUseChoice('CANCEL'))
         ] )            
 

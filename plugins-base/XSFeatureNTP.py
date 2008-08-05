@@ -17,13 +17,13 @@ class NTPDialogue(Dialogue):
         data=Data.Inst()
             
         choiceDefs = [
-            ChoiceDef(Lang("Enable NTP time synchronization"), lambda: self.HandleInitialChoice('ENABLE') ), 
-            ChoiceDef(Lang("Disable NTP time synchronization"), lambda: self.HandleInitialChoice('DISABLE') ),
-            ChoiceDef(Lang("Add an NTP server"), lambda: self.HandleInitialChoice('ADD') ) ]
+            ChoiceDef(Lang("Enable NTP Time Synchronization"), lambda: self.HandleInitialChoice('ENABLE') ), 
+            ChoiceDef(Lang("Disable NTP Time Synchronization"), lambda: self.HandleInitialChoice('DISABLE') ),
+            ChoiceDef(Lang("Add an NTP Server"), lambda: self.HandleInitialChoice('ADD') ) ]
         
         if len(data.ntp.servers([])) > 0:
-            choiceDefs.append(ChoiceDef(Lang("Remove a single NTP server"), lambda: self.HandleInitialChoice('REMOVE') ))
-            choiceDefs.append(ChoiceDef(Lang("Remove all NTP servers"), lambda: self.HandleInitialChoice('REMOVEALL') ))
+            choiceDefs.append(ChoiceDef(Lang("Remove a Single NTP Server"), lambda: self.HandleInitialChoice('REMOVE') ))
+            choiceDefs.append(ChoiceDef(Lang("Remove All NTP Servers"), lambda: self.HandleInitialChoice('REMOVEALL') ))
             
         if Auth.Inst().IsTestMode():
             # Show Status is a testing-only function
@@ -70,7 +70,7 @@ class NTPDialogue(Dialogue):
         pane = self.Pane()
         pane.ResetFields()
         
-        pane.AddTitleField(Lang("Select Server Entry To Remove"))
+        pane.AddTitleField(Lang("Select Server Entry to Remove"))
         pane.AddWrappedTextField(Lang("NTP servers supplied by DHCP may overwrite values configured here."))
         pane.NewLine()
         

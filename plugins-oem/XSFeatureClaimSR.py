@@ -73,11 +73,11 @@ class ClaimSRDialogue(Dialogue):
     
     def BuildPaneCHOOSETYPE(self):
         self.typeMenu = Menu()
-        self.typeMenu.AddChoice(name = Lang('Claim Disk For Storage Repository and XenServer Use'),
+        self.typeMenu.AddChoice(name = Lang('Claim Disk for Storage Repository and XenServer Use'),
             onAction = self.HandleTypeChoice,
             handle = 'CLAIM'
         )
-        self.typeMenu.AddChoice(name = Lang('Use Disk as Storage Repository Only'),
+        self.typeMenu.AddChoice(name = Lang('Use Disk As Storage Repository Only'),
             onAction = self.HandleTypeChoice,
             handle = 'SRONLY'
         )
@@ -310,7 +310,7 @@ class ClaimSRDialogue(Dialogue):
             try:
                 Data.Inst().SetPoolSRsFromDeviceIfNotSet(self.deviceToErase.device)
             except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claimed, but could not set as default SR: ") + Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk claimed, but could not set as default SR: ") + Lang(e)))
                 # Continue to reboot dialogue
 
 
@@ -318,13 +318,13 @@ class XSFeatureClaimSR:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Claim Local Disk as SR"))
+        inPane.AddTitleField(Lang("Claim Local Disk As SR"))
     
         inPane.AddWrappedTextField(Lang("Local disks can be configured as Storage Repositories "
             "for use by virtual machines.  Press <Enter> to list the disks available."))
 
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Claim Disk as SR")
+            Lang("<Enter>") : Lang("Claim Disk As SR")
         })
 
     @classmethod
@@ -338,7 +338,7 @@ class XSFeatureClaimSR:
             {
                 'menuname' : 'MENU_DISK',
                 'menupriority' : 600,
-                'menutext' : Lang('Claim Local Disk as SR') ,
+                'menutext' : Lang('Claim Local Disk As SR') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler
             }

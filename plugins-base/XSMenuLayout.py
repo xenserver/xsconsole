@@ -163,7 +163,7 @@ class XSMenuLayout:
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
     def UpdateFieldsREBOOTSHUTDOWN(self, inPane):
-        inPane.AddTitleField(Lang("Reboot/Shutdown"))
+        inPane.AddTitleField(Lang("Reboot or Shutdown"))
     
         inPane.AddWrappedTextField(Lang(
             "This option can reboot or shutdown this server, and enter or exit Maintenance Mode."))

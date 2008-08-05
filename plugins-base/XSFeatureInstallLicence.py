@@ -16,9 +16,9 @@ class InstallLicenceDialogue(FileDialogue):
         self.custom = {
             'title' : Lang("Install License"),
             'searchregexp' : r'.*(licen[cs]e|xslic)',  # Licence files end in .xslic
-            'deviceprompt' : Lang("Select The Device Containing The License File"), 
-            'fileprompt' : Lang("Select The License File"),
-            'confirmprompt' : Lang("Press <F8> To Install The License"),
+            'deviceprompt' : Lang("Select the Device Containing the License File"), 
+            'fileprompt' : Lang("Select the License File"),
+            'confirmprompt' : Lang("Press <F8> to Install the License"),
             'mode' : 'ro'
         }
         FileDialogue.__init__(self) # Must fill in self.custom before calling __init__

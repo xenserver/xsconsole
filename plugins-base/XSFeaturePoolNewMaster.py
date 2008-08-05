@@ -95,7 +95,7 @@ class PoolNewMasterDialogue(Dialogue):
             hostUtils.DoOperation('designate_new_master', self.newMaster.HotOpaqueRef())
             Layout.Inst().PushDialogue(InfoDialogue(Lang("The Pool Master has Been Changed"), Lang('Please allow several seconds for the change to propagate throughout the Pool.')))
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed To Designate New Pool Master"), Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed to Designate New Pool Master"), Lang(e)))
             
 class XSFeaturePoolNewMaster:
     @classmethod
@@ -135,7 +135,7 @@ class XSFeaturePoolNewMaster:
             {
                 'menuname' : 'MENU_POOL',
                 'menupriority' : 400,
-                'menutext' : Lang('Designate A New Pool Master') ,
+                'menutext' : Lang('Designate a New Pool Master') ,
                 'activatehandler' : XSFeaturePoolNewMaster.ActivateHandler,
                 'statusupdatehandler' : XSFeaturePoolNewMaster.StatusUpdateHandler
             }

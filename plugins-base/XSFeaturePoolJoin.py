@@ -22,7 +22,7 @@ class PoolJoinDialogue(Dialogue):
     def BuildPane(self):
         pane = self.NewPane(DialoguePane(self.parent))
         pane.ResetPosition()
-        pane.TitleSet(Lang("Join A Resource Pool"))
+        pane.TitleSet(Lang("Join a Resource Pool"))
         pane.AddBox()
         if hasattr(self, 'BuildPane'+self.state):
             handled = getattr(self, 'BuildPane'+self.state)() # Despatch method named 'BuildPane'+self.state
@@ -141,7 +141,7 @@ class PoolJoinDialogue(Dialogue):
             Layout.Inst().PushDialogue(ProgressDialogue(task, Lang("Joining Pool with Master '")+self.params['hostname']+"'"))
     
         except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Failed To Join The Pool"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Failed to Join the Pool"), Lang(e)))
             
 class XSFeaturePoolJoin:
     @classmethod

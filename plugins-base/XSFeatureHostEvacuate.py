@@ -17,10 +17,10 @@ class HostEvacuateDialogue(Dialogue):
         self.newMaster = None
         self.hostWasEnabled = db.local_host.enabled(False)
         self.migrateMenu = Menu()
-        self.migrateMenu.AddChoice(name = Lang('Migrate, Resume or Restart Virtual Machines on this host'),
+        self.migrateMenu.AddChoice(name = Lang('Migrate, Resume or Restart Virtual Machines on This Host'),
             onAction = self.HandleMigrateChoice,
             handle = 'YES')
-        self.migrateMenu.AddChoice(name = Lang('Do not alter Virtual Machines'),
+        self.migrateMenu.AddChoice(name = Lang('Do Not Alter Virtual Machines'),
             onAction = self.HandleMigrateChoice,
             handle = 'NO')
         
@@ -174,7 +174,7 @@ class HostEvacuateDialogue(Dialogue):
                     message = Lang('Please allow several seconds for the pool to propagate information about the new Master')
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Successfully Entered Maintenance Mode"), message))
             except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Enter Maintenance Mode Failed To Complete"), Lang(e)))
+                Layout.Inst().PushDialogue(InfoDialogue(Lang("Enter Maintenance Mode Failed to Complete"), Lang(e)))
         else:
             try:
                 Layout.Inst().TransientBanner(Lang('Exiting Maintenance Mode...'))

@@ -116,7 +116,7 @@ class XSFeatureReset:
             {
                 'menuname' : 'MENU_TECHNICAL',
                 'menupriority' : 500,
-                'menutext' : Lang('Reset To Factory Defaults') ,
+                'menutext' : Lang('Reset to Factory Defaults') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
                 'activatehandler' : self.ActivateHandler
             }
