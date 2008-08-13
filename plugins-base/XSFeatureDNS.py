@@ -14,9 +14,6 @@ class DNSDialogue(Dialogue):
     def __init__(self):
         Dialogue.__init__(self)
         data=Data.Inst()
-        pane = self.NewPane(DialoguePane(self.parent))
-        pane.TitleSet(Lang("DNS Configuration"))
-        pane.AddBox()
         
         choiceDefs = [
             ChoiceDef(Lang("Add a Nameserver"), lambda: self.HandleAddRemoveChoice('ADD') ) ]
@@ -34,10 +31,13 @@ class DNSDialogue(Dialogue):
         
         self.removeMenu = Menu(self, None, Lang("Remove Nameserver Entry"), choiceDefs)
         
-        self.state = 'INITIAL'
+        self.ChangeState('INITIAL')
 
-        self.UpdateFields()
-        
+    def BuildPane(self):
+        pane = self.NewPane(DialoguePane(self.parent))
+        pane.TitleSet(Lang("DNS Configuration"))
+        pane.AddBox()
+
     def UpdateFieldsINITIAL(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -68,6 +68,11 @@ class DNSDialogue(Dialogue):
         self.Pane().ResetPosition()
         getattr(self, 'UpdateFields'+self.state)() # Despatch method named 'UpdateFields'+self.state
     
+    def ChangeState(self, inState):
+        self.state = inState
+        self.BuildPane()
+        self.UpdateFields()
+        
     def HandleKeyINITIAL(self, inKey):
         return self.addRemoveMenu.HandleKey(inKey)
      
@@ -111,11 +116,9 @@ class DNSDialogue(Dialogue):
             
     def HandleAddRemoveChoice(self,  inChoice):
         if inChoice == 'ADD':
-            self.state = 'ADD'
-            self.UpdateFields()
+            self.ChangeState('ADD')
         elif inChoice == 'REMOVE':
-            self.state = 'REMOVE'
-            self.UpdateFields()
+            self.ChangeState('REMOVE')
         elif inChoice == 'REMOVEALL':
             Layout.Inst().PopDialogue()
             Data.Inst().NameserversSet([])
