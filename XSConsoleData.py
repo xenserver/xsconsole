@@ -364,7 +364,7 @@ class Data:
         # Protect from shell escapes
         if not re.match(r'[-A-Za-z0-9.]+$', inHostname):
             raise Exception("Invalid hostname '"+inHostname+"'")
-        IPUtils.AssertValidHostname(inHostname)
+        IPUtils.AssertValidNetworkName(inHostname)
         
         self.RequireSession()
         

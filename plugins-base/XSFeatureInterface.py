@@ -243,7 +243,7 @@ class InterfaceDialogue(Dialogue):
                     failedName = Lang('Gateway')
                     IPUtils.AssertValidIP(self.gateway)
                     failedName = Lang('Hostname')
-                    IPUtils.AssertValidHostname(self.hostname)
+                    IPUtils.AssertValidNetworkName(self.hostname)
                     self.ChangeState('PRECOMMIT')
                 except:
                     pane.InputIndexSet(None)
@@ -268,7 +268,7 @@ class InterfaceDialogue(Dialogue):
             inputValues = pane.GetFieldValues()
             self.hostname = inputValues['hostname']
             try:
-                IPUtils.AssertValidHostname(self.hostname)
+                IPUtils.AssertValidNetworkName(self.hostname)
                 self.ChangeState('PRECOMMIT')
             except:
                 pane.InputIndexSet(None)
