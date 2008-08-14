@@ -52,15 +52,15 @@ class SRNewDialogue(Dialogue):
                 handle = type)
 
         self.ChangeState('INITIAL')
-    
+
     def IQNString(self, inIQN, inLUN = None):
-        if inLUN is None: # LUN not present
-            retVal = "TGPT %-4.4s %-60.60s" % (inIQN.tgpt[:4], inIQN.name[:60])
+        if inLUN is None or int(inLUN) > 999: # LUN not present or more than 3 characters
+            retVal = "TPGT %-5.5s %-60.60s" % (inIQN.tpgt[:5], inIQN.name[:60])
         else:
-            retVal = "TGPT %-4.4s %-52.52s LUN %-3.3s" % (inIQN.tgpt[:4], inIQN.name[:52], str(inLUN)[:3])
+            retVal = "TPGT %-5.5s %-52.52s LUN %-3.3s" % (inIQN.tpgt[:5], inIQN.name[:52], str(inLUN)[:3])
         
         return retVal
-        
+
     def LUNString(self, inLUN):
         retVal = "LUN %-4.4s %s" % (inLUN.LUNid[:4], (SizeUtils.SRSizeString(inLUN.size)+ ' ('+inLUN.vendor)[:62]+')')
         
@@ -358,7 +358,7 @@ class SRNewDialogue(Dialogue):
         pane.AddTitleField(Lang('Please select from the list of discovered IQNs.'))
 
         pane.AddMenuField(self.iqnMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), Lang("<Space>") : Lang("More Information On Item") } )
     
     def UpdateFieldsPROBE_ISCSI_LUN(self):
         pane = self.Pane()
@@ -630,7 +630,21 @@ class SRNewDialogue(Dialogue):
         return self.srMenu.HandleKey(inKey)
 
     def HandleKeyPROBE_ISCSI_IQN(self, inKey):
-        return self.iqnMenu.HandleKey(inKey)
+        handled = False
+        if inKey == ' ':
+            try:
+                iqn = self.iqnChoices[self.iqnMenu.ChoiceIndex()]
+                message = Lang("Portal", 12)+iqn.portal+"\n"
+                message += Lang("TPGT", 12)+iqn.tpgt+"\n"
+                message += Lang("IQN", 12)+iqn.name
+                
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("IQN Information"), message))
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
+            handled = True
+        else:
+            handled =self.iqnMenu.HandleKey(inKey)
+        return handled
 
     def HandleKeyPROBE_ISCSI_LUN(self, inKey):
         return self.lunMenu.HandleKey(inKey)
@@ -783,7 +797,7 @@ class SRNewDialogue(Dialogue):
                         iqn =  str(tgt.getElementsByTagName('TargetIQN')[0].firstChild.nodeValue.strip())
                         self.iqnChoices.append(Struct(
                             portal = self.srParams['remotehost']+':'+self.srParams['port'],
-                            tgpt=index,
+                            tpgt=index,
                             name=iqn,
                             iqn=iqn))
                             

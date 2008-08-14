@@ -24,9 +24,9 @@ class RemoteDBDialogue(Dialogue):
 
     def IQNString(self, inIQN, inLUN = None):
         if inLUN is None or int(inLUN) > 999: # LUN not present or more than 3 characters
-            retVal = "TGPT %-4.4s %-60.60s" % (inIQN.tgpt[:4], inIQN.name[:60])
+            retVal = "TPGT %-5.5s %-60.60s" % (inIQN.tpgt[:5], inIQN.name[:60])
         else:
-            retVal = "TGPT %-4.4s %-52.52s LUN %-3.3s" % (inIQN.tgpt[:4], inIQN.name[:52], str(inLUN)[:3])
+            retVal = "TPGT %-5.5s %-52.52s LUN %-3.3s" % (inIQN.tpgt[:5], inIQN.name[:52], str(inLUN)[:3])
         
         return retVal
 
@@ -139,7 +139,7 @@ class RemoteDBDialogue(Dialogue):
         
         pane.AddTitleField(Lang("Please select from the list of discovered IQNs"))
         pane.AddMenuField(self.iqnMenu)
-        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+        pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel"), Lang("<Space>") : Lang("More Information On Item") } )
 
     def UpdateFieldsCHOOSELUN(self):
         pane = self.Pane()
@@ -246,7 +246,21 @@ class RemoteDBDialogue(Dialogue):
         return handled
 
     def HandleKeyCHOOSEIQN(self, inKey):
-        return self.iqnMenu.HandleKey(inKey)
+        handled = False
+        if inKey == ' ':
+            try:
+                iqn = self.probedIQNs[self.iqnMenu.ChoiceIndex()]
+                message = Lang("Portal", 12)+iqn.portal+"\n"
+                message += Lang("TPGT", 12)+iqn.tpgt+"\n"
+                message += Lang("IQN", 12)+iqn.name
+                
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("IQN Information"), message))
+            except Exception, e:
+                Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
+            handled = True
+        else:
+            handled =self.iqnMenu.HandleKey(inKey)
+        return handled
 
     def HandleKeyCHOOSELUN(self, inKey):
         return self.lunMenu.HandleKey(inKey)

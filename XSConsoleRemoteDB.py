@@ -59,7 +59,7 @@ class RemoteDB:
             
         retVal = []
         for iqn in probedIQNs:
-            retVal.append(Struct(portal = iqn[0], tgpt=iqn[1], name=iqn[2]))
+            retVal.append(Struct(portal = iqn[0], tpgt=iqn[1], name=iqn[2]))
             
         return retVal
     
