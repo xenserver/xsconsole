@@ -419,5 +419,8 @@ class XSFeatureRemoteDB:
             }
         )
 
-# Register this plugin when module is imported
-XSFeatureRemoteDB().Register()
+# The remote DB is disabled when this flag file is missing:
+import os.path
+if os.path.isfile("/etc/xensource/enable-remote-db"):
+    # Register this plugin when module is imported
+    XSFeatureRemoteDB().Register()
