@@ -46,7 +46,11 @@ class Importer:
                             
     @classmethod
     def ImportRelativeDir(self, inDir):
-        self.ImportAbsDir(sys.path[0]+'/'+inDir)
+        basePath = sys.path[0]
+        if basePath == '' and len(sys.path) > 1:
+            # Handle redundant empty string when running from IDE
+            basePath = sys.path[1]
+        self.ImportAbsDir(basePath+'/'+inDir)
             
     @classmethod
     def RegisterMenuEntry(cls, inObj, inName, inParams):

@@ -14,21 +14,23 @@ class XSFeatureHostInfo:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField("Host Performance Information")
-        
-        host = HotAccessor().local_host
-        localCPUs = [cpu for cpu in host.host_CPUs]
-        try:
-            cpuUsage = sum( [cpu.utilisation() for cpu in localCPUs] ) / len(localCPUs) # Allow divide-by-zero to throw
-            cpuUsage = max(0.0, min(1.0, cpuUsage))
-            cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), len(localCPUs))
-        except Exception, e:
-            cpuUsageStr = Lang('<Unavailable>')
+
+        localHostMetrics = HotMetrics.Inst().LocalHostMetrics()
 
         try:
-            totalMemory = float(host.metrics.memory_total(0))
-            freeMemory = float(host.metrics.memory_free(0))
+            cpuUsage = localHostMetrics['cpuusage']
+            cpuUsage = max(0.0, min(1.0, cpuUsage))
+            cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), localHostMetrics['numcpus'])
+        except Exception, e:
+            cpuUsageStr = Lang('<Unavailable>'+str(e))
+
+        try:
+            totalMemory = localHostMetrics['memory_total']
+            freeMemory = localHostMetrics['memory_free']
             memoryUsage = (totalMemory - freeMemory) / totalMemory # Allow divide-by-zero to throw
             memoryUsage = max(0.0, min(1.0, memoryUsage))
+            # Increase memory slightly to counteract metrics error
+            totalMemory *= 1.001
             memoryUsageStr = "%d%% of %s" % (int(memoryUsage * 100), SizeUtils.MemorySizeString(totalMemory))
         except Exception, e:
             memoryUsageStr = Lang('<Unavailable>')
