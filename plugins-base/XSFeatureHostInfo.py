@@ -14,15 +14,18 @@ class XSFeatureHostInfo:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         inPane.AddTitleField("Host Performance Information")
-
-        localHostMetrics = HotMetrics.Inst().LocalHostMetrics()
-
+        try:
+            localHostMetrics = HotMetrics.Inst().LocalHostMetrics()
+        except Exception, e:
+            XSLogOnce('LocalHostMetrics failed', e)
+            localHostMetrics = {}
+        
         try:
             cpuUsage = localHostMetrics['cpuusage']
             cpuUsage = max(0.0, min(1.0, cpuUsage))
             cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), localHostMetrics['numcpus'])
         except Exception, e:
-            cpuUsageStr = Lang('<Unavailable>'+str(e))
+            cpuUsageStr = Lang('<Unavailable>')
 
         try:
             totalMemory = localHostMetrics['memory_total']

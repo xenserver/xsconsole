@@ -19,6 +19,7 @@ from XSConsoleImporter import *
 from XSConsoleLang import *
 from XSConsoleLangFriendlyNames import *
 from XSConsoleLayout import *
+from XSConsoleLog import *
 from XSConsoleMenus import *
 from XSConsoleMetrics import *
 from XSConsoleTask import *

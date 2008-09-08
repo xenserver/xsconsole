@@ -8,3 +8,6 @@
 def XSLog(*inParams):
     pass
     
+def XSLogOnce(*inParams):
+    pass
+    
