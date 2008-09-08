@@ -288,11 +288,11 @@ class ClaimSRDialogue(Dialogue):
         Layout.Inst().TransientBanner(Lang("Claiming and Configuring Disk..."))
 
         if self.typeChoice == 'SRONLY':
-            options = '--sr-only '
+            pipe = ShellPipe(
+                "/opt/xensource/libexec/delete-partitions-and-claim-disk", '--sr-only', self.deviceToErase.device)
         else:
-            options = ''
-        pipe = ShellPipe(
-            "/opt/xensource/libexec/delete-partitions-and-claim-disk", options+self.deviceToErase.device)
+            pipe = ShellPipe(
+                "/opt/xensource/libexec/delete-partitions-and-claim-disk", self.deviceToErase.device)
         status = pipe.CallRC()
         
         time.sleep(4) # Allow xapi to pick up the new SR
