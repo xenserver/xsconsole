@@ -291,13 +291,15 @@ class ClaimSRDialogue(Dialogue):
             options = '--sr-only '
         else:
             options = ''
-        status, output = commands.getstatusoutput(
-            "/opt/xensource/libexec/delete-partitions-and-claim-disk "+options+self.deviceToErase.device+" 2>&1")
+        pipe = ShellPipe(
+            "/opt/xensource/libexec/delete-partitions-and-claim-disk", options+self.deviceToErase.device)
+        status = pipe.CallRC()
         
         time.sleep(4) # Allow xapi to pick up the new SR
         Data.Inst().Update() # Read information about the new SR
         
         if status != 0:
+            output = "\n".join(pipe.AllOutput())
             Layout.Inst().PopDialogue()
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
         else:
