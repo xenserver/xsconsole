@@ -53,6 +53,31 @@ class HotMetrics:
 
         return retVal
 
+    def VMMetrics(self, inUUID):
+        self.UpdateMetrics()
+        retVal = {}
+        vmPrefix = r'AVERAGE:vm:' + inUUID
+
+        cpuRE = re.compile(vmPrefix+r':cpu[0-9]+')
+        cpuValues = [ float(v) for k, v in self.data.iteritems() if cpuRE.match(k) ]
+        retVal['numcpus'] = len(cpuValues)
+        if len(cpuValues) == 0:
+            retVal['cpuusage'] = None
+        else:
+            retVal['cpuusage'] = sum(cpuValues) / len(cpuValues)
+
+        try:
+            retVal['memory_total'] = float(self.data[vmPrefix +':memory']) # Not scaled
+        except Exception, e:
+            retVal['memory_total'] = None
+        
+        try:
+            retVal['memory_free'] = float(self.data[vmPrefix +':memory_internal_free']) * 1024.0 # Value is in kiB
+        except Exception, e:
+            retVal['memory_free'] = None
+
+        return retVal
+
     def UpdateMetrics(self):
         timeNow = time.time()
         if self.timestamp is None or abs(timeNow - self.timestamp) > self.LIFETIME_SECS:

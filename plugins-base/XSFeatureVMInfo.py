@@ -37,6 +37,12 @@ class XSFeatureVMInfo:
         if vm is None:
             inPane.AddWrappedTextField(Lang("This Virtual Machine is no longer present"))
         else:
+            try:
+                vmMetrics = HotMetrics.Inst().VMMetrics(vm.uuid())
+            except Exception, e:
+                XSLogOnce('VMMetrics failed', e)
+                vmMetrics = {}
+            
             powerState = vm.power_state(Lang('<Unknown>'))
             isRunning = powerState.lower().startswith('running')
             inPane.AddWrappedTextField(vm.name_label())
@@ -44,14 +50,13 @@ class XSFeatureVMInfo:
             inPane.AddStatusField(Lang("Power State", 16), powerState)
             inPane.AddStatusField(Lang("Memory", 16), SizeUtils.MemorySizeString(vm.memory_static_max(0)))
             try:
-                if isRunning:
-                    perCPUUsage = vm.metrics.VCPUs_utilisation({})
-
-                    cpuUsage = sum(perCPUUsage.values()) / len(perCPUUsage) # Let divide by zero throw
+                cpuUsage = vmMetrics['cpuusage']
+                numCPUs = vmMetrics['numcpus']
+                if isRunning and cpuUsage is not None:
                     cpuUsage = max(0, min(cpuUsage, 1))
-                    cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), len(perCPUUsage))
+                    cpuUsageStr = "%d%% of %d CPUs" % (int(cpuUsage * 100), numCPUs)
                 else:
-                    cpuUsageStr = '-' # Follow XenCenter convention
+                    cpuUsageStr = Lang('<Unavailable>')
 
             except Exception, e:
                 cpuUsageStr = Lang('<Unknown>')
@@ -60,10 +65,11 @@ class XSFeatureVMInfo:
 
             if isRunning:
                 try:
-                    freeMemoryKB = vm.guest_metrics.memory({})['free'] # returns a string or throws
-                    freeMemory = int(freeMemoryKB) * 1024.0 # int converts from string here
-                    usedMemory = int(vm.memory_static_max(0)) - freeMemory
-                    memoryUsage = usedMemory / int(vm.memory_static_max(1))
+                    totalMemory = vmMetrics['memory_total']
+                    freeMemory = vmMetrics['memory_free']
+
+                    usedMemory = totalMemory - freeMemory
+                    memoryUsage = usedMemory / totalMemory
                     memoryUsage = max(0, min(memoryUsage, 1))
                     memoryUsageStr = "%d%% (%s)" % (int(memoryUsage * 100), SizeUtils.MemorySizeString(usedMemory))
                 except Exception, e:
