@@ -90,6 +90,7 @@ class CursesPane:
         self.yOffset = inYOffset
         self.yClipMin = 0
         self.yClipMax = self.ySize
+        self.title = ""
         
     def HasBox(self):
         return self.hasBox
@@ -242,6 +243,19 @@ class CursesPane:
         except:
             pass
         self.win.cursyncup()
+
+    def Snapshot(self):
+        retVal = []
+        if self.title != "":
+            retVal.append(self.title)
+        if self.hasBox:
+            for i in range(1, self.ySize-1):
+                retVal.append(self.win.instr(i, 1, self.xSize-2))
+        else:
+            for i in range(self.ySize):
+                retVal.append(self.win.instr(i, 0, self.xSize))
+                
+        return retVal
 
 class CursesWindow(CursesPane):
     def __init__(self, inXPos, inYPos, inXSize, inYSize, inParent):

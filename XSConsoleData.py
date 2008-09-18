@@ -48,7 +48,11 @@ class Data:
         if cls.instance is not None:
             del cls.instance
             cls.instance = None
-            
+    
+    def DataCache(self):
+        # Not for general use
+        return self.data
+    
     def GetData(self, inNames, inDefault = None):
         data = self.data
         for name in inNames:

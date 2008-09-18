@@ -93,7 +93,7 @@ class PoolNewMasterDialogue(Dialogue):
         try:
             Layout.Inst().TransientBanner(Lang('Designating New Pool Master...'))
             hostUtils.DoOperation('designate_new_master', self.newMaster.HotOpaqueRef())
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("The Pool Master has Been Changed"), Lang('Please allow several seconds for the change to propagate throughout the Pool.')))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("The Pool Master Has Been Changed"), Lang('Please allow several seconds for the change to propagate throughout the Pool.')))
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed to Designate New Pool Master"), Lang(e)))
             

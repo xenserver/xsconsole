@@ -20,10 +20,20 @@ def Lang(inLabel, inPad = 0):
     
 class Language:
     instance = None
+    stringHook = None
+    errorHook = None
     
     def __init__(self):
         self.brandingMap = Config.Inst().BrandingMap()
     
+    @classmethod
+    def SetStringHook(cls, inHook):
+        cls.stringHook = inHook
+    
+    @classmethod
+    def SetErrorHook(cls, inHook):
+        cls.errorHook = inHook
+
     @classmethod
     def Inst(self):
         if self.instance is None:
@@ -48,10 +58,16 @@ class Language:
     def ToString(cls, inLabel):
         if isinstance(inLabel, XenAPI.Failure):
             retVal = cls.XapiError(inLabel.details)
+            if cls.errorHook is not None:
+                cls.errorHook(retVal)
         elif isinstance(inLabel, Exception):
             retVal = str(inLabel)
+            if cls.errorHook is not None:
+                cls.errorHook(retVal)
         else:
             retVal = inLabel
+            if cls.stringHook is not None:
+                cls.stringHook(retVal)
         return retVal
 
     @classmethod

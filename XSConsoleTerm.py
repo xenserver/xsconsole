@@ -17,10 +17,19 @@ from XSConsoleImporter import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
 from XSConsoleLayout import *
+from XSConsoleRemoteTest import *
 from XSConsoleRootDialogue import *
 from XSConsoleState import *
 
 class App:
+    __instance = None
+    
+    @classmethod
+    def Inst(cls):
+        if cls.__instance is None:
+            cls.__instance = App()
+        return cls.__instance
+        
     def __init__(self):
         self.cursesScreen = None
     
@@ -47,9 +56,7 @@ class App:
             HotData.Inst().Dump()
             doQuit = True
         
-        # Purge leftover VBDs at startup
-        # Removed following API change
-        # Data.Inst().PurgeVBDs()
+        RemoteTest.Inst().SetApp(self)
         
         # Reinstate keymap
         if State.Inst().Keymap() is not None:
@@ -138,35 +145,61 @@ class App:
                 sys.stderr.write(Lang(e)+"\n")
                 doQuit = True
                 raise
+    
+    def NeedsRefresh(self):
+        self.needsRefresh = True
+    
+    def HandleKeypress(self, inKeypress):
+        handled = True
+        Auth.Inst().KeepAlive()
+        self.lastWakeSeconds = time.time()
+        if self.layout.TopDialogue().HandleKey(inKeypress):
+            State.Inst().SaveIfRequired()
+            self.needsRefresh = True
+        elif inKeypress == 'KEY_ESCAPE':
+            # Set root menu choice to the first, to give a fixed start state after lots of escapes
+            self.layout.TopDialogue().Reset()
+            self.needsRefresh = True
+        elif inKeypress == 'KEY_F(5)':
+            Data.Inst().Update()
+            self.layout.UpdateRootFields()
+            self.needsRefresh = True
+        elif inKeypress == '\014': # Ctrl-L
+            Layout.Inst().Clear() # Full redraw
+            self.needsRefresh = True
+        else:
+            handled = False
         
-
+        return handled
+        
     def MainLoop(self):
-
         doQuit= False
         startSeconds = time.time()
         lastDataUpdateSeconds = startSeconds
         lastScreenUpdateSeconds = startSeconds
         lastGarbageCollectSeconds = startSeconds
-        lastWakeSeconds = startSeconds
+        self.lastWakeSeconds = startSeconds
         resized = False
         data = Data.Inst()
         errorCount = 0
         
         self.layout.DoUpdate()
         while not doQuit:
-            needsRefresh = False
-            
+            self.needsRefresh = False
+            gotTestCommand = RemoteTest.Inst().Poll()
             secondsNow = time.time()
             try:
-                if secondsNow - lastWakeSeconds > State.Inst().SleepSeconds():
+                if gotTestCommand:
+                    gotKey = None # Prevent delay whilst waiting for a keypress
+                elif secondsNow - self.lastWakeSeconds > State.Inst().SleepSeconds():
                     gotKey = None
                     Layout.Inst().PushDialogue(BannerDialogue(Lang("Press any key to access this console")))
                     Layout.Inst().Refresh()
                     Layout.Inst().DoUpdate()
                     self.layout.Window(Layout.WIN_MAIN).GetKeyBlocking()
 
-                    lastWakeSeconds = time.time()
-                    needsRefresh = True
+                    self.lastWakeSeconds = time.time()
+                    self.needsRefresh = True
                     Layout.Inst().PopDialogue()
                 else:
                     gotKey = self.layout.Window(Layout.WIN_MAIN).GetKey()
@@ -180,8 +213,7 @@ class App:
             if gotKey == "\177": gotKey = "KEY_BACKSPACE"
             if gotKey == '\xc2': gotKey = "KEY_F(5)" # Handle function key mistranslation on vncterm
             if gotKey == '\xc5': gotKey = "KEY_F(8)" # Handle function key mistranslation on vncterm
-            
-            
+
             if gotKey == 'KEY_RESIZE':
                 resized = True
             elif resized and gotKey is not None:
@@ -203,31 +235,16 @@ class App:
                     lastDataUpdateSeconds = secondsNow
                     data.Update()
                     self.layout.UpdateRootFields()
-                    needsRefresh = True
+                    self.needsRefresh = True
     
             if secondsNow - lastScreenUpdateSeconds >= 4:
                 lastScreenUpdateSeconds = secondsNow
                 self.layout.UpdateRootFields()
-                needsRefresh = True
+                self.needsRefresh = True
                 
             if gotKey is not None:
                 try:
-                    Auth.Inst().KeepAlive()
-                    lastWakeSeconds = secondsNow
-                    if self.layout.TopDialogue().HandleKey(gotKey):
-                        State.Inst().SaveIfRequired()
-                        needsRefresh = True
-                    elif gotKey == 'KEY_ESCAPE':
-                        # Set root menu choice to the first, to give a fixed start state after lots of escapes
-                        self.layout.TopDialogue().Reset()
-                        needsRefresh = True
-                    elif gotKey == 'KEY_F(5)':
-                        data.Update()
-                        self.layout.UpdateRootFields()
-                        needsRefresh = True
-                    elif gotKey == '\014': # Ctrl-L
-                        Layout.Inst().Clear() # Full redraw
-                        needsRefresh = True
+                    self.HandleKeypress(gotKey)
                         
                 except Exception, e:
                     if Auth.Inst().IsTestMode():
@@ -257,7 +274,7 @@ class App:
             statusLine = ("%-35s%10.10s%35.35s" % (bannerStr[:35], timeStr[:10], hostStr[:35]))
             self.renderer.RenderStatus(self.layout.Window(Layout.WIN_TOPLINE), statusLine)
 
-            if needsRefresh:
+            if self.needsRefresh:
                 self.layout.Refresh()
             elif self.layout.LiveUpdateFields():
                 self.layout.Refresh()

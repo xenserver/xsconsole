@@ -250,3 +250,11 @@ class DialoguePane:
     def Delete(self):
         self.Win().Delete()
         self.window = None
+
+    def Snapshot(self):
+        if self.window is None:
+            retVal = []
+        else:
+            retVal = self.window.Snapshot()
+        return retVal
+        

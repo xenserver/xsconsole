@@ -160,7 +160,7 @@ class Auth:
             session.login_with_password('root','')
         except Exception,  e:
             session = None
-            self.error = Lang(e)
+            self.error = e
             
         if session is None and self.testingHost is not None:
             # Local session couldn't connect, so try remote.
@@ -171,10 +171,10 @@ class Auth:
             except XenAPI.Failure, e:
                 if e.details[0] != 'HOST_IS_SLAVE': # Ignore slave errors when testing
                     session = None
-                    self.error = Lang(e)
+                    self.error = e
             except Exception, e:
                 session = None
-                self.error = Lang(e)
+                self.error = e
         return session
     
     def NewSession(self):

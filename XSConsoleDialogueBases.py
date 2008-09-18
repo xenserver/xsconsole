@@ -60,6 +60,12 @@ class Dialogue:
         # Reset to known state, e.g. first menu item selected
         pass
 
+    def Snapshot(self):
+        retVal = []
+        for key in sorted(self.panes.keys()):
+            retVal.append(self.panes[key].Snapshot())
+        return retVal
+        
 class InfoDialogue(Dialogue):
     def __init__(self, inText,  inInfo = None):
         Dialogue.__init__(self)
@@ -98,7 +104,7 @@ class InfoDialogue(Dialogue):
             self.Pane().ScrollPageDown()
         else:
             handled = False
-        return True
+        return handled
 
 class BannerDialogue(Dialogue):
     def __init__(self, inText):
@@ -532,7 +538,7 @@ class InputDialogue(Dialogue):
             pass # Leave handled as True
         else:
             handled = False
-        return True
+        return handled
         
 class SRDialogue(Dialogue):
     def __init__(self):

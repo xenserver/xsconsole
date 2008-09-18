@@ -125,7 +125,12 @@ class Layout:
     
     def CreateRootDialogue(self, inRootDialogue):
         self.dialogues = [ inRootDialogue ]
-        
+    
+    def Reset(self):
+        while len(self.dialogues) > 1:
+            self.PopDialogue()
+        self.TopDialogue().Reset()
+    
     def Refresh(self):
         self.Window(self.WIN_MAIN).Erase() # Unknown why main won't redraw without this
         for window in self.windows:

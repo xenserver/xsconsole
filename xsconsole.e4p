@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.2.dtd">
 <!-- eric4 project file for project xsconsole -->
-<!-- Saved: 2008-09-04, 18:50:53 -->
+<!-- Saved: 2008-09-16, 18:57:31 -->
 <!-- Copyright (C) 2008 ,  -->
 <Project version="4.2">
   <ProgLanguage mixed="0">Python</ProgLanguage>
@@ -287,6 +287,13 @@
     </Source>
     <Source>
       <Name>XSConsoleMetrics.py</Name>
+    </Source>
+    <Source>
+      <Dir>plugins-base</Dir>
+      <Name>XSTestRPC.py</Name>
+    </Source>
+    <Source>
+      <Name>XSConsoleRemoteTest.py</Name>
     </Source>
   </Sources>
   <Forms>

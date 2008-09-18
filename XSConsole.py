@@ -21,7 +21,7 @@ def main():
         else:
             print
     else:
-        app = App()
+        app = App.Inst()
         app.Build( ['plugins-base', 'plugins-oem', 'plugins-extras'] )
         app.Enter()
 
