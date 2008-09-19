@@ -46,7 +46,7 @@ class OEMBackupDialogue(FileDialogue):
         Layout.Inst().PopDialogue()
         
         Layout.Inst().PushDialogue(BannerDialogue(
-            Lang("Saving to backup... This make take several minutes.  Press <Ctrl-C> to abort.")))
+            Lang("Saving to backup... This may take several minutes.  Press <Ctrl-C> to abort.")))
             
         try:
             try:

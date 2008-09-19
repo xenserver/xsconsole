@@ -300,6 +300,7 @@ class ClaimSRDialogue(Dialogue):
         
         if status != 0:
             output = "\n".join(pipe.AllOutput())
+            XSLogFailure("Disk claim failed", output)
             Layout.Inst().PopDialogue()
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Disk Claim Failed"), output))
         else:
