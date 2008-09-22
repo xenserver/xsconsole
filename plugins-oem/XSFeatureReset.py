@@ -42,9 +42,9 @@ class ResetDialogue(Dialogue):
         pane.ResetFields()
         
         pane.AddWarningField(Lang("WARNING"))
-        pane.AddWrappedTextField(Lang("This function will delete ALL configuration information, ALL virtual machines "
-            "and ALL information within Storage Repositories on local disks.  "
-            "This operation cannot be undone.  Do you want to continue?"))
+        pane.AddWrappedTextField(Lang("This function will delete ALL configuration information, " 
+            "ALL virtual machines and ALL information within Storage Repositories on local disks.  "
+            "This host will then immediately reboot.  This operation cannot be undone.  Do you want to continue?"))
         pane.AddKeyHelpField( { Lang("<F8>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
     def UpdateFieldsCONFIRM(self):
@@ -52,7 +52,7 @@ class ResetDialogue(Dialogue):
         pane.ResetFields()
         
         pane.AddWrappedBoldTextField(Lang("Press <Enter> to confirm that you want to reset configuration data and "
-            "erase all information in Storage Repositories on local disks.  "
+            "erase all information in Storage Repositories on local disks, and reboot.  "
             "The data cannot be recovered after this step."))
 
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Reset to Factory Defaults"), Lang("<Esc>") : Lang("Cancel") } )
@@ -87,11 +87,22 @@ class ResetDialogue(Dialogue):
         return handled
 
     def DoAction(self):
-        Layout.Inst().ExitBannerSet(Lang("Resetting..."))
-        Layout.Inst().SubshellCommandSet("/opt/xensource/libexec/revert-to-factory yesimeanit && sleep 2")
+        Layout.Inst().PopDialogue()
         Data.Inst().SetVerboseBoot(False)
-        State.Inst().RebootMessageSet(Lang("This server must reboot to complete the reset process.  Reboot the server now?"))
-
+        try:
+            Layout.Inst().TransientBanner(Lang('Stopping Virtual Machines...'))
+            ShellPipe('service', 'xapi-domains', 'stop').Call()
+        except Exception, e:
+            Layout.Inst().TransientBanner(Lang('Could not stop Virtual Machines: ' + Lang(e)))
+            time.sleep(3.0)
+        try:
+            Layout.Inst().TransientBanner(Lang('Resetting to Factory Defaults...'))          
+            ShellPipe('/opt/xensource/libexec/revert-to-factory', 'yesimeanit').Call()
+            Layout.Inst().TransientBanner(Lang('Rebooting...'))    
+            Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
+            Layout.Inst().SubshellCommandSet("/sbin/reboot -f") # -f avoids running init scripts on shutdown
+        except Exception, e:
+            Layout.Inst().PushDialogue(InfoDialogue(Lang('Reset to Factory Defaults Failed'), Lang(e)))
 
 class XSFeatureReset:
     @classmethod
