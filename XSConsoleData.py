@@ -371,14 +371,8 @@ class Data:
         IPUtils.AssertValidNetworkName(inHostname)
         
         self.RequireSession()
-        
-        # Don't treat name-label as hostname
-        # self.session.xenapi.host.set_name_label(self.host.opaqueref(), inHostname)
-        
-        self.data['sysconfig']['network']['hostname'] = inHostname
-        self.SaveToSysconfig()
 
-        ShellPipe("/bin/hostname", inHostname).Call()
+        self.session.xenapi.host.set_hostname_live(self.host.opaqueref(), inHostname)
 
     def NameLabelSet(self, inNameLabel):
         self.RequireSession()
