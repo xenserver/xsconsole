@@ -36,6 +36,9 @@ class OEMRestoreDialogue(FileDialogue):
                 Layout.Inst().Refresh()
                 Layout.Inst().DoUpdate()
                 
+                if len(HotAccessor().local_host.resident_VMs([])) > 1: # Count includes dom0
+                    raise Exception(Lang("One or more Virtual Machines are running on this host.  Please migrate, shut down or suspend Virtual Machines before continuing."))
+                
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
                     raise Exception("Internal error 1")
