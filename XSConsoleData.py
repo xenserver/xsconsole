@@ -943,6 +943,11 @@ class Data:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.Inst().CloseSession(self.session)
     
+    def LocalHostDisable(self):
+        Auth.Inst().AssertAuthenticatedOrPasswordUnset()
+        self.RequireSession()
+        self.session.xenapi.host.disable(self.host.opaqueref())
+
     def ConfigureRemoteShell(self, inEnable):
         if inEnable:
             status, output = commands.getstatusoutput("/sbin/chkconfig sshd on")

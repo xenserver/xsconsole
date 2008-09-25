@@ -26,6 +26,7 @@ class XSFeatureShutdown:
     def ShutdownReplyHandler(cls,  inYesNo):
         if inYesNo == 'y':
             try:
+                Data.Inst().LocalHostDisable()
                 Layout.Inst().ExitBannerSet(Lang("Shutting Down..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -h now')
             except Exception, e:

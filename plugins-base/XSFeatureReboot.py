@@ -26,6 +26,7 @@ class XSFeatureReboot:
     def RebootReplyHandler(cls,  inYesNo):
         if inYesNo == 'y':
             try:
+                Data.Inst().LocalHostDisable()
                 Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
             except Exception, e:
