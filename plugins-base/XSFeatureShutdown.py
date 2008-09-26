@@ -26,7 +26,12 @@ class XSFeatureShutdown:
     def ShutdownReplyHandler(cls,  inYesNo):
         if inYesNo == 'y':
             try:
-                Data.Inst().LocalHostDisable()
+                try:
+                    Data.Inst().LocalHostDisable()
+                except XenAPI.Failure:
+                    raise
+                except:
+                    pass # Ignore non-xapi failure - we want HA to veto the shutdown but not other problems
                 Layout.Inst().ExitBannerSet(Lang("Shutting Down..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -h now')
             except Exception, e:

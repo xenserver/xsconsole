@@ -26,7 +26,12 @@ class XSFeatureReboot:
     def RebootReplyHandler(cls,  inYesNo):
         if inYesNo == 'y':
             try:
-                Data.Inst().LocalHostDisable()
+                try:
+                    Data.Inst().LocalHostDisable()
+                except XenAPI.Failure:
+                    raise
+                except:
+                    pass # Ignore non-xapi failure - we want HA to veto the reboot but not other problems
                 Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
             except Exception, e:
