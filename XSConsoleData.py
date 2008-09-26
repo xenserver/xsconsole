@@ -943,6 +943,11 @@ class Data:
             # Network reconfigured so this link is potentially no longer valid
             self.session = Auth.Inst().CloseSession(self.session)
     
+    def LocalHostEnable(self):
+        Auth.Inst().AssertAuthenticatedOrPasswordUnset()
+        self.RequireSession()
+        self.session.xenapi.host.enable(self.host.opaqueref())
+        
     def LocalHostDisable(self):
         Auth.Inst().AssertAuthenticatedOrPasswordUnset()
         self.RequireSession()

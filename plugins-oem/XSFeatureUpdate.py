@@ -30,7 +30,9 @@ class UpdateDialogue(FileDialogue):
         
         Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Applying update... This may take several minutes.  Press <Ctrl-C> to abort.")))
-            
+        
+        hostEnabled = Data.Inst().host.enabled(False)
+
         try:
             try:
                 Layout.Inst().Refresh()
@@ -38,6 +40,8 @@ class UpdateDialogue(FileDialogue):
                 
                 if len(HotAccessor().local_host.resident_VMs([])) > 1: # Count includes dom0
                     raise Exception(Lang("One or more Virtual Machines are running on this host.  Please migrate, shut down or suspend Virtual Machines before continuing."))
+
+                Data.Inst().LocalHostDisable()
 
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
@@ -54,6 +58,7 @@ class UpdateDialogue(FileDialogue):
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Update Successful"), Lang("Please reboot to use the newly installed software.")))
+                hostEnabled = False
 
             except Exception, e:
                 Layout.Inst().PopDialogue()
@@ -62,6 +67,9 @@ class UpdateDialogue(FileDialogue):
         finally:
             try:
                 self.PreExitActions()
+                if hostEnabled:
+                    # Dont leave the host disabled if the update has failed
+                    Data.Inst().LocalHostEnable()
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Software Update Failed"), Lang(e)))
 

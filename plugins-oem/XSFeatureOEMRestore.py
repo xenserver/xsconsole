@@ -31,6 +31,8 @@ class OEMRestoreDialogue(FileDialogue):
         Layout.Inst().PushDialogue(BannerDialogue(
             Lang("Restoring from backup... This may take several minutes.")))
             
+        hostEnabled = Data.Inst().host.enabled(False)
+        
         try:
             try:
                 Layout.Inst().Refresh()
@@ -38,6 +40,8 @@ class OEMRestoreDialogue(FileDialogue):
                 
                 if len(HotAccessor().local_host.resident_VMs([])) > 1: # Count includes dom0
                     raise Exception(Lang("One or more Virtual Machines are running on this host.  Please migrate, shut down or suspend Virtual Machines before continuing."))
+
+                Data.Inst().LocalHostDisable()
                 
                 hostRef = Data.Inst().host.uuid(None)
                 if hostRef is None:
@@ -53,7 +57,8 @@ class OEMRestoreDialogue(FileDialogue):
                 
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(
-                    Lang("Restore Successful"), Lang("Please reboot to use the new backup.")))
+                    Lang("Restore Successful"), Lang("Please reboot to use the restored state.")))
+                hostEnabled = False
 
             except Exception, e:
                 Layout.Inst().PopDialogue()
@@ -62,6 +67,9 @@ class OEMRestoreDialogue(FileDialogue):
         finally:
             try:
                 self.PreExitActions()
+                if hostEnabled:
+                    # Dont leave the host disabled if restoration has failed
+                    Data.Inst().LocalHostEnable()
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Restore Failed"), Lang(e)))
 
