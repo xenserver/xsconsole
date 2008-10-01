@@ -72,10 +72,19 @@ class XSFeatureSystem:
         data = Data.Inst()
         
         inPane.AddTitleField(Lang("System Memory"))
-            
-        inPane.AddStatusField(Lang("Total memory", 27), str(data.dmi.memory_size())+' MB')
-        inPane.AddStatusField(Lang("Populated memory sockets", 27), str(data.dmi.memory_modules()))
-        inPane.AddStatusField(Lang("Total memory sockets", 27), str(data.dmi.memory_sockets()))
+        
+        xapiMemory = int(data.host.metrics.memory_total(0)) /  1048576 # Convert from bytes to MB
+        dmiMemory = data.dmi.memory_size(0)
+        
+        if xapiMemory != 0 and (dmiMemory < xapiMemory * 0.9 or dmiMemory > xapiMemory * 1.1):
+            # DMI memory doesn't agree with xapi, probably due to errors in the
+            # BIOS DMI information.  Prefer xapi's value
+            inPane.AddStatusField(Lang("Total memory", 26), str(int(xapiMemory))+' MB')
+            # Don't display possibly invalid socket information
+        else:
+            inPane.AddStatusField(Lang("Total memory", 26), str(int(dmiMemory))+' MB')
+            inPane.AddStatusField(Lang("Populated memory sockets", 26), str(data.dmi.memory_modules()))
+            inPane.AddStatusField(Lang("Total memory sockets", 26), str(data.dmi.memory_sockets()))
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
