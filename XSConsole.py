@@ -7,13 +7,15 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import sys
+import sys, traceback
 
 from XSConsoleConfig import *
-from XSConsoleTerm import *
 from XSConsoleLang import *
+from XSConsoleLog import *
+from XSConsoleTerm import *
 
 def main():
+    XSLog('Started as ' + ' '.join(sys.argv))
     if '--shelltimeout' in sys.argv:
         # Print a shell timeout value, suitable for TMOUT=`xsconsole --shelltimeout`
         if Config.Inst().AllShellsTimeout():
@@ -29,5 +31,11 @@ if __name__ == "__main__":
     try:
         main()
     except Exception, e:
-        print Lang(e)
+        # Add backtrace to log
+        try:
+            trace = traceback.format_tb(sys.exc_info()[2])
+        except:
+            trace = ['Traceback not available']
+        XSLogFatal(*trace)
+        XSLogFatal('*** Exit caused by unhandled exception: ', str(e))
         raise

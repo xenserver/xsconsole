@@ -17,7 +17,7 @@ class XSFeatureHostInfo:
         try:
             localHostMetrics = HotMetrics.Inst().LocalHostMetrics()
         except Exception, e:
-            XSLogOnce('LocalHostMetrics failed', e)
+            XSLogFailure('LocalHostMetrics failed', e)
             localHostMetrics = {}
         
         try:

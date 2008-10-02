@@ -35,7 +35,7 @@ class Keymaps:
         Lang("Norwegian") : 'no-latin1',
         Lang("Polish") : 'pl2',
         Lang("Portugese") : 'pt-latin1',
-        Lang("Romanian") : 'ro_win',
+        Lang("Romanian") : 'ro',
         Lang("Russian") : 'ru',
         Lang("Slovakian") : 'sk-qwertz',
         Lang("Slovenian") : 'slovene',

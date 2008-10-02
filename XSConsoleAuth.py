@@ -10,6 +10,7 @@ import PAM # From PyPAM module
 
 from XSConsoleBases import *
 from XSConsoleLang import *
+from XSConsoleLog import *
 from XSConsoleState import *
 from XSConsoleUtils import *
 
@@ -129,6 +130,7 @@ class Auth:
             self.loggedInPassword = inPassword
         self.authTimestampSeconds = time.time()
         self.isAuthenticated = True
+        XSLog('User authenticated successfully')
         
     def IsAuthenticated(self):
         if self.isAuthenticated and self.AuthAge() <= State.Inst().AuthTimeoutSeconds():

@@ -9,6 +9,7 @@ import os, popen2, sys
 from pprint import pprint
 
 from XSConsoleBases import *
+from XSConsoleLog import *
 
 oldPath = sys.path
 sys.path = ['/opt/xensource/sm'] + sys.path
@@ -40,8 +41,9 @@ class RemoteDB:
                 retVal = shared_db_util.get_local_iqn_from_xapi()
                 if retVal <> '':
                     return retVal
-            except:
-                pass 
+            except Exception, e:
+                XSLogError('Failed to get IQN from xapi', e)
+                
         # Otherwise use the database read tool
         retVal = shared_db_util.get_local_iqn(False) # Try local conf file
         if retVal == '':

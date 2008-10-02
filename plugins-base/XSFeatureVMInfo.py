@@ -40,7 +40,7 @@ class XSFeatureVMInfo:
             try:
                 vmMetrics = HotMetrics.Inst().VMMetrics(vm.uuid())
             except Exception, e:
-                XSLogOnce('VMMetrics failed', e)
+                XSLogFailure('VMMetrics failed', e)
                 vmMetrics = {}
             
             powerState = vm.power_state(Lang('<Unknown>'))

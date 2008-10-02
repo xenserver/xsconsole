@@ -14,6 +14,7 @@ from XSConsoleAuth import *
 from XSConsoleRemoteDB import *
 from XSConsoleKeymaps import *
 from XSConsoleLang import *
+from XSConsoleLog import *
 from XSConsoleState import *
 from XSConsoleUtils import *
 
@@ -185,7 +186,7 @@ class Data:
                     try:
                         retVal['network'] = self.session.xenapi.network.get_record(retVal['network'])
                     except XenAPI.Failure, e:
-                        pass # Ignore failure
+                        XSLogError('Missing network record: ', e)
                         
                     retVal['opaqueref'] = inPIF
                     return retVal
@@ -279,7 +280,7 @@ class Data:
                    self.data['pools'][id] = convertPool(id, pool)
 
             except Exception, e:
-                pass # Ignore failure - just leave data empty
+                XSLogError('Data update failed: ', e)
 
             try:
                 self.data['sr'] = []
@@ -298,8 +299,8 @@ class Data:
                             
                     self.data['sr'].append(values)
                     
-            except:
-                pass # Ignore failure - just leave data empty
+            except Exception, e:
+                XSLogError('SR data update failed: ', e)
 
         self.UpdateFromResolveConf()
         self.UpdateFromSysconfig()
@@ -475,8 +476,8 @@ class Data:
                     if match:
                         alternateVersion = match.group(1)
                         break
-            except:
-                pass # Ignore missing files error on non-OEM, etc
+            except Exception, e:
+                XSLog('UpdateFromPatchVersions failed: ', e)
         finally:
             # Undefined variables raise exceptions, so this code will only undo operations that succeeded
             try: inventoryFile.close()
@@ -811,7 +812,7 @@ class Data:
         self.data['keyboard']['namestomaps'] = Keymaps.NamesToMaps()
         for value in self.data['keyboard']['namestomaps'].values():
             if not value in self.data['keyboard']['keymaps']:
-                print "Warning: Missing keymap " + value
+                XSLogError("Warning: Missing keymap " + value)
     
     def KeymapSet(self, inKeymap):
         # mapFile = self.keyboard.keymaps().get(inKeymap, None)
@@ -1098,8 +1099,8 @@ class Data:
                 if vbd['currently_attached']:
                     self.UnplugVBD(vbd)
                 self.DestroyVBD(vbd)
-            except Exception:
-                pass # Fail silently
+            except Exception, e:
+                XSLogError('VBD purge failed', e)
     
     def IsXAPIRunning(self):
         try:

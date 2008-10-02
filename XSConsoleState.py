@@ -9,6 +9,7 @@ import re, os, pickle
 
 from XSConsoleBases import *
 from XSConsoleLang import *
+from XSConsoleLog import *
 
 class State:
     instance = None
@@ -132,6 +133,6 @@ class State:
             pickler.dump(self)
             saveFile.close()
         except Exception, e:
-            pass # Ignore failure
+            XSLogFailure('Failed to save state file', e)
 
 

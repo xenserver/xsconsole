@@ -17,6 +17,7 @@ from XSConsoleImporter import *
 from XSConsoleMenus import *
 from XSConsoleLang import *
 from XSConsoleLayout import *
+from XSConsoleLog import *
 from XSConsoleRemoteTest import *
 from XSConsoleRootDialogue import *
 from XSConsoleState import *
@@ -40,6 +41,11 @@ class App:
             Importer.ImportRelativeDir(dir)
     
     def Enter(self):
+        startTime = time.time()
+        Data.Inst().Update()
+        elapsedTime = time.time() - startTime
+        XSLog('Loaded initial xapi and system data in %.3f seconds' % elapsedTime)
+        
         doQuit = False
         
         if '--dump' in sys.argv:
@@ -91,12 +97,14 @@ class App:
                         Data.Inst().Update()
                         
                     if not Data.Inst().IsXAPIRunning() and State.Inst().RebootMessage() is None:
+                        XSLog("Displaying 'xapi is not running' dialogue")
                         self.layout.PushDialogue(QuestionDialogue(
                             Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
                                  "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
 
                     # Request password change on first boot, or if it isn't set
                     if not Auth.Inst().IsPasswordSet() :
+                        XSLog("Displaying 'Please specify a password' dialogue")
                         Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please specify a password for user 'root' before continuing"))
                     elif State.Inst().PasswordChangeRequired():
                         Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please change the password for user 'root' before continuing"))
@@ -196,8 +204,9 @@ class App:
                     Layout.Inst().PushDialogue(BannerDialogue(Lang("Press any key to access this console")))
                     Layout.Inst().Refresh()
                     Layout.Inst().DoUpdate()
+                    XSLog('Entering sleep due to inactivity - xsconsole is now blocked waiting for a keypress')
                     self.layout.Window(Layout.WIN_MAIN).GetKeyBlocking()
-
+                    XSLog('Exiting sleep')
                     self.lastWakeSeconds = time.time()
                     self.needsRefresh = True
                     Layout.Inst().PopDialogue()
@@ -288,9 +297,12 @@ class App:
     def HandleRestartChoice(self, inChoice):
         if inChoice == 'y':
             try:
+                XSLog('Attempting to restart xapi')
                 self.layout.TransientBanner(Lang("Restarting xapi...."))
                 Data.Inst().StartXAPI()
+                XSLog('Restarted xapi')
             except Exception, e:
+                XSLogFailure('Failed to restart xapi', e)
                 self.layout.PushDialogue(InfoDialogue(Lang('Restart Failed'), Lang('Xapi did not restart successfully.  More information may be available in the file /var/log/messages.')))
 
     @classmethod

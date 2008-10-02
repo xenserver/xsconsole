@@ -10,6 +10,7 @@ import os, socket, xmlrpclib
 from XSConsoleBases import *
 from XSConsoleImporter import *
 from XSConsoleLang import *
+from XSConsoleLog import *
 from XSConsoleLayout import *
 
 import SocketServer
@@ -268,6 +269,7 @@ class RemoteTest:
         if cls.__instance is None:
             if os.path.exists('/etc/xsconsole/activatexmlrpc'):
                 cls.__instance = XMLRPCRemoteTest()
+                XSLog('xsconsole XMLRPC interface activated')
             else:
                 cls.__instance = NullRemoteTest()
             

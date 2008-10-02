@@ -11,6 +11,7 @@ from XSConsoleBases import *
 from XSConsoleData import *
 from XSConsoleHotData import *
 from XSConsoleLang import *
+from XSConsoleLog import *
 
 # Utils that do not need to access XSConsoleData should go in XSConsoleUtils,
 # so that XSConsoleData can use them without creating circular import problems
@@ -232,8 +233,8 @@ class MountVDI:
             if status != 0:
                 try:
                     self.Unmount()
-                except Exception:
-                    pass # Ignore unmount failure
+                except Exception, e:
+                    XSLogFailure('Device failed to unmount', e)
                 output += '\n'+self.mountDev
                 self.HandleMountFailure(output.split("\n"))
             
@@ -242,8 +243,9 @@ class MountVDI:
         except Exception, e:
             try:
                 self.Unmount()
-            except Exception:
-                pass #  Report the original exception, not this one
+            except Exception, e:
+                #  Report the original exception, not this one
+                XSLogFailure('Device failed to unmount', e)
             raise e
         
     def HandleMountFailure(self, inOutput):
@@ -314,8 +316,9 @@ class MountVDI:
                 time.sleep(5)
                 try:
                     self.vbd = Data.Inst().UnplugVBD(self.vbd)
-                except Exception:
-                    pass # Ignore second failure
+                except Exception, e:
+                    XSLogFailure('Device failed to unmount', e)
+                
             self.pluggedVBD = False
         if self.createdVBD:
             Data.Inst().DestroyVBD(self.vbd)
@@ -355,8 +358,8 @@ class MountVDIDirectly:
             if status != 0:
                 try:
                     self.Unmount()
-                except Exception:
-                    pass # Ignore unmount failure
+                except Exception, e:
+                    XSLogFailure('Device failed to unmount', e)
                 output += '\n'+self.mountDev
                 self.HandleMountFailure(status, output.split("\n"))
             
@@ -365,8 +368,8 @@ class MountVDIDirectly:
         except Exception, e:
             try:
                 self.Unmount()
-            except Exception:
-                pass #  Report the original exception, not this one
+            except Exception, e:
+                XSLogFailure('Device failed to unmount', e)
             raise e
         
     def HandleMountFailure(self, inStatus, inOutput):

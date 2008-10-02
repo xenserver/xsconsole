@@ -80,8 +80,8 @@ class SRUtils:
                 for pbd in unplugged:
                     try:
                         Task.Sync(lambda x: x.xenapi.PBD.plug(pbd.HotOpaqueRef().OpaqueRef()))
-                    except: # Ignore failure
-                        pass
+                    except Exception, e:
+                        XSLogFailure('SR undo failed', e)
                 raise # Reraise the original exception
                 
                 

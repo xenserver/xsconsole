@@ -7,8 +7,9 @@
 # trademarks of Citrix Systems, Inc., in the United States and other
 # countries.
 
-import imp, os, re, sys
+import imp, os, re, sys, traceback
 
+from XSConsoleLog import *
 from XSConsoleMenus import *
 
 class Importer:
@@ -39,7 +40,10 @@ class Importer:
                                 (fileObj, pathName, description) = imp.find_module(importName, [root])
                                 imp.load_module(importName, fileObj, pathName, description)
                             except Exception, e:
-                                print "PlugIn '"+importName+"' failed to load: "+str(e)
+                                try: XSLogError(*traceback.format_tb(sys.exc_info()[2]))
+                                except: pass
+                                try: XSLogError("*** PlugIn '"+importName+"' failed to load: "+str(e))
+                                except: pass
                         finally:
                             if fileObj is not None:
                                 fileObj.close()

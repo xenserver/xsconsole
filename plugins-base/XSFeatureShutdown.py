@@ -30,8 +30,9 @@ class XSFeatureShutdown:
                     Data.Inst().LocalHostDisable()
                 except XenAPI.Failure:
                     raise
-                except:
-                    pass # Ignore non-xapi failure - we want HA to veto the shutdown but not other problems
+                except Exception, e:
+                    # Ignore non-xapi failure - we want HA to veto the shutdown but not other problems
+                    XSLogFailure('Host disable before shutdown failed', e)
                 Layout.Inst().ExitBannerSet(Lang("Shutting Down..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -h now')
             except Exception, e:

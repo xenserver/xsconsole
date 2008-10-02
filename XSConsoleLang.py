@@ -22,6 +22,7 @@ class Language:
     instance = None
     stringHook = None
     errorHook = None
+    errorLoggingHook = None
     
     def __init__(self):
         self.brandingMap = Config.Inst().BrandingMap()
@@ -33,6 +34,10 @@ class Language:
     @classmethod
     def SetErrorHook(cls, inHook):
         cls.errorHook = inHook
+
+    @classmethod
+    def SetErrorLoggingHook(cls, inHook):
+        cls.errorLoggingHook = inHook
 
     @classmethod
     def Inst(self):
@@ -55,15 +60,20 @@ class Language:
         return retVal
 
     @classmethod
+    def LogError(cls, inValue): # For internal use
+        if cls.errorLoggingHook is not None:
+            cls.errorLoggingHook(inValue)
+        if cls.errorHook is not None:
+            cls.errorHook(inValue)
+
+    @classmethod
     def ToString(cls, inLabel):
         if isinstance(inLabel, XenAPI.Failure):
             retVal = cls.XapiError(inLabel.details)
-            if cls.errorHook is not None:
-                cls.errorHook(retVal)
+            cls.LogError(retVal)
         elif isinstance(inLabel, Exception):
             retVal = str(inLabel)
-            if cls.errorHook is not None:
-                cls.errorHook(retVal)
+            cls.LogError(retVal)
         else:
             retVal = inLabel
             if cls.stringHook is not None:
