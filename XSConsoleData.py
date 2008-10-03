@@ -146,13 +146,25 @@ class Data:
             }
         return retVal
     
+    def CloseSession(self):
+        if self.session is not None:
+            self.session = Auth.Inst().CloseSession(self.session)
+    
     def Update(self):
         self.data['host'] = {}
 
         self.RequireSession()
         if self.session is not None:
             try:
-                thisHost = self.session.xenapi.session.get_this_host(self.session._session)
+                try:
+                    thisHost = self.session.xenapi.session.get_this_host(self.session._session)
+                except XenAPI.Failure, e:
+                    XSLog('Data update connection failed - retrying.  Exception was:', e)
+                    self.session = Auth.Inst().CloseSession(self.session)
+                    self.RequireSession()
+                    if self.session is None:
+                        raise Exception('Could not connect to local xapi')
+                    thisHost = self.session.xenapi.session.get_this_host(self.session._session)
                 
                 hostRecord = self.session.xenapi.host.get_record(thisHost)
                 self.data['host'] = hostRecord

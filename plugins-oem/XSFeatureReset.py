@@ -90,6 +90,7 @@ class ResetDialogue(Dialogue):
         Layout.Inst().PopDialogue()
         XSLog('Resetting to factory defaults')
         Data.Inst().SetVerboseBoot(False)
+        Data.Inst().CloseSession()
         try:
             Layout.Inst().TransientBanner(Lang('Stopping Virtual Machines...'))
             ShellPipe('service', 'xapi-domains', 'stop').Call()

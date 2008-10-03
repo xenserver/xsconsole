@@ -288,7 +288,9 @@ class ClaimSRDialogue(Dialogue):
 
     def DoAction(self):
         Layout.Inst().TransientBanner(Lang("Claiming and Configuring Disk..."))
-
+        XSLog('Disk claim initiated for '+str(self.deviceToErase.device))
+        Data.Inst().CloseSession() # Disk claim restarts xapi, so close the session in Data.Inst()
+        
         if self.typeChoice == 'SRONLY':
             pipe = ShellPipe(
                 "/opt/xensource/libexec/delete-partitions-and-claim-disk", '--sr-only', self.deviceToErase.device)
