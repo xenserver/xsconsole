@@ -44,7 +44,7 @@ class DRBackupDialogue(SRDialogue):
             else:
                 raise Exception(output)
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Backup failed: ")+str(e)))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Backup failed: ")+Lang(e)))
         Data.Inst().Update()
 
 class XSFeatureDRBackup:

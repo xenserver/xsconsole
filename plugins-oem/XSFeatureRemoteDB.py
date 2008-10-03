@@ -338,6 +338,7 @@ class RemoteDBDialogue(Dialogue):
                     Layout.Inst().PopDialogue()
                     Layout.Inst().PushDialogue(InfoDialogue(
                         Lang("Configuration Successful")))
+                    XSLog('Configured remote database')
                 except Exception, e:
                     Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
             finally:
@@ -353,6 +354,7 @@ class RemoteDBDialogue(Dialogue):
                     Layout.Inst().PopDialogue()
                     Layout.Inst().PushDialogue(InfoDialogue(
                         Lang("Configuration Successful")))
+                    XSLog('Removed remote database')
                 except Exception, e:
                     Layout.Inst().PushDialogue(InfoDialogue( Lang("Failed: ")+Lang(e)))
             finally:

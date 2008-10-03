@@ -35,6 +35,7 @@ class XSFeatureShutdown:
                     XSLogFailure('Host disable before shutdown failed', e)
                 Layout.Inst().ExitBannerSet(Lang("Shutting Down..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -h now')
+                XSLog('Initiated shutdown')
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Shutdown Failed"), Lang(e)))
 

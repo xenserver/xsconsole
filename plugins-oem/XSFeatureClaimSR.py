@@ -209,6 +209,7 @@ class ClaimSRDialogue(Dialogue):
         handled = False
         
         if inKey == 'KEY_F(8)':
+            XSLog('Disk claim will overwrite existing SR')
             if Data.Inst().state_on_usb_media(True):
                 self.ChangeState('CHOOSETYPE')
             else:
@@ -250,6 +251,7 @@ class ClaimSRDialogue(Dialogue):
         if inKey == 'KEY_F(8)':
             Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
             Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
+            XSLog('Disk claim initiated reboot')
             handled = True
             
         return handled
@@ -308,6 +310,7 @@ class ClaimSRDialogue(Dialogue):
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(Lang('Disk Claimed Successfully')))
             else:
+                XSLog('Requesting reboot after claiming disk')
                 self.ChangeState('REBOOT')
             
             try:

@@ -17,8 +17,7 @@ if os.path.isfile(sys.path[0]+'/shared_db_util.py'):
     try:
         import shared_db_util
     except Exception, e:
-        print "Exception importing shared_db_util.py: " + str(e)
-        # Ignore
+        XSLogError("Exception importing shared_db_util.py: " + str(e))
 sys.path = oldPath
 
 class RemoteDB:

@@ -58,6 +58,7 @@ class UpdateDialogue(FileDialogue):
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Update Successful"), Lang("Please reboot to use the newly installed software.")))
+                XSLog('Software updated')
                 hostEnabled = False
 
             except Exception, e:

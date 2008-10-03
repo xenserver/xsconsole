@@ -174,6 +174,7 @@ class FileUtils:
         
         if status != 0:
             raise Exception(output)
+        XSLog('Formatted USB device')
 
     @classmethod
     def BugReportFilename(cls):
@@ -364,7 +365,7 @@ class MountVDIDirectly:
                 self.HandleMountFailure(status, output.split("\n"))
             
             self.mountedVDI = True
-
+            XSLog('Mounted '+self.mountDev + ' on ' + self.mountPoint + ' mode ' + self.mode)
         except Exception, e:
             try:
                 self.Unmount()
@@ -434,6 +435,7 @@ class MountVDIDirectly:
             status, output = commands.getstatusoutput("/bin/umount '"+self.mountPoint +  "' 2>&1")
             os.rmdir(self.mountPoint)
             self.mountedVDI = False
+            XSLog('Unmounted '+self.mountPoint)
         if status != 0:
             raise Exception(output)
     

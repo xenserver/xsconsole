@@ -88,6 +88,7 @@ class ResetDialogue(Dialogue):
 
     def DoAction(self):
         Layout.Inst().PopDialogue()
+        XSLog('Resetting to factory defaults')
         Data.Inst().SetVerboseBoot(False)
         try:
             Layout.Inst().TransientBanner(Lang('Stopping Virtual Machines...'))

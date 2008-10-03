@@ -58,6 +58,7 @@ class DRScheduleDialogue(Dialogue):
                 os.symlink("/opt/xensource/libexec/backup-metadata-cron", self.cronPath(inChoice))
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Backup Schedule successfully changed to occur ") + inChoice + "."))
             except:
+                XSLogFailure('Failed to create metadata schedule link')
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Failed to create metadata schedule link")))
         else:
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Backup Schedule successfully disabled")))

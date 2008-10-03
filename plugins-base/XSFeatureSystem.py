@@ -80,6 +80,7 @@ class XSFeatureSystem:
             # DMI memory doesn't agree with xapi, probably due to errors in the
             # BIOS DMI information.  Prefer xapi's value
             inPane.AddStatusField(Lang("Total memory", 26), str(int(xapiMemory))+' MB')
+            XSLog('xapi total memory ('+str(int(xapiMemory))+" MB) doesn't match DMI total memory ("+str(int(dmiMemory))+' MB)')
             # Don't display possibly invalid socket information
         else:
             inPane.AddStatusField(Lang("Total memory", 26), str(int(dmiMemory))+' MB')

@@ -30,6 +30,7 @@ class XSFeatureOEMRevert:
         if inYesNo == 'y':
             try:
                 Data.Inst().Revert()
+                XSLog('Reverted to previous version')
                 Importer.ActivateNamedPlugIn('REBOOT', Lang("To use the reverted version you need to reboot.  Would you like to reboot now?"))
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("Revert Failed"), Lang(e)))

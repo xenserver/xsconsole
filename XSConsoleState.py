@@ -51,6 +51,7 @@ class State:
                         # Version mismatch - don't use the state information
                         cls.instance = None
             except Exception, e:
+                XSLog('No state file present - using default state')
                 cls.instance = None
             
             if cls.instance is None:
@@ -132,6 +133,7 @@ class State:
             self.modified = False # Set unmodified before saving
             pickler.dump(self)
             saveFile.close()
+            XSLog('Saved state file')
         except Exception, e:
             XSLogFailure('Failed to save state file', e)
 

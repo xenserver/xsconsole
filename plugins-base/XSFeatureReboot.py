@@ -35,6 +35,7 @@ class XSFeatureReboot:
                     XSLogFailure('Host disable before reboot failed', e)
                 Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
                 Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
+                XSLog('Initiating reboot')
             except Exception, e:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Reboot Failed"), Lang(e)))
 

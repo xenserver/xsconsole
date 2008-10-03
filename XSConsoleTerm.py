@@ -142,6 +142,7 @@ class App:
                             Data.Inst().Update() # Pick up changes caused by the subshell command
 
             except KeyboardInterrupt, e: # Catch Ctrl-C
+                XSLog('Resetting due to Ctrl-C')
                 Data.Reset()
                 sys.stderr.write("\033[H\033[J"+Lang("Resetting...")) # Clear screen and print banner
                 try:
@@ -224,6 +225,7 @@ class App:
             if gotKey == '\xc5': gotKey = "KEY_F(8)" # Handle function key mistranslation on vncterm
 
             if gotKey == 'KEY_RESIZE':
+                XSLog('Activity on another console')
                 resized = True
             elif resized and gotKey is not None:
                 if os.path.isfile("/bin/setfont"): os.system("/bin/setfont") # Restore the default font
@@ -258,8 +260,8 @@ class App:
                 except Exception, e:
                     if Auth.Inst().IsTestMode():
                         raise
+                    message = Lang(e) # Also logs the error
                     if errorCount <= 10:
-                        message = Lang(e)
                         if errorCount == 10:
                             message += Lang('\n\n(No more errors will be reported)')
                         errorCount += 1

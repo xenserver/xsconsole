@@ -41,7 +41,8 @@ class UploadBugReportDialogue(InputDialogue):
         status, output = commands.getstatusoutput(command)
                 
         if status != 0:
-            raise Exception(Lang('The bug report upload failed.  Please check that the ftp directory is correct, and that the server accepts anonymous uploads to that directory and is reachable from this network.')) 
+            XSLogError('Upload bugreport failed', output) # Error output can be verbose, so syslog only
+            raise Exception(Lang('The bug report upload failed.  Please check that the destination directory is correct, and that the server accepts anonymous uploads to that directory and is reachable from this network.')) 
 
         return (Lang("Bug Report Uploaded Successfully"), None)
         

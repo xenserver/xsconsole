@@ -58,6 +58,7 @@ class OEMRestoreDialogue(FileDialogue):
                 Layout.Inst().PopDialogue()
                 Layout.Inst().PushDialogue(InfoDialogue(
                     Lang("Restore Successful"), Lang("Please reboot to use the restored state.")))
+                XSLog('Restore successful')
                 hostEnabled = False
 
             except Exception, e:

@@ -107,6 +107,7 @@ class KeyboardDialogue(Dialogue):
             data.KeymapSet(inKeymap)
             message = Lang('Keyboard type set to ')+data.KeymapToName(inKeymap)
             Layout.Inst().PushDialogue(InfoDialogue( message))
+            XSLog(message)
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Configuration failed: ")+Lang(e)))
 

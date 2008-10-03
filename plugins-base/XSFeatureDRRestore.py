@@ -89,6 +89,7 @@ class DRRestoreSelection(Dialogue):
             if status == 0:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Restore Succeeded: ") + output))
             else:
+                XSLogFailure('Metadata restore failed: '+str(output))
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Restore Failed: ") + output))
 
     def HandleKey(self, inKey):
@@ -149,7 +150,7 @@ class DRRestoreDialogue(SRDialogue):
                 raise Exception(output)
             Layout.Inst().PushDialogue(DRRestoreSelection(output, vdi_uuid, sr_uuid))
         except Exception, e:
-            Layout.Inst().PushDialogue(InfoDialogue( Lang("Metadata Restore failed: ")+str(e)))
+            Layout.Inst().PushDialogue(InfoDialogue( Lang("Metadata Restore failed: ")+Lang(e)))
         Data.Inst().Update()
 
 class XSFeatureDRRestore:

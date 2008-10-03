@@ -124,6 +124,7 @@ class TestNetworkDialogue(Dialogue):
         if success:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Ping successful"), output))
         else:
+            XSLogFailure('Ping failed ', str(output))
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Ping failed"), output))
         
 

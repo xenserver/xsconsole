@@ -134,6 +134,7 @@ class PoolJoinDialogue(Dialogue):
             Layout.Inst().TransientBanner(Lang('Joining Pool...'))
             if self.force:
                 op = 'join_force'
+                XSLog('Forced pool join')
             else:
                 op = 'join'
             task = hostUtils.AsyncOperation(op, HotAccessor().local_host_ref(),
@@ -141,7 +142,7 @@ class PoolJoinDialogue(Dialogue):
             Layout.Inst().PushDialogue(ProgressDialogue(task, Lang("Joining Pool with Master '")+self.params['hostname']+"'"))
     
         except Exception, e:
-                Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Failed to Join the Pool"), Lang(e)))
+            Layout.Inst().PushDialogue(InfoDialogue(Lang("Host Failed to Join the Pool"), Lang(e)))
             
 class XSFeaturePoolJoin:
     @classmethod
