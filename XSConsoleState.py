@@ -50,12 +50,13 @@ class State:
                     if cls.instance.version != cls.instance.thisVersion:
                         # Version mismatch - don't use the state information
                         cls.instance = None
+                        XSLog('State file version mismatch - discarding')
             except Exception, e:
-                XSLog('No state file present - using default state')
                 cls.instance = None
             
             if cls.instance is None:
                 cls.instance = State()
+                XSLog('No saved state avavilable - using default state')
             
             # Fill in pseudo-state
             cls.instance.isFirstBoot = isFirstBoot
@@ -123,18 +124,19 @@ class State:
             AuthTimeoutSecondsSet(60)
     
     def SaveIfRequired(self):
-        self.MakeSane()
-        try:
-            if not os.path.isdir(self.savePath):
-                os.mkdir(self.savePath, 0700)
-            
-            saveFile = open(self.SaveFilename(), "w")
-            pickler = pickle.Pickler(saveFile)
-            self.modified = False # Set unmodified before saving
-            pickler.dump(self)
-            saveFile.close()
-            XSLog('Saved state file')
-        except Exception, e:
-            XSLogFailure('Failed to save state file', e)
+        if self.modified:
+            self.MakeSane()
+            try:
+                if not os.path.isdir(self.savePath):
+                    os.mkdir(self.savePath, 0700)
+                
+                saveFile = open(self.SaveFilename(), "w")
+                pickler = pickle.Pickler(saveFile)
+                self.modified = False # Set unmodified before saving
+                pickler.dump(self)
+                saveFile.close()
+                XSLog('Saved state file')
+            except Exception, e:
+                XSLogFailure('Failed to save state file', e)
 
 
