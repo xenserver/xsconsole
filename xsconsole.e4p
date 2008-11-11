@@ -26,7 +26,6 @@
     <Source>XSConsoleConfig.py</Source>
     <Source>XSConsoleUtils.py</Source>
     <Source>XSConsoleDataUtils.py</Source>
-    <Source>XSConsoleRemoteDB.py</Source>
     <Source>XSConsoleKeymaps.py</Source>
     <Source>XSConsoleStandard.py</Source>
     <Source>XSConsoleDialogueBases.py</Source>
@@ -48,7 +47,6 @@
     <Source>plugins-base/XSFeatureSuspendSR.py</Source>
     <Source>plugins-base/XSFeatureNTP.py</Source>
     <Source>plugins-oem/XSFeatureManagementHelp.py</Source>
-    <Source>plugins-oem/XSFeatureRemoteDB.py</Source>
     <Source>plugins-oem/XSFeatureVerboseBoot.py</Source>
     <Source>plugins-oem/XSFeatureReset.py</Source>
     <Source>plugins-base/XSFeatureInstallLicence.py</Source>

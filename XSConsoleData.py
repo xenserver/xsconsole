@@ -11,7 +11,6 @@ import commands, re, shutil, sys, tempfile
 from pprint import pprint
 
 from XSConsoleAuth import *
-from XSConsoleRemoteDB import *
 from XSConsoleKeymaps import *
 from XSConsoleLang import *
 from XSConsoleLog import *
@@ -317,7 +316,6 @@ class Data:
         self.UpdateFromResolveConf()
         self.UpdateFromSysconfig()
         self.UpdateFromNTPConf()
-        self.UpdateFromRemoteDBConf()
         self.UpdateFromTimezone()
         self.UpdateFromKeymap()
         
@@ -424,25 +422,6 @@ class Data:
     def StringToBool(self, inString):
         return inString.lower().startswith('true')
 
-    def UpdateFromRemoteDBConf(self):
-        self.data['remotedb'] = {}
-
-        try:
-            self.data['remotedb'] = RemoteDB.Inst().ReadConf()
-            remoteDB = self.data['remotedb']
-            
-            # Translate string booleans to python booleans
-            remoteDB['available_this_boot'] = self.StringToBool(remoteDB['available_this_boot'])
-            remoteDB['is_on_remote_storage'] = self.StringToBool(remoteDB['is_on_remote_storage'])
-            
-        except Exception, e:
-            remoteDB = { 'is_on_remote_storage' : False }
-            
-        try:
-            self.data['remotedb']['defaultlocaliqn'] = RemoteDB.Inst().LocalIQN()
-        except Exception, e:
-            pass
-
     def RootLabel(self):
         output = commands.getoutput('/bin/cat /proc/cmdline')
         match = re.search(r'root=\s*LABEL\s*=\s*(\S+)', output)
@@ -518,7 +497,6 @@ class Data:
     def Revert(self):
         if self.CanRevert():
             ShellPipe('/opt/xensource/libexec/set-boot', 'alternate').Call()
-            RemoteDB.Inst().ConfigureNoDB()
         else:
             raise Exception("Unable to revert")
 
