@@ -1,4 +1,5 @@
-USE_BRANDING=yes
+USE_BRANDING := yes
+IMPORT_BRANDING := yes
 # makefile for xen component in build system
 include $(B_BASE)/common.mk
 include $(B_BASE)/rpmbuild.mk
@@ -18,9 +19,9 @@ XS_VERSION := $(PRODUCT_VERSION)
 XS_RELEASE := $(CSET_NUMBER)
 
 CHANGELOG_DATE    := $(shell LANG=C date +"%a %b %d %Y")
-CHANGELOG_USER    := @COMPANY_NAME_LEGAL@ <citrix.com>
+CHANGELOG_USER    := $(COMPANY_NAME) <$(COMPANY_WEBSITE)>
 CHANGELOG_HEADER  := * $(CHANGELOG_DATE) $(CHANGELOG_USER) [$(XS_VERSION)-$(XS_RELEASE)]
-CHANGELOG_MESSAGE := - Build @BRAND_SERVER@ Configuration Console.
+CHANGELOG_MESSAGE := - Build $(BRAND_SERVER) Configuration Console.
 
 # File selection criteria for base and OEM packages
 HG_FILTERS_BASE := -I Makefile -I xsconsole -I LICENSE -I '*.py' -I 'plugins-base/*py'
