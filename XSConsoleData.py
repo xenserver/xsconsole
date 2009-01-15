@@ -452,10 +452,14 @@ class Data:
                 ShellPipe('/bin/mount', '-t', 'auto', '-o', 'ro', alternateDev, alternateMount).Call()
                 
                 rootfsDev = alternateMount + '/rootfs'
-                rootfsMount = tempfile.mkdtemp(".xsconsole")
-                ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
+                if not os.path.isfile(rootfsDev):
+                    inventoryMount = alternateMount
+                else:
+                    rootfsMount = tempfile.mkdtemp(".xsconsole")
+                    ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
+                    inventoryMount = rootfsMount
 
-                inventoryFile = open(rootfsMount+'/etc/xensource-inventory')
+                inventoryFile = open(inventoryMount+'/etc/xensource-inventory')
     
                 for line in inventoryFile:
                     match = re.match(r"\s*BUILD_NUMBER\s*=\s*'([^']*)'", line)
