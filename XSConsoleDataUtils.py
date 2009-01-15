@@ -226,9 +226,7 @@ class MountVDI:
                 self.mountDev += '1'
                 
             FileUtils.AssertSafePath(self.mountDev)
-            self.mountPoint = tempfile.mktemp(".xsconsole")
-            if not os.path.isdir(self.mountPoint):
-                os.mkdir(self.mountPoint, 0700)
+            self.mountPoint = tempfile.mkdtemp(".xsconsole")
 
             status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
             if status != 0:
@@ -351,9 +349,7 @@ class MountVDIDirectly:
                 self.mountDev += '1'
                 
             FileUtils.AssertSafePath(self.mountDev)
-            self.mountPoint = tempfile.mktemp(".xsconsole")
-            if not os.path.isdir(self.mountPoint):
-                os.mkdir(self.mountPoint, 0700)
+            self.mountPoint = tempfile.mkdtemp(".xsconsole")
 
             status, output = commands.getstatusoutput("/bin/mount -t auto -o " + self.mode + ' ' +self.mountDev+" "+self.mountPoint + " 2>&1")
             if status != 0:

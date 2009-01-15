@@ -447,19 +447,14 @@ class Data:
         try:
             try:
                 alternateDev = ShellPipe('/opt/xensource/libexec/find-partition', 'alternate').Stdout()[0].split(',')[0]
-                alternateMount = tempfile.mktemp(".xsconsole")
-                if not os.path.isdir(alternateMount):
-                    os.mkdir(alternateMount, 0700)
+                alternateMount = tempfile.mkdtemp(".xsconsole")
     
                 ShellPipe('/bin/mount', '-t', 'auto', '-o', 'ro', alternateDev, alternateMount).Call()
                 
                 rootfsDev = alternateMount + '/rootfs'
-                rootfsMount = tempfile.mktemp(".xsconsole")
-                if not os.path.isdir(rootfsMount):
-                    os.mkdir(rootfsMount, 0700)
-    
+                rootfsMount = tempfile.mkdtemp(".xsconsole")
                 ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
-                
+
                 inventoryFile = open(rootfsMount+'/etc/xensource-inventory')
     
                 for line in inventoryFile:
