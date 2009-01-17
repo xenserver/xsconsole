@@ -42,6 +42,8 @@ class InstallLicenceDialogue(FileDialogue):
                     
                 filename = self.vdiMount.MountedPath(self.filename)
                 FileUtils.AssertSafePath(filename)
+                if not os.path.isfile(filename):
+                    raise Exception(Lang('Cannot read license file'))
                 command = "/opt/xensource/bin/xe host-license-add license-file='"+filename+"' host-uuid="+hostRef
                 status, output = commands.getstatusoutput(command)
                 

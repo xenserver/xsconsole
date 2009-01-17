@@ -340,7 +340,12 @@ class FileDialogue(Dialogue):
         if self.Custom('mode') == 'rw':
             fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('New file'))+')'
         else:
-            fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('File not found'))+')'
+            if self.filename == '':
+                fileSize = Lang(' (No file specified)')
+            elif os.path.isdir(self.filename):
+                fileSize = Lang(' (Directory)')
+            else:
+                fileSize = ' ('+self.vdiMount.SizeString(self.filename, Lang('File not found'))+')'
         
         pane.AddWrappedBoldTextField(Lang("File"))
         pane.AddWrappedTextField(self.filename+fileSize)
