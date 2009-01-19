@@ -49,6 +49,15 @@ class Config:
     def AllShellsTimeout(self):
         return True
     
+    def DisplaySerialNumber(self):
+        return True
+        
+    def DisplayAssetTag(self):
+        return True
+    
+    def BMCName(self):
+        return 'BMC'
+        
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):
     import XSConsoleConfigOEM

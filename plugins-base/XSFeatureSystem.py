@@ -29,20 +29,22 @@ class XSFeatureSystem:
         inPane.AddWrappedTextField(model)
         inPane.NewLine()
         
-        inPane.AddTitleField(data.host.software_version.machine_serial_name(Lang("Serial Number")))
-        serialNumber = data.host.software_version.machine_serial_number('')
-        if serialNumber == '':
-            serialNumber = data.dmi.system_serial_number('')
-        if serialNumber == '':
-            serialNumber = Lang("<Not Set>")
-        inPane.AddWrappedTextField(serialNumber)
-        inPane.NewLine()
+        if Config.Inst().DisplaySerialNumber():
+            inPane.AddTitleField(data.host.software_version.machine_serial_name(Lang("Serial Number")))
+            serialNumber = data.host.software_version.machine_serial_number('')
+            if serialNumber == '':
+                serialNumber = data.dmi.system_serial_number('')
+            if serialNumber == '':
+                serialNumber = Lang("<Not Set>")
+            inPane.AddWrappedTextField(serialNumber)
+            inPane.NewLine()
         
-        inPane.AddTitleField(Lang("Asset Tag"))
-        assetTag = data.dmi.asset_tag('') # FIXME: Get from XAPI when available
-        if assetTag == '':
-            assetTag = Lang("<Not Set>")
-        inPane.AddWrappedTextField(assetTag) 
+        if Config.Inst().DisplayAssetTag():
+            inPane.AddTitleField(Lang("Asset Tag"))
+            assetTag = data.dmi.asset_tag('') # FIXME: Get from XAPI when available
+            if assetTag == '':
+                assetTag = Lang("<Not Set>")
+            inPane.AddWrappedTextField(assetTag) 
 
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -106,9 +108,9 @@ class XSFeatureSystem:
     def StatusUpdateHandlerBMC(cls, inPane):
         data = Data.Inst()
         
-        inPane.AddTitleField(Lang("BMC Information"))
+        inPane.AddTitleField(Lang(Config.Inst().BMCName()+" Information"))
         
-        inPane.AddStatusField(Lang("BMC Firmware Version",  22), data.bmc.version())
+        inPane.AddStatusField(Lang(Config.Inst().BMCName()+" Firmware Version",  22), data.bmc.version())
         
         inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
@@ -192,7 +194,7 @@ class XSFeatureSystem:
                 {
                     'menuname' : 'MENU_PROPERTIES',
                     'menupriority' : 600,
-                    'menutext' : Lang('BMC Version') ,
+                    'menutext' : Lang(Config.Inst().BMCName()+' Version'),
                     'statusupdatehandler' : self.StatusUpdateHandlerBMC
                 }
             )
