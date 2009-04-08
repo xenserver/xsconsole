@@ -7,7 +7,7 @@ outputFilename = "XSConsoleLangErrors.py"
 
 if ARGV.size != 1:
   puts "usage: #{$0} <filename>"
-  puts "Please supply the filename for api.hg/ocaml/idl/FriendlyErrorNames.resx"
+  puts "Please supply the filename for xenadmin.hg/XenAdmin/XenAPI/autogen-enterprise/FriendlyErrorNames.resx"
   abort
 end
 
