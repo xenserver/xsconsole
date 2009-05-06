@@ -165,6 +165,7 @@ class HostEvacuateDialogue(Dialogue):
         if self.hostWasEnabled:
             try:
                 Layout.Inst().TransientBanner(Lang('Entering Maintenance Mode...'))
+                hostUtils.DoOperation('disable', HotAccessor().local_host_ref())
                 hostUtils.DoOperation('evacuate', HotAccessor().local_host_ref())
                 message = None
                 if self.newMaster is not None:

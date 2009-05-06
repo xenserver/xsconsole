@@ -38,6 +38,8 @@ class HostUtils:
             task = Task.New(lambda x: x.xenapi.Async.host.evacuate(inHostHandle.OpaqueRef()))
             cls.OtherConfigReplace(inHostHandle, 'MAINTENANCE_MODE_EVACUATED_VMS', ','.join(runningVMs))
             cls.OtherConfigReplace(inHostHandle, 'MAINTENANCE_MODE', 'true')
+        elif inOperation == 'disable':
+            task = Task.New(lambda x: x.xenapi.Async.host.disable(inHostHandle.OpaqueRef()))
         elif inOperation == 'enable':
             cls.OtherConfigRemove(inHostHandle, 'MAINTENANCE_MODE')
             cls.OtherConfigRemove(inHostHandle, 'MAINTENANCE_MODE_EVACUATED_VMS')
