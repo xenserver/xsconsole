@@ -909,7 +909,7 @@ class SRNewDialogue(Dialogue):
                 )
             )
         except XenAPI.Failure, e:
-            if e.details[0] != 'SR_BACKEND_FAILURE_90':
+            if e.details[0] != 'SR_BACKEND_FAILURE_107':
                 raise
             # Parse XML for UUID values
             self.deviceChoices = []
@@ -1105,11 +1105,11 @@ class SRNewDialogue(Dialogue):
         self.ChangeState('CONFIRM')
 
     def HandleDeviceChoice(self, inChoice):
-        self.srParams['device'] = inChoice.path
+        self.srParams['scsiid'] = inChoice.scsiid
         self.extraInfo.append( (Lang('Device'), inChoice.vendor + ' ' + inChoice.serial) ) # Append tuple, so double brackets
         xmlResult = Task.Sync(lambda x: x.xenapi.SR.probe(
             HotAccessor().local_host_ref().OpaqueRef(), # host
-            { 'device' : self.srParams['device'] }, # device_config
+            { 'SCSIid' : self.srParams['scsiid'] }, # device_config
             'lvmohba' # type
             )
         )
@@ -1332,7 +1332,7 @@ class SRNewDialogue(Dialogue):
         )
         
     def CommitHBA_CREATE(self):
-        deviceConfig = { 'device' : self.srParams['device'] }
+        deviceConfig = { 'SCSIid' : self.srParams['scsiid'] }
         self.CommitCreate('lvmohba',
             deviceConfig,
             { # Set auto-scan to false for non-ISO SRs
@@ -1341,7 +1341,7 @@ class SRNewDialogue(Dialogue):
         )
     
     def CommitHBA_ATTACH(self):
-        deviceConfig = { 'device' : self.srParams['device'] }
+        deviceConfig = { 'SCSIid' : self.srParams['scsiid'] }
         
         self.CommitAttach('lvmohba',
             deviceConfig, # device_config
