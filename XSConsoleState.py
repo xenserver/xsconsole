@@ -56,7 +56,7 @@ class State:
             
             if cls.instance is None:
                 cls.instance = State()
-                XSLog('No saved state avavilable - using default state')
+                XSLog('No saved state available - using default state')
             
             # Fill in pseudo-state
             cls.instance.isFirstBoot = isFirstBoot
