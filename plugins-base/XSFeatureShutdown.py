@@ -40,9 +40,12 @@ class XSFeatureShutdown:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Shutdown Failed"), Lang(e)))
 
     @classmethod
-    def ActivateHandler(cls):
-        DialogueUtils.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
-                Lang("Do you want to shutdown this server?"), lambda x: cls.ShutdownReplyHandler(x))))
+    def ActivateHandler(cls, *inParams):
+        if len(inParams) > 0:
+            banner = inParams[0]
+        else:
+            banner = Lang("Do you want to shutdown this server?")
+        DialogueUtils.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(banner, lambda x: cls.ShutdownReplyHandler(x))))
         
     def Register(self):
         Importer.RegisterNamedPlugIn(

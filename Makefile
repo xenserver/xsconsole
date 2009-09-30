@@ -52,6 +52,7 @@ PLUGINS_BASE += XSFeatureDRRestore.py
 PLUGINS_BASE += XSFeatureDRSchedule.py
 PLUGINS_BASE += XSFeatureDNS.py
 PLUGINS_BASE += XSFeatureDisplayNICs.py
+PLUGINS_BASE += XSFeatureEULA.py
 PLUGINS_BASE += XSFeatureHostCommon.py
 PLUGINS_BASE += XSFeatureHostEvacuate.py
 PLUGINS_BASE += XSFeatureHostInfo.py
