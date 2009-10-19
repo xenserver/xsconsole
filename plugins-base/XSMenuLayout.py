@@ -137,30 +137,6 @@ class XSMenuLayout:
             'and migrate running Virtual Machines between hosts.  Press <Enter> to add this host a Resource Pool '
             'or remove it from its current Pool.'))
         inPane.NewLine()
-    
-    def UpdateFieldsXENDETAILS(self, inPane):
-        data = Data.Inst()
-
-        inPane.AddTitleField(Lang("XenServer Product Information"))
-        inPane.AddStatusField(Lang("Name", 16), Language.Inst().Branding((data.host.software_version.product_brand())))
-        inPane.AddStatusField(Lang("Version", 16), str(data.derived.fullversion()))
-        inPane.AddStatusField(Lang("Xen Version", 16), str(data.host.software_version.xen()))
-        inPane.AddStatusField(Lang("Kernel Version",16), str(data.host.software_version.linux()))
-        inPane.NewLine()
-        
-        expiryStr = data.host.license_params.expiry()
-        if (re.match('\d{8}', expiryStr)):
-            # Convert ISO date to more readable form
-            expiryStr = expiryStr[0:4]+'-'+expiryStr[4:6]+'-'+expiryStr[6:8]
-        
-        inPane.AddTitleField(Lang("License"))
-        inPane.AddStatusField(Lang("Product SKU", 16), data.host.license_params.sku_marketing_name())
-        inPane.AddStatusField(Lang("Expiry", 16), expiryStr)
-        inPane.AddStatusField(Lang("Sockets", 16), str(data.host.license_params.sockets()))
-        inPane.NewLine()
-        inPane.AddWrappedTextField(Lang("Press <Enter> to view further details or install a new license."))
-        
-        inPane.AddKeyHelpField( { Lang("<F5>") : Lang("Refresh")})
 
     def UpdateFieldsREBOOTSHUTDOWN(self, inPane):
         inPane.AddTitleField(Lang("Reboot or Shutdown"))
@@ -206,8 +182,6 @@ class XSMenuLayout:
                 lambda: self.ActivateHandler('MENU_DISK'), self.UpdateFieldsDISK ],
             [ 'MENU_POOL', Lang("Resource Pool Configuration"),
                 lambda: self.ActivateHandler('MENU_POOL'), self.UpdateFieldsPOOL],
-            [ 'MENU_XENDETAILS', Lang("XenServer Details and Licensing"),
-                lambda: self.ActivateHandler('MENU_XENDETAILS'), self.UpdateFieldsXENDETAILS ],
             [ 'MENU_PROPERTIES', Lang("Hardware and BIOS Information"),
                 lambda: self.ActivateHandler('MENU_PROPERTIES'), self.UpdateFieldsPROPERTIES ],
             [ 'MENU_MANAGEMENT', Lang("Keyboard and Timezone"),
