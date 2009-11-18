@@ -21,6 +21,7 @@ class ChangePasswordDialogue(Dialogue):
         pane.TitleSet("Change Password")
         pane.AddBox()
         self.UpdateFields()
+        pane.InputIndexSet(None) # Reactivate cursor if this dialogue is initially covered and revealed later
         
     def UpdateFields(self):
         pane = self.Pane()

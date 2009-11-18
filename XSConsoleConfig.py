@@ -58,6 +58,10 @@ class Config:
     def BMCName(self):
         return 'BMC'
         
+    def FirstBootEULAs(self):
+        # Subclasses in XSConsoleConfigOEM can add their EULAs to this array
+        return ['/EULA']
+        
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):
     import XSConsoleConfigOEM

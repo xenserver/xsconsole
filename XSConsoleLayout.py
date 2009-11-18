@@ -78,7 +78,7 @@ class Layout:
         self.dialogues.pop()
         if len(self.dialogues) == 1:
             # When the display returns to the root screen, it's possible that data has changed, so
-            # selete the HotData cache to force a refetch
+            # delete the HotData cache to force a refetch
             HotData.Inst().DeleteCache()
         self.TopDialogue().UpdateFields()
         self.Refresh()

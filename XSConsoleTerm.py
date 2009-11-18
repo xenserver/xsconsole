@@ -102,16 +102,18 @@ class App:
                             Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
                                  "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
 
-                    # Request password change on first boot, or if it isn't set
                     if not Auth.Inst().IsPasswordSet() :
-                        XSLog("Displaying 'Please specify a password' dialogue")
+                        # Request password change on first boot, or if it isn't set
+                        XSLog("Displaying 'Please specify a password' dialogue and EULAs")
                         Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please specify a password for user 'root' before continuing"))
+                        # Create a stack of EULA dialogues that must be accepted before the password dialogue is revealed
+                        Importer.ActivateNamedPlugIn('EULA')
                     elif State.Inst().PasswordChangeRequired():
                         Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please change the password for user 'root' before continuing"))
                     elif State.Inst().RebootMessage() is not None:
                         Importer.ActivateNamedPlugIn('REBOOT', State.Inst().RebootMessage())
                         State.Inst().RebootMessageSet(None)
-                            
+            
                     self.layout.Clear()
                     if not '--dryrun' in sys.argv:
                         self.MainLoop()
