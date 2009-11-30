@@ -756,9 +756,9 @@ class Data:
         for root, dirs, files in os.walk(zonePath):
             for filename in files:
                 filePath = os.path.join(root, filename)
-                localPath = filePath[len(zonePath)+1:] # Just the path afer /usr/share/zoneinfo/
+                localPath = filePath[len(zonePath)+1:] # Just the path after /usr/share/zoneinfo/
                 if filterExp.match(localPath):
-                    # Store only those entries starting with on of our known prefixes
+                    # Store only those entries starting with one of our known prefixes
                     self.data['timezones']['cities'][localPath] = filePath
 
     def UpdateFromTimezone(self):
@@ -771,7 +771,7 @@ class Data:
         localtimeFile = '/etc/localtime'
         if os.path.isfile(localtimeFile):
             os.remove(localtimeFile)
-        shutil.copy(self.timezones.cities({})[inTimezone], localtimeFile)
+        os.symlink(self.timezones.cities({})[inTimezone], localtimeFile)
         
         file = open('/etc/timezone', 'w')
         file.write(inTimezone+"\n")
