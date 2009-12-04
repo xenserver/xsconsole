@@ -720,7 +720,7 @@ class Data:
         
         for line in inLines:
             match = re.match(r'server\s+(\S+)', line)
-            if match:
+            if match and not match.group(1).startswith('127.127.'):
                 self.data['ntp']['servers'].append(match.group(1))
             else:
                 self.data['ntp']['othercontents'].append(line)
