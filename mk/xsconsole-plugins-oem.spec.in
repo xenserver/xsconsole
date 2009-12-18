@@ -2,7 +2,7 @@ Summary: XenServer Host Configuration Console OEM Plugins
 Name: xsconsole-plugins-oem
 Version: @XS_VERSION@
 Release: @XS_RELEASE@
-License: Proprietary
+License: GPL2
 Group: Administration/System
 Source0: %{name}-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-buildroot
