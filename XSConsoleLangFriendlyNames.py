@@ -1206,9 +1206,7 @@ class LangFriendlyNames:
     'Message.action-vif_qos_failed' : 'Apply License',
     'Message.body-alarm' : 'Alarm \'{0}\' was not recognised.',
     'Message.body-extauth_in_pool_is_non_homogeneous' : 'The external authentication service used within \'{0}\' is not consistent.',
-    'Message.body-extauth_init_in_host_failed' : 'Server \'{0}\' has failed to connect to the Active Directory server.
-
-{1}',
+    'Message.body-extauth_init_in_host_failed' : 'Server \'{0}\' has failed to connect to the Active Directory server {1}',
     'Message.body-grace_license' : 'A grace license was issued for {0}. This was either because the license server could not be reached or because the host has recently been upgraded.',
     'Message.body-ha_heartbeat_approaching_timeout' : 'Server \'{0}\' is taking too long to respond to the HA networking heartbeat and may fence.',
     'Message.body-ha_host_failed' : 'Server \'{0}\' has failed.',
@@ -1332,40 +1330,40 @@ class LangFriendlyNames:
     'NewVMWizard-StoragePage.PageTitle' : 'Configure storage for the new VM',
     'NewVMWizard-TemplatePage.PageName' : 'Template',
     'NewVMWizard-TemplatePage.PageTitle' : 'Select a VM template',
-    'Role.pool-admin.Description' : 'Pool Admins have full access to all XenServer features and settings. They can access the XenServer console and manage the roles of other users.
- 
-- No restrictions
-- Role and user management
+    'Role.pool-admin.Description' : 'Pool Admins have full access to all XenServer features and settings. They can access the XenServer console and manage the roles of other users.\
+ \
+- No restrictions\
+- Role and user management\
 - Access to XenServer console',
     'Role.pool-admin.NameLabel' : 'Pool Admin',
-    'Role.pool-operator.Description' : 'Pool Operators manage pool-wide resources, including setting up storage, managing patches and creating resource pools.
- 
-- Configure pool resources
-- Full access to High Availability (HA), Workload Balancing (WLB) and patch management features
+    'Role.pool-operator.Description' : 'Pool Operators manage pool-wide resources, including setting up storage, managing patches and creating resource pools.\
+ \
+- Configure pool resources\
+- Full access to High Availability (HA), Workload Balancing (WLB) and patch management features\
 - No access to role management',
     'Role.pool-operator.NameLabel' : 'Pool Operator',
-    'Role.read-only.Description' : 'With a Read Only role, the user has basic read access. They can connect to the server and view its contents, but will be unable to issue commands or alter any settings.
- 
+    'Role.read-only.Description' : 'With a Read Only role, the user has basic read access. They can connect to the server and view its contents, but will be unable to issue commands or alter any settings.\
+ \
 - Read access only',
     'Role.read-only.NameLabel' : 'Read Only',
-    'Role.vm-admin.Description' : 'VM Admins can manage VMs and Templates and can access the storage necessary to complete these tasks. This role relies on XenServer to choose where to run each VM, and on templates to provide values for dynamic memory control (DMC) and Home Server settings.
- 
-- Manage VMs and Templates
-- No access to dynamic memory control features
-- No access to VM snapshot features
+    'Role.vm-admin.Description' : 'VM Admins can manage VMs and Templates and can access the storage necessary to complete these tasks. This role relies on XenServer to choose where to run each VM, and on templates to provide values for dynamic memory control (DMC) and Home Server settings.\
+ \
+- Manage VMs and Templates\
+- No access to dynamic memory control features\
+- No access to VM snapshot features\
 - Cannot set Home Server or choose where to run workloads',
     'Role.vm-admin.NameLabel' : 'VM Admin',
-    'Role.vm-operator.Description' : 'VM Operators are granted access to use the VMs within the resource pool. They can interact with VM consoles, and can start or stop VMs when there are sufficient server resources available.
- 
-- Full access to VM consoles
-- Basic VM lifecycle control
+    'Role.vm-operator.Description' : 'VM Operators are granted access to use the VMs within the resource pool. They can interact with VM consoles, and can start or stop VMs when there are sufficient server resources available.\
+ \
+- Full access to VM consoles\
+- Basic VM lifecycle control\
 - Cannot alter VM properties or server resources',
     'Role.vm-operator.NameLabel' : 'VM Operator',
-    'Role.vm-power-admin.Description' : 'VM Power Admins have full access to VM and Template management. They can choose where to start VMs, and can use the dynamic memory control and VM snapshot features.
- 
-- Manages VMs and Templates
-- Full access to dynamic memory control features
-- Full access to VM snapshot features
+    'Role.vm-power-admin.Description' : 'VM Power Admins have full access to VM and Template management. They can choose where to start VMs, and can use the dynamic memory control and VM snapshot features.\
+ \
+- Manages VMs and Templates\
+- Full access to dynamic memory control features\
+- Full access to VM snapshot features\
 - Can set Home Server and choose where to run workloads',
     'Role.vm-power-admin.NameLabel' : 'VM Power Admin',
     'SR.name_description-ebs' : 'EBS volumes',
