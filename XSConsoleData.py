@@ -641,8 +641,8 @@ class Data:
             'storage_controllers' : []
         }
         # Spot storage controllers by looking for keywords or the phrase 'storage controller' in the lspci output
-        classExp = re.compile(r'([Ss]torage|IDE|PATA|SATA|SCSI|SAS|RAID|[Ff]iber [Cc]hannel)\s+[Cc]ontroller')
-        nameExp = re.compile(r'IDE|PATA|SATA|SCSI|SAS|RAID|Fiber Channel')
+        classExp = re.compile(r'[Ss]torage|IDE|PATA|SATA|SCSI|SAS|RAID|[Ff]iber [Cc]hannel|[Ff]ibre [Cc]hannel')
+        nameExp = re.compile(r'IDE|PATA|SATA|SCSI|SAS|RAID|[Ff]iber [Cc]hannel|[Ff]ibre [Cc]hannel')
         unknownExp = re.compile(r'[Uu]nknown [Dd]evice')
         regExp = re.compile(
             r'[^"]*' + # Bus position, etc.
