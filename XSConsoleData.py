@@ -656,6 +656,7 @@ class Data:
             match = regExp.match(line)
             if match:
                 devClass = match.group(1)
+                devVendor = match.group(2)
                 devName = match.group(3)
                 devSVendor = match.group(4)
                 devSName = match.group(5)
@@ -669,7 +670,8 @@ class Data:
                         self.data['lspci']['storage_controllers'].append((devClass, devSVendor+' '+devSName)) # Tuple so double brackets
                     elif not unknownExp.search(devName):
                         self.data['lspci']['storage_controllers'].append((devClass, devName)) # Tuple so double brackets
-                    # otherwise don't add it at all
+                    else:
+                        self.data['lspci']['storage_controllers'].append((devClass, devVendor+' '+devName)) # Tuple so double brackets
             
     def ScanIpmiMcInfo(self, inLines):
         self.data['bmc'] = {}
