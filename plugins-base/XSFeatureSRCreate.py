@@ -528,6 +528,7 @@ class SRNewDialogue(Dialogue):
                 inputValues = pane.GetFieldValues()
                 if self.variant == 'ATTACH':
                     Layout.Inst().TransientBanner(Lang('Probing for Storage Repositories...'))
+                self.HandleCommonData(inputValues)
                 self.HandleNFSData(inputValues)
             except Exception, e:
                 pane.InputIndexSet(None)
@@ -545,6 +546,7 @@ class SRNewDialogue(Dialogue):
         if inKey == 'KEY_ENTER' and pane.IsLastInput():
             try:
                 inputValues = pane.GetFieldValues()
+                self.HandleCommonData(inputValues)
                 self.HandleCIFSData(inputValues)
             except Exception, e:
                 pane.InputIndexSet(None)
@@ -559,6 +561,7 @@ class SRNewDialogue(Dialogue):
         if inKey == 'KEY_ENTER' and pane.IsLastInput():
             try:
                 inputValues = pane.GetFieldValues()
+                self.HandleCommonData(inputValues)
                 self.HandleISCSIData(inputValues)
             except Exception, e:
                 pane.InputIndexSet(None)
@@ -574,6 +577,7 @@ class SRNewDialogue(Dialogue):
             try:
                 inputValues = pane.GetFieldValues()
                 Layout.Inst().TransientBanner(Lang('Probing NetApp...'))
+                self.HandleCommonData(inputValues)
                 self.HandleNetAppData(inputValues)
             except Exception, e:
                 pane.InputIndexSet(None)
@@ -626,6 +630,7 @@ class SRNewDialogue(Dialogue):
             try:
                 inputValues = pane.GetFieldValues()
                 Layout.Inst().TransientBanner(Lang('Probing Dell EqualLogic Server...'))
+                self.HandleCommonData(inputValues)
                 self.HandleEqualData(inputValues)
             except Exception, e:
                 pane.InputIndexSet(None)
@@ -720,6 +725,10 @@ class SRNewDialogue(Dialogue):
             handled = True
 
         return handled
+
+    def HandleCommonData(self, inParams):
+        if not inParams['name']:
+            raise Exception(Lang('Name field must be non empty'))
 
     def HandleNFSData(self, inParams):
         self.srParams = inParams
