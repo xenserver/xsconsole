@@ -173,17 +173,17 @@ class DialoguePane:
         self.AddBodyFieldObj(TextField(inText, self.baseColour, FirstValue(inFlow, Field.FLOW_RIGHT)))
     
     def AddWrappedTextField(self, inText, inFlow = None):
-        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.baseColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+        field = self.AddBodyFieldObj(WrappedTextField(inText, self.baseColour, FirstValue(inFlow, Field.FLOW_RETURN)))
 
     def AddWrappedBoldTextField(self, inText, inFlow = None):
-        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.brightColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+        field = self.AddBodyFieldObj(WrappedTextField(inText, self.brightColour, FirstValue(inFlow, Field.FLOW_RETURN)))
 
     def AddWrappedCentredTextField(self, inText, inFlow = None):
-        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.baseColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+        field = self.AddBodyFieldObj(WrappedTextField(inText, self.baseColour, FirstValue(inFlow, Field.FLOW_RETURN)))
         field.SetCentred()
 
     def AddWrappedCentredBoldTextField(self, inText, inFlow = None):
-        field = self.AddBodyFieldObj(WrappedTextField(str(inText), self.brightColour, FirstValue(inFlow, Field.FLOW_RETURN)))
+        field = self.AddBodyFieldObj(WrappedTextField(inText, self.brightColour, FirstValue(inFlow, Field.FLOW_RETURN)))
         field.SetCentred()
 
     def AddStatusField(self, inName, inValue):

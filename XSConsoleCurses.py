@@ -158,7 +158,13 @@ class CursesPane:
             
             if len(clippedStr) > 0:
                 try:
-                    self.win.addstr(inY, xPos, clippedStr, CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
+                    encodedStr = clippedStr
+                    if isinstance(clippedStr, unicode):
+                        encodedStr = clippedStr.encode('utf-8')
+                        # Clear field here since addstr will clear len(encodedStr)-len(clippedStr) too few spaces
+                        self.win.addstr(inY, xPos, len(clippedStr)*' ', CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
+                        self.win.refresh()
+                    self.win.addstr(inY, xPos, encodedStr, CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
                 except Exception,  e:
                     if xPos + len(inString) == self.xSize and inY + 1 == self.ySize:
                         # Curses incorrectely raises an exception when writing the bottom right
