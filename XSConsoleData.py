@@ -850,13 +850,15 @@ class Data:
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
         self.RequireSession()
-        self.session.xenapi.host.set_suspend_image_sr(self.host.opaqueref(None), inSR['opaqueref'])
+        pool = self.GetPoolForThisHost()
+        self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], inSR['uuid'])
     
     def CrashDumpSRSet(self, inSR):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
         self.RequireSession()
-        self.session.xenapi.host.set_crash_dump_sr(self.host.opaqueref(None), inSR['opaqueref'])
+        pool = self.GetPoolForThisHost()
+        self.session.xenapi.pool.set_crash_dump_SR(pool['opaqueref'], inSR['opaqueref'])
     
     def RemovePartitionSuffix(self, inDevice):
         regExpList = [
