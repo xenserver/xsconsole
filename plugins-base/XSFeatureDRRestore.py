@@ -17,6 +17,7 @@ if __name__ == "__main__":
     raise Exception("This script is a plugin for xsconsole and cannot run independently")
     
 from XSConsoleStandard import *
+import subprocess
 
 class DRRestoreSelection(Dialogue):
 
@@ -143,19 +144,31 @@ class DRRestoreDialogue(SRDialogue):
         try:
             # probe for the restore VDI UUID
             command = "/opt/xensource/bin/xe-restore-metadata -p -u " + sr_uuid
-            status, output = commands.getstatusoutput(command)
-            status = os.WEXITSTATUS(status)
+            cmd = subprocess.Popen(command, 
+                                   stdout = subprocess.PIPE,
+                                   stderr = subprocess.PIPE,
+                                   shell = True)
+            output = "".join(cmd.stdout)
+            errput = "".join(cmd.stderr)
+            status = cmd.wait()
+            if status != 0:
+                raise Exception("(%s,%s)" % (output,errput))
             if status != 0:
                 raise Exception(output)
-            vdi_uuid = output
+            vdi_uuid = output.strip()
 
             # list the available backups
             Layout.Inst().TransientBanner(Lang("Found VDI, retrieving available backups..."))
             command = "/opt/xensource/bin/xe-restore-metadata -l -u " + sr_uuid + " -x " + vdi_uuid
-            status, output = commands.getstatusoutput(command)
-            status = os.WEXITSTATUS(status)
+            cmd = subprocess.Popen(command, 
+                                   stdout = subprocess.PIPE,
+                                   stderr = subprocess.PIPE,
+                                   shell = True)
+            output = "".join(cmd.stdout)
+            errput = "".join(cmd.stderr)
+            status = cmd.wait()
             if status != 0:
-                raise Exception(output)
+                raise Exception("(%s,%s)" % (output,errput))
             Layout.Inst().PushDialogue(DRRestoreSelection(output, vdi_uuid, sr_uuid))
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Metadata Restore failed: ")+Lang(e)))
