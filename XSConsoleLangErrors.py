@@ -24,7 +24,7 @@ class LangErrors:
 
   errorMap = {
     'ACTIVATION_WHILE_NOT_FREE' : 'An activation key can only be applied when the edition is set to \'free\'',
-    'AUTH_ALREADY_ENABLED' : 'External authentication for this host is already enabled',
+    'AUTH_ALREADY_ENABLED' : 'Host operation cannot be performed with external authentication enabled',
     'AUTH_ENABLE_FAILED' : 'The host failed to enable external authentication',
     'AUTH_IS_DISABLED' : 'External authentication is disabled, unable to resolve subject name',
     'AUTH_SERVICE_ERROR' : 'Error querying the external directory service',
