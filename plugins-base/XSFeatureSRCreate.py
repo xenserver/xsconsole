@@ -21,11 +21,12 @@ import xml.dom.minidom
 
 class SRNewDialogue(Dialogue):
     srTypeNames = {
-        'NFS': Lang('NFS Storage'),
-        'ISCSI': Lang('iSCSI Storage'),
-        'NETAPP': Lang('NetApp'),
-        'HBA': Lang('Hardware HBA (Fibre Channel)'),
+        'NFS': Lang('NFS VHD'),
+        'ISCSI': Lang('Software iSCSI'),
+        'HBA': Lang('Hardware HBA'),
+        'STORAGELINK': Lang('Advanced StorageLink Technology'),
         'EQUAL': Lang('Dell EqualLogic'),
+        'NETAPP': Lang('NetApp'),
         'CIFS_ISO': Lang('Windows File Sharing (CIFS) ISO Library'),
         'NFS_ISO': Lang('NFS ISO Library')
     }    
@@ -50,9 +51,9 @@ class SRNewDialogue(Dialogue):
         self.createMenu = Menu()
 
         if self.variant == 'CREATE':
-            choices = ['NFS', 'ISCSI', 'NETAPP', 'HBA', 'EQUAL']
+            choices = ['NFS', 'ISCSI', 'HBA', 'STORAGELINK']
         else: # ATTACH choices
-            choices = ['NFS',  'ISCSI', 'NETAPP', 'HBA', 'EQUAL', 'CIFS_ISO', 'NFS_ISO']
+            choices = ['NFS',  'ISCSI', 'HBA', 'STORAGELINK', 'CIFS_ISO', 'NFS_ISO']
         
         for type in choices:
             self.createMenu.AddChoice(name = self.srTypeNames[type],
@@ -247,6 +248,18 @@ class SRNewDialogue(Dialogue):
         pane.AddMenuField(self.createMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
+    def UpdateFieldsGATHER_STORAGELINK(self):
+        # Overwrite menu with submenu
+        self.createMenu = Menu()
+        choices = ['EQUAL', 'NETAPP']
+        
+        for type in choices:
+            self.createMenu.AddChoice(name = self.srTypeNames[type],
+                onAction = self.HandleCreateChoice,
+                handle = type)
+
+        self.ChangeState('INITIAL')
+    
     def UpdateFieldsGATHER_NFS(self):
         pane = self.Pane()
         pane.ResetFields()
@@ -319,14 +332,14 @@ class SRNewDialogue(Dialogue):
     def UpdateFieldsGATHER_HBA(self):
         pane = self.Pane()
         pane.ResetFields()
-        pane.AddTitleField(Lang('Hardware HBA (Fibre Channel)'))
+        pane.AddTitleField(Lang('Hardware HBA'))
         # Text copied from XenCenter
-        pane.AddWrappedTextField(Lang('XenServer Hosts support Fibre Channel (FC) storage area networks (SANs) '
-            'through Emulex or QLogic host bus adapters (HBAs).  All FC configuration required to expose a FC LUN '
-            'to the host must be completed manually, including storage devices, network devices, '
-            'and the HBA within the XenServer host.  Once all FC configuration is completed the HBA will expose '
-            'a SCSI device backed by the FC LUN to the host.  The SCSI device can then be used to access the '
-            'FC LUN as if it were a locally attached SCSI device.'))
+        pane.AddWrappedTextField(Lang('XenServer Hosts support Fibre Channel (FC) and shared Serial Attached SCSI (SAS) '
+            'storage area networks (SANs) using host bus adapters (HBAs).  All FC or shared SAS configuration required '
+            'to expose a LUN to the host must be completed manually, including storage devices, network devices, '
+            'and the HBA within the XenServer host.  Once all configuration is completed the HBA will expose '
+            'a SCSI device backed by the LUN to the host.  The SCSI device can then be used to access the '
+            'LUN as if it were a locally attached SCSI device.'))
         pane.NewLine()
         pane.AddWrappedTextField(Lang('Press <Enter> to scan for HBA devices.'))
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
