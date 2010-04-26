@@ -76,9 +76,9 @@ class TaskEntry:
             retVal = Lang('Operation was successful')
         elif status.startswith('failure'):
             retVal = Lang('Failed: ')+Language.XapiError(self.errorInfo)
-        elif stats.startswith('cancelling'):
+        elif status.startswith('cancelling'):
             retVal = Lang('Cancellation in progress')
-        elif stats.startswith('cancelled'):
+        elif status.startswith('cancelled'):
             retVal = Lang('Cancelled')
         else:
             retVal = Lang('<Unknown>')
