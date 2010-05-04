@@ -124,7 +124,12 @@ class XSFeaturePoolEject:
     def ActivateHandler(cls):
         db = HotAccessor()
         if len(db.host([])) <= 1:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('This host is not a Pool member.')))
+            local_pool_name = db.local_pool.name_label("")
+            if local_pool_name:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('This host is the Master of pool "%s", '
+                'and cannot be removed until another host is designated as Master.' % local_pool_name)))
+            else:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('This host is not a Pool member.')))
         elif db.local_pool.master.uuid() == db.local_host.uuid():
             Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('This host is the Pool Master, '
                 'and cannot be removed until another host is designated as Master.')))
