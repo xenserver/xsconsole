@@ -507,21 +507,6 @@ class Data:
         else:
             raise Exception("Unable to revert")
 
-    def SaveToResolvConf(self):
-        # Double-check authentication
-        Auth.Inst().AssertAuthenticated()
-        
-        file = None
-        try:
-            file = open("/etc/resolv.conf", "w")
-            for other in self.dns.othercontents([]):
-                file.write(other+"\n")
-            for server in self.dns.nameservers([]):
-                file.write("nameserver "+server+"\n")
-        finally:
-            if file is not None: file.close()
-            self.UpdateFromResolveConf()
-
     def SaveToSysconfig(self):
         # Double-check authentication
         Auth.Inst().AssertAuthenticated()
