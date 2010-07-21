@@ -71,21 +71,36 @@ class CursesPalette:
             bgNormal = curses.COLOR_RED
             bgBright = curses.COLOR_RED
 
-        cls.colours['MAIN_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
-        cls.colours['MENU_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
-        cls.colours['MENU_BRIGHT'] = cls.ColourCreate(fgBright, bgNormal)
-        cls.colours['MENU_HIGHLIGHT'] = cls.ColourCreate(bgDark, fgBright)
-        cls.colours['MENU_SELECTED'] = cls.ColourCreate(bgDark, fgBright)
-        cls.colours['MODAL_BASE'] = cls.ColourCreate(fgNormal, bgBright)
-        cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(fgBright, bgBright)
-        cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(bgDark, bgBright) # Text entry
-        cls.colours['MODAL_SELECTED'] = cls.ColourCreate(bgDark, fgBright)
-        cls.colours['MODAL_FLASH'] = cls.ColourCreate(fgBright, bgBright) | curses.A_BLINK
-        cls.colours['HELP_BASE'] = cls.ColourCreate(fgNormal, bgDark)
-        cls.colours['HELP_BRIGHT'] = cls.ColourCreate(fgBright, bgDark)
-        cls.colours['HELP_FLASH'] = cls.ColourCreate(fgBright, bgDark) | curses.A_BLINK
-        cls.colours['TOPLINE_BASE'] = cls.ColourCreate(fgDark, bgDark)
-        
+        if curses.has_colors():
+            cls.colours['MAIN_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
+            cls.colours['MENU_BASE'] = cls.ColourCreate(fgNormal, bgNormal)
+            cls.colours['MENU_BRIGHT'] = cls.ColourCreate(fgBright, bgNormal)
+            cls.colours['MENU_HIGHLIGHT'] = cls.ColourCreate(bgDark, fgBright)
+            cls.colours['MENU_SELECTED'] = cls.ColourCreate(bgDark, fgBright)
+            cls.colours['MODAL_BASE'] = cls.ColourCreate(fgNormal, bgBright)
+            cls.colours['MODAL_BRIGHT'] = cls.ColourCreate(fgBright, bgBright)
+            cls.colours['MODAL_HIGHLIGHT'] = cls.ColourCreate(bgDark, bgBright) # Text entry
+            cls.colours['MODAL_SELECTED'] = cls.ColourCreate(bgDark, fgBright)
+            cls.colours['MODAL_FLASH'] = cls.ColourCreate(fgBright, bgBright) | curses.A_BLINK
+            cls.colours['HELP_BASE'] = cls.ColourCreate(fgNormal, bgDark)
+            cls.colours['HELP_BRIGHT'] = cls.ColourCreate(fgBright, bgDark)
+            cls.colours['HELP_FLASH'] = cls.ColourCreate(fgBright, bgDark) | curses.A_BLINK
+            cls.colours['TOPLINE_BASE'] = cls.ColourCreate(fgDark, bgDark)
+        else:
+            # Monochrome terminal
+            for name in ['MAIN_BASE', 'MENU_BASE', 'MENU_BRIGHT', 'MENU_HIGHLIGHT',
+                         'MENU_SELECTED', 'MODAL_BASE', 'MODAL_BRIGHT', 'MODAL_HIGHLIGHT',
+                         'MODAL_SELECTED', 'MODAL_FLASH', 'HELP_BASE', 'HELP_BRIGHT',
+                         'HELP_FLASH', 'TOPLINE_BASE']:
+                cls.colours[name] = curses.color_pair(0)
+            for key, value in cls.colours.items():
+                if key.endswith('_SELECTED'):
+                    cls.colours[key] |= curses.A_REVERSE
+                elif key.endswith('_FLASH'):
+                    cls.colours[key] |= curses.A_BLINK
+                elif key.endswith('_BRIGHT'):
+                    cls.colours[key] |= curses.A_BOLD
+
 class CursesPane:
     debugBackground = 0
     
@@ -167,7 +182,7 @@ class CursesPane:
                     self.win.addstr(inY, xPos, encodedStr, CursesPalette.ColourAttr(FirstValue(inColour, self.defaultColour)))
                 except Exception,  e:
                     if xPos + len(inString) == self.xSize and inY + 1 == self.ySize:
-                        # Curses incorrectely raises an exception when writing the bottom right
+                        # Curses incorrectly raises an exception when writing the bottom right
                         # character in a window, but still completes the write, so ignore it
                         pass
                     else:
@@ -298,9 +313,8 @@ class CursesScreen(CursesPane):
         CursesPane.__init__(self, 0, 0, xSize, ySize, 0, 0)
         curses.noecho()
         curses.cbreak()
-        if curses.has_colors():
-            curses.start_color()
-            CursesPalette.DefineColours()
+        curses.start_color()
+        CursesPalette.DefineColours()
         try:
             curses.curs_set(0) # Make cursor invisible
         except:
