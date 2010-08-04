@@ -81,8 +81,8 @@ $(RPM_BUILD_COOKIE): $(RPM_DIRECTORIES) $(SOURCES)
 	@touch $@
 
 $(MY_SOURCES)/MANIFEST: $(MY_SOURCES_DIRSTAMP)
-	echo "xsconsole proprietary file $(MY_OUTPUT_DIR)/SRPMS/xsconsole-$(XS_VERSION)-$(XS_RELEASE).src.rpm" >$@
-	echo "xsconsole-plugins-oem proprietary file $(MY_OUTPUT_DIR)/SRPMS/xsconsole-plugins-oem-$(XS_VERSION)-$(XS_RELEASE).src.rpm" >$@
+	echo "xsconsole GPL file $(MY_OUTPUT_DIR)/SRPMS/xsconsole-$(XS_VERSION)-$(XS_RELEASE).src.rpm" >$@
+	echo "xsconsole-plugins-oem GPL file $(MY_OUTPUT_DIR)/SRPMS/xsconsole-plugins-oem-$(XS_VERSION)-$(XS_RELEASE).src.rpm" >$@
 
 .PHONY: sources
 sources: $(MY_SOURCES)/MANIFEST
