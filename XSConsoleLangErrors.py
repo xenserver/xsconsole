@@ -103,7 +103,7 @@ class LangErrors:
     'HOST_MASTER_CANNOT_TALK_BACK' : 'The master reports that it cannot talk back to the slave on the supplied management IP address',
     'HOST_NAME_INVALID' : 'The host name is invalid',
     'HOST_NOT_DISABLED' : 'This host cannot be enabled as it is not disabled',
-    'HOST_NOT_ENOUGH_FREE_MEMORY' : 'Not enough host memory is available to perform this operation',
+    'HOST_NOT_ENOUGH_FREE_MEMORY' : 'Not enough host memory available, please shutdown or suspend some VMs',
     'HOST_NOT_ENOUGH_FREE_MEMORY-SHORT' : 'Not enough free memory',
     'HOST_NOT_IN_RECOVERY_MODE' : 'The restore could not be performed because the host is not in recovery mode',
     'HOST_NOT_LIVE' : 'This operation cannot be completed as the host is not live',
