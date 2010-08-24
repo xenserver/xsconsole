@@ -33,6 +33,13 @@ class Layout:
         self.exitBanner = None # Not layout, but keep with layout for convenience
         self.exitCommandIsExec = True # Not layout, but keep with layout for convenience
 
+    def AssertScreenSize(self):
+        consoleXSize = self.parent.XSize()
+        consoleYSize = self.parent.YSize()
+        if consoleXSize < self.APP_XSIZE or consoleYSize < self.APP_YSIZE:
+            raise Exception('Console size ('+str(consoleXSize)+', '+str(consoleYSize) +
+                ') too small for application size ('+str(self.APP_XSIZE)+', '+str(self.APP_YSIZE) +')')
+
     @classmethod
     def Inst(cls):
         if cls.instance is None:
@@ -111,12 +118,8 @@ class Layout:
         self.transientBannerHandler(inMessage)
     
     def WriteParentOffset(self, inParent):
-        consoleXSize = inParent.XSize()
-        consoleYSize = inParent.YSize()
-        if consoleXSize < self.APP_XSIZE or consoleYSize < self.APP_YSIZE:
-            raise Exception('Console size ('+str(consoleXSize)+', '+str(consoleYSize) +
-                ') too small for application size ('+str(self.APP_XSIZE)+', '+str(self.APP_YSIZE) +')')
-        
+        self.AssertScreenSize()
+ 
         # Centralise subsequent windows
         inParent.OffsetSet(
             (inParent.XSize() - self.APP_XSIZE) / 2,

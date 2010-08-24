@@ -41,7 +41,11 @@ class App:
         
     def __init__(self):
         self.cursesScreen = None
-    
+
+    def AssertScreenSize(self):
+        if hasattr(self, 'layout'):
+            self.layout.AssertScreenSize()
+
     def Build(self, inDirs = None):
         # Search for the app plugins and include them
         Importer.Reset()

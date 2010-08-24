@@ -33,7 +33,13 @@ def main():
     else:
         app = App.Inst()
         app.Build( ['plugins-base', 'plugins-oem', 'plugins-extras'] )
-        app.Enter()
+        try:
+            app.Enter()
+        except Exception, e:
+            # it may be that the screen size has changed
+            app.AssertScreenSize()
+            # if we get here then it was some other problem
+            raise
 
 if __name__ == "__main__":
     try:
