@@ -85,7 +85,8 @@ class RootDialogue(Dialogue):
         if statusPane.NumStaticFields() == 0: # No key help yet
             if statusPane.NeedsScroll():
                 statusPane.AddKeyHelpField( {
-                    Lang("<Page Up/Page Down>") : Lang("Scroll")
+                    Lang("<Page Up/Down>") : Lang("Scroll"),
+                    Lang("<F5>") : Lang("Refresh"),
                 })
     
     def HandleKey(self, inKey):

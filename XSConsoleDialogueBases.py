@@ -97,7 +97,8 @@ class InfoDialogue(Dialogue):
         helpKeys = { Lang("<Enter>") : Lang("OK") }
         if pane.NeedsScroll():
             helpKeys.update({
-                Lang("<Page Up/Page Down>") : Lang("Scroll")
+                Lang("<Page Up/Down>") : Lang("Scroll"),
+                Lang("<F5>") : Lang("Refresh"),
             })
 
         pane.AddKeyHelpField( helpKeys )

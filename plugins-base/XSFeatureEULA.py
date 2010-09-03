@@ -63,7 +63,7 @@ class EULADialogue(Dialogue):
         helpKeys = { Lang("<Enter>") : Lang("Accept") , Lang("<Esc>") : Lang("Decline") }
         if pane.NeedsScroll():
             helpKeys.update({
-                Lang("<Page Up/Page Down>") : Lang("Scroll")
+                Lang("<Page Up/Down>") : Lang("Scroll")
             })
 
         pane.AddKeyHelpField( helpKeys )
