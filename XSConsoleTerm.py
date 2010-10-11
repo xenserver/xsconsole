@@ -284,7 +284,7 @@ class App:
             if self.layout.ExitCommand() is not None:
                 doQuit = True
             
-            bannerStr = Language.Inst().Branding(data.host.software_version.product_brand('')) + ' ' + data.host.software_version.product_version('')
+            bannerStr = Language.Inst().Branding(data.host.software_version.product_brand('')) + ' ' + data.host.software_version.product_version_text_short('')
             
             if Auth.Inst().IsAuthenticated():
                 hostStr = Auth.Inst().LoggedInUsername()+'@'+data.host.hostname('')
