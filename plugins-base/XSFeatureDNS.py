@@ -30,10 +30,7 @@ class XSFeatureDNS:
         for dns in data.dns.nameservers([]):
             inPane.AddWrappedTextField(str(dns))
         inPane.NewLine()
-        inPane.AddWrappedTextField(Lang("Changes to this configuration may be overwritten if any "
-                                        "interfaces are configured to use DHCP."))
         inPane.AddKeyHelpField( {
-            Lang("<Enter>") : Lang("Reconfigure DNS"),
             Lang("<F5>") : Lang("Refresh")
         })
         
