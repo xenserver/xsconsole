@@ -539,6 +539,7 @@ class Data:
     def ScanDmiDecode(self, inLines):
         STATE_NEXT_ELEMENT = 2
         state = 0
+        handles = []
         
         self.data['dmi'] = {
             'cpu_sockets' : 0,
@@ -567,8 +568,11 @@ class Data:
                     state += 1
             elif state == 2:
                 # scan for 'Handle...' line
-                if indent == 0 and re.match(r'Handle.*', line):
-                    state += 1
+                if indent == 0:
+                    match = re.match(r'Handle (.*)$', line)
+                    if match and (match.group(1) not in handles):
+                        handles.append(match.group(1))
+                        state += 1
             elif state == 3:
                 if indent == 0:
                     elementName = line
@@ -577,6 +581,8 @@ class Data:
                     elif elementName == 'Chassis Information': state = 6
                     elif elementName == 'Processor Information': state = 7
                     elif elementName == 'Memory Device': state = 8
+                    else:        
+                        state = STATE_NEXT_ELEMENT
                 else:        
                     state = STATE_NEXT_ELEMENT
             elif state == 4: # BIOS Information
