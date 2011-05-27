@@ -29,8 +29,7 @@ class Config:
             'bg_bright' : (0, 200, 400), 
         }
         
-        self.ftpname = 'XenServer Support'
-        self.ftpserver = 'ftp://support.xensource.com/bugreports'
+        self.ftpserver = ''
     
     @classmethod
     def Inst(cls):
@@ -45,9 +44,6 @@ class Config:
     def Colour(self,  inName):
         return self.colours[inName]
     
-    def FTPName(self):
-        return self.ftpname
-        
     def FTPServer(self):
         return self.ftpserver
     
