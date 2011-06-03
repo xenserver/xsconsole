@@ -208,8 +208,6 @@ class Auth:
         
         if inNewPassword == '':
             raise Exception(Lang('An empty password is not allowed'))
-        if re.match(r'\s*$', inNewPassword):
-            raise Exception(Lang('Passwords containing only spaces are not allowed'))
             
         if self.IsPasswordSet():
             try:
