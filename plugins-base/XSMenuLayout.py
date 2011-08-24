@@ -166,6 +166,13 @@ class XSMenuLayout:
         inPane.AddWrappedTextField(Lang("This menu configures remote services, such as access by "
             "remote shell (ssh) and remote logging (syslog) to other servers."))
 
+    def UpdateFieldsBUR(self, inPane):
+        inPane.AddTitleField(Lang("Backup, Restore and Update"))
+   
+        inPane.AddWrappedTextField(Lang(
+            "From this menu you can backup and restore the system database and Virtual Machine metadata, and apply "
+            "software updates to the system."))
+
     def ActivateHandler(self, inName):
         Layout.Inst().TopDialogue().ChangeMenu(inName)
 
@@ -189,6 +196,8 @@ class XSMenuLayout:
                 lambda: self.ActivateHandler('MENU_MANAGEMENT'), self.UpdateFieldsMANAGEMENT ],
             [ 'MENU_REMOTE', Lang("Remote Service Configuration"),
                 lambda: self.ActivateHandler('MENU_REMOTE'), self.UpdateFieldsREMOTE ],
+            [ 'MENU_BUR', Lang("Backup, Restore and Update"),
+                lambda: self.ActivateHandler('MENU_BUR'), self.UpdateFieldsBUR ],
             [ 'MENU_TECHNICAL', Lang("Technical Support"),
                 lambda: self.ActivateHandler('MENU_TECHNICAL'), self.UpdateFieldsTECHNICAL ],
             [ 'MENU_REBOOTSHUTDOWN', Lang("Reboot or Shutdown"),
