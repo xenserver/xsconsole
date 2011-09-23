@@ -85,7 +85,7 @@ class XSFeatureDRSchedule:
     @classmethod
     def StatusUpdateHandler(cls, inPane):
         data = Data.Inst()
-        inPane.AddTitleField(Lang("Schedule Virtual Machine Metadata"))
+        inPane.AddTitleField(Lang("Schedule Virtual Machine Metadata Backup"))
 
         inPane.AddWrappedTextField(Lang(
             "Press <Enter> to select how to schedule regular Virtual Machine metadata backups."))  
