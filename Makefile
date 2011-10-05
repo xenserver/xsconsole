@@ -61,6 +61,7 @@ PLUGINS_BASE += XSFeatureInterface.py
 PLUGINS_BASE += XSFeatureKeyboard.py
 PLUGINS_BASE += XSFeatureLocalShell.py
 PLUGINS_BASE += XSFeatureLogInOut.py
+PLUGINS_BASE += XSFeatureNetworkReset.py
 PLUGINS_BASE += XSFeatureNTP.py
 PLUGINS_BASE += XSFeatureQuit.py
 PLUGINS_BASE += XSFeaturePoolEject.py
