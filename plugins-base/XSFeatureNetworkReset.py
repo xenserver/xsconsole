@@ -21,30 +21,29 @@ from XSConsoleStandard import *
 pool_conf = '/etc/xensource/pool.conf'
 interface_reconfigure = '/opt/xensource/libexec/interface-reconfigure'
 inventory_file = '/etc/xensource-inventory'
+management_conf = '/etc/firstboot.d/data/management.conf'
 network_reset = '/tmp/network-reset'
 
-# read inventory file
-def read_inventory():
-	f = open(inventory_file, 'r')
-	inventory = {}
+def read_dict_file(fname):
+	f = open(fname, 'r')
+	d = {}
 	for l in f.readlines():
 		kv = l.split('=')
-		inventory[kv[0]] = kv[1][1:-2]
-	return inventory
-	
+		d[kv[0]] = kv[1][1:-2]
+	return d
+
+def read_inventory():
+	return read_dict_file(inventory_file)
+
+def read_management_conf():
+	return read_dict_file(management_conf)
+
 def write_inventory(inventory):
 	f = open(inventory_file, 'w')
 	for k in inventory:
 		f.write(k + "='" + inventory[k] + "'\n")
 	f.close()
 
-def biosdevname(d):
-	try:
-		p = popen('biosdevname -i ' + d)
-		return p.read()
-	except:
-		return d
-		
 class NetworkResetDialogue(Dialogue):
 	def __init__(self):
 		Dialogue.__init__(self)
@@ -52,9 +51,6 @@ class NetworkResetDialogue(Dialogue):
 		data.Update() # Pick up current 'connected' states
 		choiceDefs = []
 
-		self.mac = None
-		self.dev2mac = {}
-			
 		# Determine pool role
 		self.master_ip = None
 		try:
@@ -65,34 +61,13 @@ class NetworkResetDialogue(Dialogue):
 				self.master_ip = ls[1]
 		finally:
 			f.close()
-		
-		# Find existing network interfaces (MACs)
-		sysfs = '/sys/class/net/'
-		currentPIF = None
-		# iterate over all devices
-		for d in os.listdir(sysfs):
-			# only continue if it is a physical device
-			if os.access(sysfs + d + '/device', os.F_OK):
-				# try to get the MAC
-				m = None
-				try:
-					f = open(sysfs + d + '/address', 'r')
-					m = f.readline()[:-1].lower()
-					if m != 'fe:ff:ff:ff:ff:ff':
-						self.dev2mac[biosdevname(d)] = m
-				finally:
-					f.close()
-		self.devices = self.dev2mac.keys()
-		self.devices.sort()
-		for d in self.devices:
-			choiceDefs.append(ChoiceDef(self.dev2mac[d] + ' (' + d + ')', lambda: self.HandleNICChoice(self.nicMenu.ChoiceIndex())))
-					
-		if len(choiceDefs) == 0:
-			XSLog('Configure Management Interface found no PIFs to present')
-			choiceDefs.append(ChoiceDef(Lang("<No interfaces present>"), None))
 
-		self.nicMenu = Menu(self, None, "Configure Management Interface", choiceDefs)
-		
+		try:
+			conf = read_management_conf()
+			self.device = conf['LABEL']
+		except:
+			self.device = "eth0"
+
 		self.modeMenu = Menu(self, None, Lang("Select IP Address Configuration Mode"), [
 			ChoiceDef(Lang("DHCP"), lambda: self.HandleModeChoice('DHCP') ),
 			ChoiceDef(Lang("Static"), lambda: self.HandleModeChoice('STATIC') )
@@ -111,14 +86,28 @@ class NetworkResetDialogue(Dialogue):
 		pane = self.NewPane(DialoguePane(self.parent))
 		pane.TitleSet(Lang("Emergency Network Reset"))
 		pane.AddBox()
-		
+
 	def UpdateFieldsINITIAL(self):
 		pane = self.Pane()
 		pane.ResetFields()
 		
-		pane.AddTitleField(Lang("Select NIC for Management Interface"))
-		pane.AddMenuField(self.nicMenu)
+		pane.AddTitleField(Lang("!! WARNING !!"))
+		pane.AddWrappedTextField(Lang("This command will reboot the host and reset its network configuration."))
+		pane.NewLine()
+		pane.AddWrappedTextField(Lang("Before continuing:"))
+		pane.AddWrappedTextField(Lang("- Shut down all VMs running on this host."))
+		pane.AddWrappedTextField(Lang("- Disable HA if this host is part of a resource pool with HA enabled."))
+		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
+
+	def UpdateFieldsDEVICE(self):
+		pane = self.Pane()
+		pane.ResetFields()
+		
+		pane.AddTitleField(Lang("Choose Management Interface after reset"))
+		pane.AddInputField(Lang("Device name",  14),  self.device, 'device')
 		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+		if pane.InputIndex() is None:
+			pane.InputIndexSet(0) # Activate first field for input
 
 	def UpdateFieldsMODE(self):
 		pane = self.Pane()
@@ -155,14 +144,13 @@ class NetworkResetDialogue(Dialogue):
 	def UpdateFieldsPRECOMMIT(self):
 		pane = self.Pane()
 		pane.ResetFields()
-		
-		pane.AddTitleField(Lang("Press <Enter> to reset the network configuration"))
+
+		pane.AddWrappedTextField(Lang("Press <Enter> to reset the network configuration."))
 		pane.AddWrappedTextField(Lang("This will cause the host to reboot."))
-		
-		pane.AddWrappedTextField(Lang("The management interface will be configured as follows:"))
 		pane.NewLine()
-		
-		pane.AddStatusField(Lang("NIC",  16),  self.mac + ' (' + self.device + ')')
+
+		pane.AddWrappedTextField(Lang("The management interface will be configured as follows:"))
+		pane.AddStatusField(Lang("NIC",  16),  self.device)
 		pane.AddStatusField(Lang("IP Mode",  16),  self.mode)
 		if self.mode == 'static':
 			pane.AddStatusField(Lang("IP Address",  16),  self.IP)
@@ -180,9 +168,34 @@ class NetworkResetDialogue(Dialogue):
 		self.state = inState
 		self.BuildPane()
 		self.UpdateFields()
-							
+
 	def HandleKeyINITIAL(self, inKey):
-		return self.nicMenu.HandleKey(inKey)
+		handled = True
+		pane = self.Pane()
+		if inKey == 'KEY_ENTER':
+			self.ChangeState('DEVICE')
+		elif inKey == 'KEY_ESCAPE':
+			handled = False
+		else:
+			pass # Leave handled as True
+		return handled
+
+	def HandleKeyDEVICE(self, inKey):
+		handled = True
+		pane = self.Pane()
+		if inKey == 'KEY_ENTER':
+			inputValues = pane.GetFieldValues()
+			self.device = inputValues['device']
+			if self.device == "":
+				pane.InputIndexSet(None)
+				Layout.Inst().PushDialogue(InfoDialogue(Lang('Invalid device name')))
+			else:
+				self.ChangeState('MODE')
+		elif pane.CurrentInput().HandleKey(inKey):
+			pass # Leave handled as True
+		else:
+			handled = False
+		return handled
 
 	def HandleKeyMODE(self, inKey):
 		return self.modeMenu.HandleKey(inKey)
@@ -267,16 +280,7 @@ class NetworkResetDialogue(Dialogue):
 			handled = True
 
 		return handled
-			
-	def HandleNICChoice(self,  inChoice):
-		if inChoice is None:
-			self.mac = None
-			self.ChangeState('PRECOMMIT')
-		else:
-			self.device = self.devices[inChoice]
-			self.mac = self.dev2mac[self.device]
-			self.ChangeState('MODE')
-		
+
 	def HandleModeChoice(self,  inChoice):
 		if inChoice == 'DHCP':
 			self.mode = 'dhcp'
@@ -307,7 +311,7 @@ class NetworkResetDialogue(Dialogue):
 		os.system('service xapi stop >/dev/null 2>/dev/null')
 
 		# Reconfigure new management interface
-		if_args = ' --force ' + bridge + ' rewrite --mac=' + self.mac + ' --device=' + self.device + ' --mode=' + self.mode
+		if_args = ' --force ' + bridge + ' rewrite --mac=x --device=' + self.device + ' --mode=' + self.mode
 		if self.mode == 'static':
 			if_args += ' --ip=' + self.IP + ' --netmask=' + self.netmask
 			if self.gateway != '':
@@ -323,16 +327,15 @@ class NetworkResetDialogue(Dialogue):
 		# Write trigger file for XAPI to continue the network reset on startup
 		try:
 			f = file(network_reset, 'w')
-			f.write('mac\t' + self.mac + '\n')
-			f.write('device\t' + self.device + '\n')
-			f.write('mode\t' + self.mode + '\n')
+			f.write('DEVICE=' + self.device + '\n')
+			f.write('MODE=' + self.mode + '\n')
 			if self.mode == 'static':
-				f.write('ip\t' + self.IP + '\n')
-				f.write('netmask\t' + self.netmask + '\n')
+				f.write('IP=' + self.IP + '\n')
+				f.write('NETMASK=' + self.netmask + '\n')
 				if self.gateway != '':
-					f.write('gateway\t' + self.gateway + '\n')
+					f.write('GATEWAY=' + self.gateway + '\n')
 				if self.dns != '':
-					f.write('dns\t' + self.dns + '\n')
+					f.write('DNS=' + self.dns + '\n')
 		finally:
 			f.close()
 
@@ -345,9 +348,13 @@ class XSFeatureNetworkReset:
 	@classmethod
 	def StatusUpdateHandler(cls, inPane):
 		data = Data.Inst()
-		
+		warning = """This command will reboot the host and reset its network configuration.
+
+Before completing this command:
+- Shut down all running VMs.
+- Disable HA if enabled on the pool."""
 		inPane.AddTitleField(Lang("Emergency Network Reset"))
-		inPane.AddWrappedTextField("This option will reset the configuration of this host's network interfaces. This will cause the host to reboot.")
+		inPane.AddWrappedTextField(warning)
 				
 		inPane.AddKeyHelpField( {
 			Lang("<Enter>") : Lang("Reset Networking")
