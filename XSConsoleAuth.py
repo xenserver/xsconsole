@@ -13,7 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, popen2, pwd, re, sys, time
+import os, popen2, pwd, re, sys, time, socket
 import PAM # From PyPAM module
 
 from XSConsoleBases import *
@@ -34,6 +34,8 @@ class Auth:
         self.defaultPassword = ''
         self.testingHost = None
         self.authTimestampSeconds = None
+        self.masterConnectionBroken = False
+        socket.setdefaulttimeout(15)
         
         self.testMode = False
         # The testing.txt file is used for testing only
@@ -163,28 +165,37 @@ class Auth:
 
     def OpenSession(self):
         session = None
-        
-        try:
-            # Try the local Unix domain socket first
-            session = XenAPI.xapi_local()
-            session.login_with_password('root','')
-        except Exception,  e:
-            session = None
-            self.error = e
-            
-        if session is None and self.testingHost is not None:
-            # Local session couldn't connect, so try remote.
-            session = XenAPI.Session("https://"+self.testingHost)
+
+        if not self.masterConnectionBroken:
             try:
-                session.login_with_password('root', self.defaultPassword)
-                
-            except XenAPI.Failure, e:
-                if e.details[0] != 'HOST_IS_SLAVE': # Ignore slave errors when testing
-                    session = None
-                    self.error = e
-            except Exception, e:
+                # Try the local Unix domain socket first
+                session = XenAPI.xapi_local()
+                session.login_with_password('root','')
+            except socket.timeout:
+                session = None
+                self.masterConnectionBroken = True
+                self.error = 'The master connection has timed out.'
+            except Exception,  e:
                 session = None
                 self.error = e
+                
+            if session is None and self.testingHost is not None:
+                # Local session couldn't connect, so try remote.
+                session = XenAPI.Session("https://"+self.testingHost)
+                try:
+                    session.login_with_password('root', self.defaultPassword)
+                    
+                except XenAPI.Failure, e:
+                    if e.details[0] != 'HOST_IS_SLAVE': # Ignore slave errors when testing
+                        session = None
+                        self.error = e
+                except socket.timeout:
+                    session = None
+                    self.masterConnectionBroken = True
+                    self.error = 'The master connection has timed out.'
+                except Exception, e:
+                    session = None
+                    self.error = e
         return session
     
     def NewSession(self):
@@ -232,3 +243,7 @@ class Auth:
     def TimeoutSecondsSet(self, inSeconds):
         Auth.Inst().AssertAuthenticated()
         State.Inst().AuthTimeoutSecondsSet(inSeconds)
+
+    def IsXenAPIConnectionBroken(self):
+       return self.masterConnectionBroken
+

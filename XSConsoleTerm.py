@@ -114,6 +114,12 @@ class App:
                             Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
                                  "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
 
+                    if Auth.Inst().IsXenAPIConnectionBroken():
+                        XSLog("Displaying 'XenAPI connection timeout' dialogue")
+                        self.layout.PushDialogue(InfoDialogue(
+                            Lang("The XenAPI connection has timed out.  This console will have reduced functionality.  "
+                                "If this host is a pool slave, the master might be unreachable.")))
+
                     if not Auth.Inst().IsPasswordSet() :
                         # Request password change on first boot, or if it isn't set
                         XSLog("Displaying 'Please specify a password' dialogue and EULAs")
