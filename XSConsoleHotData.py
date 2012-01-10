@@ -15,7 +15,7 @@
 
 import XenAPI
 
-import commands, re, shutil, sys
+import commands, re, shutil, sys, socket
 from pprint import pprint
 
 from XSConsoleAuth import *
@@ -137,9 +137,13 @@ class HotData:
         if not isinstance(inRef, types.IntType) and cacheEntry is not None and timeNow - cacheEntry.timestamp < fetcher.lifetimeSecs:
             retVal = cacheEntry.value
         else:
-            retVal = fetcher.fetcher(inRef)
-            # Save in the cache
-            self.data[cacheName] = Struct(timestamp = timeNow, value = retVal)
+            try:
+                retVal = fetcher.fetcher(inRef)
+                # Save in the cache
+                self.data[cacheName] = Struct(timestamp = timeNow, value = retVal)
+            except socket.timeout:
+                self.session = None
+                raise socket.timeout
         return retVal    
     
     def FetchByRef(self, inRef):

@@ -90,13 +90,19 @@ class Auth:
 
     def TCPAuthenticate(self, inUsername, inPassword):
 
-        session = XenAPI.Session("https://"+self.testingHost)
-        
-        try:
-            session.login_with_password(inUsername, inPassword)
-            session.logout()
-        finally:
-            session.close()    
+        if not self.masterConnectionBroken:
+            session = XenAPI.Session("https://"+self.testingHost)
+            
+            try:
+                try:
+                    session.login_with_password(inUsername, inPassword)
+                    session.logout()
+                except socket.timeout:
+                    session = None
+                    self.masterConnectionBroken = True
+                    self.error = 'The master connection has timed out.'
+            finally:
+                session.close()    
         
     def PAMAuthenticate(self, inUsername, inPassword):
         

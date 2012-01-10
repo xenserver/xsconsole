@@ -15,7 +15,7 @@
 
 import XenAPI
 
-import commands, re, shutil, sys, tempfile
+import commands, re, shutil, sys, tempfile, socket
 from pprint import pprint
 
 from XSConsoleAuth import *
@@ -298,6 +298,8 @@ class Data:
                 for id, pool in pools.iteritems():
                    self.data['pools'][id] = convertPool(id, pool)
 
+            except socket.timeout:
+                self.session = None
             except Exception, e:
                 XSLogError('Data update failed: ', e)
 
