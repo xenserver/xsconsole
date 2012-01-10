@@ -240,7 +240,10 @@ class NetworkResetDialogue(Dialogue):
 					IPUtils.AssertValidIP(self.gateway)
 					failedName = Lang('DNS Server')
 					IPUtils.AssertValidIP(self.dns)
-					self.ChangeState('PRECOMMIT')
+					if self.master_ip == None:
+						self.ChangeState('PRECOMMIT')
+					else:
+						self.ChangeState('MASTERIP')
 				except:
 					pane.InputIndexSet(None)
 					Layout.Inst().PushDialogue(InfoDialogue(Lang('Invalid ')+failedName))
