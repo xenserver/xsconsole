@@ -94,8 +94,10 @@ class NetworkResetDialogue(Dialogue):
 		pane.AddTitleField(Lang("!! WARNING !!"))
 		pane.AddWrappedTextField(Lang("This command will reboot the host and reset its network configuration."))
 		pane.NewLine()
+		pane.AddWrappedTextField(Lang("As part of this utility, VMs running on this host will be forcefully shutdown."))
+		pane.NewLine()
 		pane.AddWrappedTextField(Lang("Before continuing:"))
-		pane.AddWrappedTextField(Lang("- Shut down all VMs running on this host."))
+		pane.AddWrappedTextField(Lang("- Where possible, cleanly shutdown VMs."))
 		pane.AddWrappedTextField(Lang("- Disable HA if this host is part of a resource pool with HA enabled."))
 		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Continue"), Lang("<Esc>") : Lang("Cancel") } )
 
@@ -103,7 +105,7 @@ class NetworkResetDialogue(Dialogue):
 		pane = self.Pane()
 		pane.ResetFields()
 		
-		pane.AddTitleField(Lang("Choose Management Interface after reset"))
+		pane.AddTitleField(Lang("Enter the Primary Management Interface to be used after reset"))
 		pane.AddInputField(Lang("Device name",  14),  self.device, 'device')
 		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
 		if pane.InputIndex() is None:
@@ -113,7 +115,7 @@ class NetworkResetDialogue(Dialogue):
 		pane = self.Pane()
 		pane.ResetFields()
 		
-		pane.AddTitleField(Lang("Select DHCP or static IP address configuration"))
+		pane.AddTitleField(Lang("Select the IP configuration mode to be used after reset"))
 		pane.AddMenuField(self.modeMenu)
 		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
 
@@ -149,7 +151,7 @@ class NetworkResetDialogue(Dialogue):
 		pane.AddWrappedTextField(Lang("This will cause the host to reboot."))
 		pane.NewLine()
 
-		pane.AddWrappedTextField(Lang("The management interface will be configured as follows:"))
+		pane.AddWrappedTextField(Lang("The Primary Management Interface will be reconfigured with the following settings:"))
 		pane.AddStatusField(Lang("NIC",  16),  self.device)
 		pane.AddStatusField(Lang("IP Mode",  16),  self.mode)
 		if self.mode == 'static':
@@ -158,7 +160,7 @@ class NetworkResetDialogue(Dialogue):
 			pane.AddStatusField(Lang("Gateway",  16),  self.gateway)
 			pane.AddStatusField(Lang("DNS Server",  16),  self.dns)
 								
-		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
+		pane.AddKeyHelpField( { Lang("<Enter>") : Lang("Apply Changes and Reboot"), Lang("<Esc>") : Lang("Cancel") } )
 					
 	def UpdateFields(self):
 		self.Pane().ResetPosition()
@@ -353,8 +355,10 @@ class XSFeatureNetworkReset:
 		data = Data.Inst()
 		warning = """This command will reboot the host and reset its network configuration.
 
-Before completing this command:
-- Shut down all running VMs.
+As part of this utility, VMs be forcefully shutdown.
+
+Before running this command:
+- If possible, cleanly shutdown VMs.
 - Disable HA if enabled on the pool."""
 		inPane.AddTitleField(Lang("Emergency Network Reset"))
 		inPane.AddWrappedTextField(warning)
