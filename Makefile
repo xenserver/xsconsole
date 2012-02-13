@@ -91,7 +91,6 @@ PLUGINS_OEM += XSFeatureClaimSR.py
 PLUGINS_OEM += XSFeatureManagementHelp.py
 PLUGINS_OEM += XSFeatureOEMBackup.py
 PLUGINS_OEM += XSFeatureOEMRestore.py
-PLUGINS_OEM += XSFeatureOEMRevert.py
 PLUGINS_OEM += XSFeatureReset.py
 PLUGINS_OEM += XSFeatureUpdate.py
 PLUGINS_OEM += XSFeatureVerboseBoot.py

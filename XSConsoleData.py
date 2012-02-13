@@ -142,7 +142,6 @@ class Data:
     
 
 
-        self.UpdateFromPatchVersions()
         self.Update()
     
     def FakeMetrics(self, inPIF):
@@ -449,65 +448,6 @@ class Data:
             retVal = 0
         
         return retVal
-
-    def UpdateFromPatchVersions(self):
-        self.data['backup'] = {}
-
-        alternateVersion = None
-        try:
-            try:
-                alternateDev = ShellPipe('/opt/xensource/libexec/find-partition', 'alternate').Stdout()[0].split(',')[0]
-                alternateMount = tempfile.mkdtemp(".xsconsole")
-    
-                ShellPipe('/bin/mount', '-t', 'auto', '-o', 'ro', alternateDev, alternateMount).Call()
-                
-                rootfsDev = alternateMount + '/rootfs'
-                if not os.path.isfile(rootfsDev):
-                    inventoryMount = alternateMount
-                else:
-                    rootfsMount = tempfile.mkdtemp(".xsconsole")
-                    ShellPipe('/bin/mount', '-t', 'squashfs', '-o', 'loop,ro', rootfsDev, rootfsMount).Call()
-                    inventoryMount = rootfsMount
-
-                inventoryFile = open(inventoryMount+'/etc/xensource-inventory')
-    
-                for line in inventoryFile:
-                    match = re.match(r"\s*BUILD_NUMBER\s*=\s*'([^']*)'", line)
-                    if match:
-                        alternateVersion = match.group(1)
-                        break
-            except Exception, e:
-                XSLog('UpdateFromPatchVersions failed: ', e)
-        finally:
-            # Undefined variables raise exceptions, so this code will only undo operations that succeeded
-            try: inventoryFile.close()
-            except: pass
-            try: ShellPipe('/bin/umount', '-d', rootfsMount).Call() # -d for loopback device
-            except: pass
-            try: os.rmdir(rootfsMount)
-            except: pass
-            try: ShellPipe('/bin/umount', alternateMount).Call()
-            except: pass
-            try: os.rmdir(alternateMount)
-            except: pass
-
-        self.data['backup']['alternateversion'] = alternateVersion
-
-    def CanRevert(self):
-        # Revert if the alternate version is earlier than the current version.
-        try:
-            numCurrent = int(re.match(r'([0-9]+)', self.host.software_version.build_number()).group(1))
-            numAlternate = int(re.match(r'([0-9]+)', self.backup.alternateversion()).group(1))
-            retVal = (numAlternate < numCurrent)
-        except:
-            retVal = False
-        return retVal
-
-    def Revert(self):
-        if self.CanRevert():
-            ShellPipe('/opt/xensource/libexec/set-boot', 'alternate').Call()
-        else:
-            raise Exception("Unable to revert")
 
     def SaveToSysconfig(self):
         # Double-check authentication
