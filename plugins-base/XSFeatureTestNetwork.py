@@ -33,7 +33,7 @@ class TestNetworkDialogue(Dialogue):
         self.testMenu = Menu(self, None, Lang("Select Test Type"), [
             ChoiceDef(Lang("Ping local address 127.0.0.1"), lambda: self.HandleTestChoice('local') ), 
             ChoiceDef(Lang("Ping gateway address")+" ("+gatewayName+")", lambda: self.HandleTestChoice('gateway') ), 
-            ChoiceDef(Lang("Ping citrixxenserver.com"), lambda: self.HandleTestChoice('xenserver') ), 
+            ChoiceDef(Lang("Ping www.kernel.org"), lambda: self.HandleTestChoice('fixedserver') ), 
             ChoiceDef(Lang("Ping custom address"), lambda: self.HandleTestChoice('custom') ), 
             ])
     
@@ -106,8 +106,8 @@ class TestNetworkDialogue(Dialogue):
             pingTarget = '127.0.0.1'
         elif inChoice == 'gateway':
             pingTarget = Data.Inst().ManagementGateway()
-        elif inChoice == 'xenserver':
-            pingTarget = 'citrixxenserver.com'
+        elif inChoice == 'fixedserver':
+            pingTarget = 'www.kernel.org'
         else:
             custom = True
 
