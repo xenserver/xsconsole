@@ -42,6 +42,7 @@ SCRIPTS += XSConsoleState.py
 SCRIPTS += XSConsoleTask.py
 SCRIPTS += XSConsoleTerm.py
 SCRIPTS += XSConsoleUtils.py
+SCRIPTS += simpleconfig.py
 
 PLUGINS_BASE :=
 PLUGINS_BASE += XSFeatureChangePassword.py

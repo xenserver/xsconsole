@@ -17,6 +17,7 @@ import XenAPI
 
 import commands, re, shutil, sys, tempfile, socket
 from pprint import pprint
+from simpleconfig import SimpleConfigFile
 
 from XSConsoleAuth import *
 from XSConsoleKeymaps import *
@@ -719,7 +720,13 @@ class Data:
         file = open('/etc/timezone', 'w')
         file.write(inTimezone+"\n")
         file.close()
-        
+
+        if os.path.exists('/etc/sysconfig/clock'):
+            cfg = SimpleConfigFile()
+            cfg.read('/etc/sysconfig/clock')
+            cfg.info["ZONE"] = inTimezone
+            cfg.write('/etc/sysconfig/clock')
+
     def CurrentTimeString(self):
         return commands.getoutput('/bin/date -R')
 
