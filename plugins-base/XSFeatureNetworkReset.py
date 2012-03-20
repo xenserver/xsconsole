@@ -316,18 +316,38 @@ class NetworkResetDialogue(Dialogue):
 		os.system('service xapi stop >/dev/null 2>/dev/null')
 
 		# Reconfigure new management interface
-		if_args = ' --force ' + bridge + ' rewrite --mac=x --device=' + self.device + ' --mode=' + self.mode
-		if self.mode == 'static':
-			if_args += ' --ip=' + self.IP + ' --netmask=' + self.netmask
-			if self.gateway != '':
-				if_args += ' --gateway=' + self.gateway
-		os.system(interface_reconfigure + if_args + ' >/dev/null 2>/dev/null')
+		if os.access('/tmp/do-not-use-networkd', os.F_OK):
+			if_args = ' --force ' + bridge + ' rewrite --mac=x --device=' + self.device + ' --mode=' + self.mode
+			if self.mode == 'static':
+				if_args += ' --ip=' + self.IP + ' --netmask=' + self.netmask
+				if self.gateway != '':
+					if_args += ' --gateway=' + self.gateway
+			os.system(interface_reconfigure + if_args + ' >/dev/null 2>/dev/null')
+		else:
+			os.system('service xcp-networkd stop >/dev/null 2>/dev/null')
+			try: os.remove('/var/xapi/networkd.db')
+			except: pass
 
 		# Update interfaces in inventory file
 		inventory = read_inventory()
 		inventory['MANAGEMENT_INTERFACE'] = bridge
 		inventory['CURRENT_INTERFACES'] = ''
 		write_inventory(inventory)
+
+		# Rewrite firstboot management.conf file, which will be picked it by xcp-networkd on restart (if used)
+		try:
+			f = file(management_conf, 'w')
+			f.write("LABEL='" + self.device + "'\n")
+			f.write("MODE='" + self.mode + "'\n")
+			if self.mode == 'static':
+				f.write("IP='" + self.IP + "'\n")
+				f.write("NETMASK='" + self.netmask + "'\n")
+				if self.gateway != '':
+					f.write("GATEWAY='" + self.gateway + "'\n")
+				if self.dns != '':
+					f.write("DNS='" + self.dns + "'\n")
+		finally:
+			f.close()
 
 		# Write trigger file for XAPI to continue the network reset on startup
 		try:
