@@ -372,13 +372,19 @@ class Data:
                     self.data['derived']['dom0_vm'] = vm
      
         # Calculate the full version string
-        version = self.host.software_version.product_version('') + '-' + self.host.software_version.build_number('')
+        version = self.host.software_version.product_version(self.host.software_version.platform_version())
+        version += '-' + self.host.software_version.build_number('')
+
         oemBuildNumber = self.host.software_version.oem_build_number('')
         if oemBuildNumber != '':
             version += '-'+oemBuildNumber
         if version.startswith('-'):
             version = Lang("<Unknown>")
         self.data['derived']['fullversion'] = version
+
+        # Calculate the branding string
+        brand = self.host.software_version.product_brand(self.host.software_version.platform_name())
+        self.data['derived']['brand'] = brand
 
     def Dump(self):
         pprint(self.data)

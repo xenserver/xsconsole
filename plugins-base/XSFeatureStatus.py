@@ -26,7 +26,7 @@ class XSFeatureStatus:
         inPane.AddWrappedTextField(data.dmi.system_manufacturer())
         inPane.AddWrappedTextField(data.dmi.system_product_name())
         inPane.NewLine()
-        inPane.AddWrappedTextField(Language.Inst().Branding(data.host.software_version.product_brand()) + ' ' +
+        inPane.AddWrappedTextField(Language.Inst().Branding(data.derived.brand()) + ' ' +
             data.derived.fullversion())
         inPane.NewLine()
         inPane.AddTitleField(Lang("Management Network Parameters"))
