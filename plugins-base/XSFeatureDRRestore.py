@@ -148,14 +148,14 @@ class DRRestoreDialogue(SRDialogue):
                                    stdout = subprocess.PIPE,
                                    stderr = subprocess.PIPE,
                                    shell = True)
-            output = "".join(cmd.stdout)
-            errput = "".join(cmd.stderr)
+            output = "".join(cmd.stdout).strip()
+            errput = "".join(cmd.stderr).strip()
             status = cmd.wait()
             if status != 0:
                 raise Exception("(%s,%s)" % (output,errput))
-            if status != 0:
-                raise Exception(output)
-            vdi_uuid = output.strip()
+            if len(output) == 0:
+                raise Exception(errput)
+            vdi_uuid = output
 
             # list the available backups
             Layout.Inst().TransientBanner(Lang("Found VDI, retrieving available backups..."))
