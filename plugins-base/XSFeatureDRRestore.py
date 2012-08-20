@@ -164,8 +164,8 @@ class DRRestoreDialogue(SRDialogue):
                                    stdout = subprocess.PIPE,
                                    stderr = subprocess.PIPE,
                                    shell = True)
-            output = "".join(cmd.stdout)
-            errput = "".join(cmd.stderr)
+            output = "".join(cmd.stdout).strip()
+            errput = "".join(cmd.stderr).strip()
             status = cmd.wait()
             if status != 0:
                 raise Exception("(%s,%s)" % (output,errput))
