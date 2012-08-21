@@ -132,7 +132,10 @@ class XSFeaturePoolNewMaster:
     def ActivateHandler(cls):
         db = HotAccessor()
         if len(db.host([])) <= 1:
-            Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('This host is not a Pool member.')))
+            if db.local_pool.name_label(""):
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('No other hosts in Pool.')))
+            else:
+                Layout.Inst().PushDialogue(InfoDialogue(Lang('Option Unavailable'), Lang('This host is not a Pool member.')))
         else:
             DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(PoolNewMasterDialogue()))
     
