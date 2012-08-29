@@ -375,10 +375,10 @@ class XSFeatureNetworkReset:
 		data = Data.Inst()
 		warning = """This command will reboot the host and reset its network configuration.
 
-As part of this utility, VMs be forcefully shutdown.
+As part of this utility all running VMs will be forcefully shutdown.
 
 Before running this command:
-- If possible, cleanly shutdown VMs.
+- Shutdown running VMs.
 - Disable HA if enabled on the pool."""
 		inPane.AddTitleField(Lang("Emergency Network Reset"))
 		inPane.AddWrappedTextField(warning)
