@@ -32,7 +32,7 @@ class XSFeatureLocalShell:
         user = os.environ.get('USER', 'root')
         Layout.Inst().ExitBannerSet(Lang("\rShell for local user '")+user+"'.\r\r"+
                 Lang("Type 'exit' to return to the management console.\r"))
-        Layout.Inst().SubshellCommandSet("( export HOME=/root; export TMOUT="+str(State.Inst().AuthTimeoutSeconds())+" && /bin/bash --login )")
+        Layout.Inst().SubshellCommandSet("( export HOME=/root; export TMOUT="+str(State.Inst().AuthTimeoutSeconds())+" && cat /etc/motd && /bin/bash --login )")
         XSLog('Local shell')
         
     @classmethod
