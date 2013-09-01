@@ -1,0 +1,47 @@
+There are prerequisites for building a xsconsole for XenServer.
+All the following must be installed, either by visiting the
+project webpage or installing a pre-built package provided by 
+your OS distributor:
+    * RPM build
+    * Redhat rpm config (if debuginfo is required)
+    * Development install of Python v2.3 or later (e.g., python-devel)
+    * Development install of bzip2 (e.g.,bzip2-devel)
+
+
+Follow these steps to build an RPM.
+
+1. Clone the xsconsole git repository to /some/path/xsconsole
+
+4. To obtain a tarballs of source for both the base and the plugin-oem run
+   the following commands:
+
+    git archive --prefix=xsconsole/ HEAD  Makefile  xsconsole LICENSE '*.py' \
+         'plugins-base/*py' | bzip2 -c > xsconsole.tar.bz2
+
+    git archive --prefix=xsconsole/ HEAD  LICENSE 'plugins-oem/*py' | \
+         bzip2 -c > xsconsole-plugins-oem.tar.bz2
+
+6. Replace with correct version numbers to create the spec file:
+     sed -e s\,@XS_VERSION@,6.2.50,g\
+         -e s\,@XS_RELEASE@,385,g\
+	  < ./mk/xsconsole.spec.in  \
+	  > xsconsole.spec
+
+     sed -e s\,@XS_VERSION@,6.2.50,g\
+         -e s\,@XS_RELEASE@,385,g\
+	  < ./mk/xsconsole-plugins-oem.spec.in  \
+	  > xsconsole-plugins-oem.spec
+
+7. Move xsconsole.tar.bz2 to /usr/src/redhat/SOURCES/
+   Move xsconsole.spec    to /usr/src/redhat/SPECS/
+   Move xsconsole-plugins-oem.tar.bz2 to /usr/src/redhat/SOURCES/
+   Move xsconsole-plugins-oem.spec    to /usr/src/redhat/SPECS/
+	      
+8. To build the RPMs run:
+     cd /usr/src/redhat/SPECS/
+     rpmbuild -ba xsconsole.spec --target noarch
+     rpmbuild -ba xsconsole-plugins-oem.spec --target noarch
+			  
+9. Install using
+     rpm -ivh /usr/src/redhat/RPMS/noarch/xsconsole*.rpm
+
