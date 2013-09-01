@@ -25,9 +25,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/xsconsole/*.py
-%{_libdir}/xsconsole/*.pyc
-%{_libdir}/xsconsole/*.pyo
+%{_libdir}/xsconsole/*.py*
 %{_libdir}/xsconsole/plugins-base
 #%{_libdir}/xsconsole/plugins-oem
 #%{_libdir}/xsconsole/plugins-extras
