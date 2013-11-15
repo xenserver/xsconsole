@@ -4,4 +4,4 @@ if [ "$USER" = "" ]; then
   export USER=root
 fi
 
-exec /usr/bin/python /usr/lib/xsconsole/XSConsole.py $@
+exec /usr/bin/python /usr/lib64/xsconsole/XSConsole.py $@

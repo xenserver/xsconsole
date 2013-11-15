@@ -3,7 +3,7 @@
 # Copyright (c) Citrix Systems 2007
 
 PREFIX=$(DESTDIR)/usr
-LIBDIR=$(DESTDIR)/usr/lib/
+LIBDIR=$(DESTDIR)/usr/lib64/
 
 INSTALL=/usr/bin/install
 
