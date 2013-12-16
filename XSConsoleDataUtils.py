@@ -13,7 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, popen2, re, tempfile
+import os, subprocess, re, tempfile
 
 from XSConsoleBases import *
 from XSConsoleData import *
@@ -152,12 +152,12 @@ class FileUtils:
         partitionName = realDevice+'1'
         
         # Write the partition table with one FAT32 partition filling the disk
-        popenObj = popen2.Popen4("/sbin/sfdisk --DOS --quiet '"+realDevice+"'")
-        popenObj.tochild.write(",,0C\n") # First partition, 0x0C => Windows LBA partition type
-        popenObj.tochild.write(";\n")
-        popenObj.tochild.write(";\n")
-        popenObj.tochild.write(";\n")
-        popenObj.tochild.close() # Send EOF
+        popenObj = subprocess.Popen("/sbin/sfdisk --DOS --quiet '"+realDevice+"'", stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        popenObj.stdin.write(",,0C\n") # First partition, 0x0C => Windows LBA partition type
+        popenObj.stdin.write(";\n")
+        popenObj.stdin.write(";\n")
+        popenObj.stdin.write(";\n")
+        popenObj.stdin.close() # Send EOF
         
         while True:
             try:

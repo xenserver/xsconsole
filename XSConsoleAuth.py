@@ -13,7 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, popen2, pwd, re, sys, time, socket
+import os, pwd, re, sys, time, socket
 import PAM # From PyPAM module
 
 from XSConsoleBases import *
