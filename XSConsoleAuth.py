@@ -69,7 +69,7 @@ class Auth:
         if self.isAuthenticated:
             retVal = time.time() - self.authTimestampSeconds
         else:
-            raise(Exception, "Cannot get age - not authenticated")
+            raise Exception("Cannot get age - not authenticated")
         return retVal
     
     def KeepAlive(self):
