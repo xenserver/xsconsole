@@ -91,7 +91,7 @@ class DRRestoreSelection(Dialogue):
             else:
               dry_flag=""
             Layout.Inst().TransientBanner(Lang("Restoring VM Metadata.  This may take a few minutes..."))
-            command = "/opt/xensource/bin/xe-restore-metadata -y " + dry_flag +" -u " + self.sr_uuid + " -x " + self.vdi_uuid + " -d " + self.chosen_date + " -m " + chosen_mode
+            command = "%s/xe-restore-metadata -y %s -u %s -x %s -d %s -m %s" % (Config.Inst().HelperPath(), dry_flag, self.sr_uuid, self.vdi_uuid, self.chosen_date, chosen_mode)
             status, output = commands.getstatusoutput(command)
             status = os.WEXITSTATUS(status)
             Layout.Inst().PopDialogue()
@@ -143,7 +143,7 @@ class DRRestoreDialogue(SRDialogue):
         sr_uuid = inSR['uuid']
         try:
             # probe for the restore VDI UUID
-            command = "/opt/xensource/bin/xe-restore-metadata -p -u " + sr_uuid
+            command = "%s/xe-restore-metadata -p -u %s" % (Config.Inst().HelperPath(), sr_uuid)
             cmd = subprocess.Popen(command, 
                                    stdout = subprocess.PIPE,
                                    stderr = subprocess.PIPE,
@@ -159,7 +159,7 @@ class DRRestoreDialogue(SRDialogue):
 
             # list the available backups
             Layout.Inst().TransientBanner(Lang("Found VDI, retrieving available backups..."))
-            command = "/opt/xensource/bin/xe-restore-metadata -l -u " + sr_uuid + " -x " + vdi_uuid
+            command = "%s/xe-restore-metadata -l -u %s -x %s" % (Config.Inst().HelperPath(), sr_uuid, vdi_uuid)
             cmd = subprocess.Popen(command, 
                                    stdout = subprocess.PIPE,
                                    stderr = subprocess.PIPE,

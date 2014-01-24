@@ -34,7 +34,7 @@ class DRBackupDialogue(SRDialogue):
         try:
             # determine if there is a backup VDI or not, and if not just create one
             sr_uuid = inSR['uuid']
-            command = "/opt/xensource/bin/xe-backup-metadata -n -u " + sr_uuid
+            command = "%s/xe-backup-metadata -n -u %s" % (Config.Inst().HelperPath(), sr_uuid)
             
             status, output = commands.getstatusoutput(command)
             status = os.WEXITSTATUS(status)
@@ -45,7 +45,7 @@ class DRBackupDialogue(SRDialogue):
                raise Exception(output)
 
             Layout.Inst().TransientBanner(Lang("Backing up metadata... This may take several minutes."))
-            command = "/opt/xensource/bin/xe-backup-metadata " + initalize_vdi + " -u " + sr_uuid
+            command = "%s/xe-backup-metadata %s -u %s" % (Config.Inst().HelperPath(), initalize_vdi, sr_uuid)
             status, output = commands.getstatusoutput(command)
             if status == 0:
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Backup Successful"), output))
