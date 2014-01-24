@@ -869,7 +869,7 @@ class Data:
             self.RequireSession()
             self.session.xenapi.PIF.reconfigure_ip(inPIF['opaqueref'],  inMode,  inIP,  inNetmask,  inGateway, FirstValue(inDNS, ''))
             self.session.xenapi.host.management_reconfigure(inPIF['opaqueref'])
-            status, output = commands.getstatusoutput('/opt/xensource/bin/xe host-signal-networking-change')
+            status, output = commands.getstatusoutput('%s host-signal-networking-change' % (Config.Inst().XECLIPath()))
             if status != 0:
                 raise Exception(output)
         finally:

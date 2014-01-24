@@ -36,6 +36,12 @@ class Config:
             if os.path.exists(path):
                 self.xcpconfigdir = path
                 break
+
+        self.xecli = '/usr/bin/xe'
+        for path in ["/usr/bin/xe", "/opt/xensource/bin/xe"]:
+            if os.path.exists(path):
+                self.xecli = path
+                break
     
     @classmethod
     def Inst(cls):
@@ -74,7 +80,10 @@ class Config:
 
     def XCPConfigDir(self):
         return self.xcpconfigdir
-        
+
+    def XECLIPath(self):
+        return self.xecli
+
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):
     import XSConsoleConfigOEM
