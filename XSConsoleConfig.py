@@ -30,6 +30,12 @@ class Config:
         }
         
         self.ftpserver = ''
+
+        self.xcpconfigdir = ''
+        for path in ["/etc/xcp", "/etc/xensource"]:
+            if os.path.exists(path):
+                self.xcpconfigdir = path
+                break
     
     @classmethod
     def Inst(cls):
@@ -65,6 +71,9 @@ class Config:
     def FirstBootEULAs(self):
         # Subclasses in XSConsoleConfigOEM can add their EULAs to this array
         return ['/EULA']
+
+    def XCPConfigDir(self):
+        return self.xcpconfigdir
         
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):

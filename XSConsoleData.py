@@ -123,7 +123,7 @@ class Data:
         if status == 0:
             self.ScanCPUInfo(output.split("\n"))
 
-        (status, output) = commands.getstatusoutput("/usr/bin/openssl x509 -in /etc/xensource/xapi-ssl.pem -fingerprint -noout")
+        (status, output) = commands.getstatusoutput("/usr/bin/openssl x509 -in %s/xapi-ssl.pem -fingerprint -noout" % (Config.Inst().XCPConfigDir()))
         if status == 0:
             fp = output.split("=")
             if len(fp) >= 2:
