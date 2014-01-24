@@ -47,6 +47,12 @@ class Config:
             if os.path.exists(path):
                 self.helperdir = path
                 break
+
+        self.libexecdir = ''
+        for path in ["/usr/lib/xcp/lib", "/opt/xensource/libexec"]:
+            if os.path.exists(path):
+                self.libexecdir = path
+                break
     
     @classmethod
     def Inst(cls):
@@ -91,6 +97,9 @@ class Config:
 
     def HelperPath(self):
         return self.helperdir
+
+    def LibexecPath(self):
+        return self.libexecdir
 
 # Import a more specific configuration if available
 if os.path.isfile(sys.path[0]+'/XSConsoleConfigOEM.py'):

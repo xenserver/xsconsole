@@ -63,7 +63,7 @@ class DRScheduleDialogue(Dialogue):
                 pass
         if inChoice != 'never':
             try:
-                os.symlink("/opt/xensource/libexec/backup-metadata-cron", self.cronPath(inChoice))
+                os.symlink("%s/backup-metadata-cron" % (Config.Inst().LibexecPath()), self.cronPath(inChoice))
                 Layout.Inst().PushDialogue(InfoDialogue(Lang("Metadata Backup Schedule successfully changed to occur ") + inChoice + "."))
             except:
                 XSLogFailure('Failed to create metadata schedule link')

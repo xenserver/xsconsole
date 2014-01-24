@@ -19,7 +19,7 @@ if __name__ == "__main__":
 from XSConsoleStandard import *
 
 pool_conf = '%s/pool.conf' % (Config.Inst().XCPConfigDir())
-interface_reconfigure = '/opt/xensource/libexec/interface-reconfigure'
+interface_reconfigure = '%s/interface-reconfigure' % (Config.Inst().LibexecPath())
 inventory_file = '/etc/xensource-inventory'
 management_conf = '/etc/firstboot.d/data/management.conf'
 network_reset = '/tmp/network-reset'
