@@ -558,7 +558,7 @@ class Data:
                         self.data['dmi']['memory_size'] += int(size.group(1))
                         self.data['dmi']['memory_modules'] += 1
                     elif size and size.group(2).lower() == 'gb':
-                        self.data['dmi']['memory'] += int(size.group(1)) * 1024
+                        self.data['dmi']['memory_size'] += int(size.group(1)) * 1024
                         self.data['dmi']['memory_modules'] += 1
     
     def Match(self, inLine, inRegExp, inKey):
