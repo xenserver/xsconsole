@@ -16,8 +16,8 @@ OEM-specific plugins for xsconsole - a console tool for configuring a XenServer 
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/usr/bin
-mkdir -p $RPM_BUILD_ROOT/usr/lib
+mkdir -p $RPM_BUILD_ROOT%{_bindir}
+mkdir -p $RPM_BUILD_ROOT%{_libdir}
 make install-oem DESTDIR=$RPM_BUILD_ROOT
 
 %clean
