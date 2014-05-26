@@ -269,7 +269,8 @@ class NetworkResetDialogue(Dialogue):
 			
 			# Reboot
 			Layout.Inst().ExitBannerSet(Lang("Rebooting..."))
-			Layout.Inst().ExitCommandSet('/sbin/shutdown -r now')
+			Layout.Inst().ExitCommandSet('mount -o remount, ro /')
+			Layout.Inst().ExitCommandSet('/sbin/reboot -f')
 			XSLog('Initiating reboot')
 		else:
 			handled = False
