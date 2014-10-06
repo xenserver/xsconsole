@@ -75,8 +75,8 @@ $(RPM_SPECSDIR)/xsconsole-plugins-oem.spec: xsconsole-plugins-oem.spec.in $(RPM_
 	-rm changelog-oem.tmp
 
 $(RPM_BUILD_COOKIE): $(RPM_DIRECTORIES) $(SOURCES)
-	$(RPMBUILD) --target noarch -ba $(RPM_SPECSDIR)/xsconsole.spec
-	$(RPMBUILD) --target noarch -ba $(RPM_SPECSDIR)/xsconsole-plugins-oem.spec
+	$(RPMBUILD) -ba $(RPM_SPECSDIR)/xsconsole.spec
+	$(RPMBUILD) -ba $(RPM_SPECSDIR)/xsconsole-plugins-oem.spec
 	@touch $@
 
 $(MY_SOURCES)/MANIFEST: $(MY_SOURCES_DIRSTAMP)
