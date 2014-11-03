@@ -95,7 +95,7 @@ class Auth:
             
             try:
                 try:
-                    session.login_with_password(inUsername, inPassword)
+                    session.login_with_password(inUsername, inPassword,'','XSConsole')
                     session.logout()
                 except socket.timeout:
                     session = None
@@ -176,7 +176,7 @@ class Auth:
             try:
                 # Try the local Unix domain socket first
                 session = XenAPI.xapi_local()
-                session.login_with_password('root','')
+                session.login_with_password('root','','','XSConsole')
             except socket.timeout:
                 session = None
                 self.masterConnectionBroken = True
@@ -189,7 +189,7 @@ class Auth:
                 # Local session couldn't connect, so try remote.
                 session = XenAPI.Session("https://"+self.testingHost)
                 try:
-                    session.login_with_password('root', self.defaultPassword)
+                    session.login_with_password('root', self.defaultPassword,'','XSConsole')
                     
                 except XenAPI.Failure, e:
                     if e.details[0] != 'HOST_IS_SLAVE': # Ignore slave errors when testing
