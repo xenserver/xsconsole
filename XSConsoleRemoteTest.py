@@ -24,12 +24,17 @@ from XSConsoleLayout import *
 import SocketServer
 import SimpleXMLRPCServer
 
+class UnixSimpleXMLRPCRequestHandler(SimpleXMLRPCServer.SimpleXMLRPCRequestHandler):
+    # Python 2.7's SimpleXMLRPCRequestHandler enables Nagle's algorithm by default
+    # which fails because we're working with Unix domain sockets so disable it.
+    disable_nagle_algorithm = False
+
 class UDSXMLRPCServer(SocketServer.UnixStreamServer, SimpleXMLRPCServer.SimpleXMLRPCDispatcher):
     def __init__(self, inAddr, inRequestHandler = None):
         self.logRequests = False
         SimpleXMLRPCServer.SimpleXMLRPCDispatcher.__init__(self)
         SocketServer.UnixStreamServer.__init__(self, inAddr,
-            FirstValue(inRequestHandler, SimpleXMLRPCServer.SimpleXMLRPCRequestHandler))
+            FirstValue(inRequestHandler, UnixSimpleXMLRPCRequestHandler))
         
     def handle_request(self):
         # Same as base class, but returns True if a request was handled
