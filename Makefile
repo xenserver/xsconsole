@@ -134,6 +134,9 @@ install-base:
 #	$(foreach docfile,$(DOCUMENTS),\
 #          $(INSTALL) -m $(DOC_MODE) $(docfile) $(DOCDIR);)
 
+	mkdir -p $(PREFIX)/lib/systemd/system
+	$(INSTALL) -m $(LIB_MODE) xsconsole.service $(PREFIX)/lib/systemd/system
+
 install-oem:
 	mkdir -p $(LIBDIR)/xsconsole/plugins-oem
 

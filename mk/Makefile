@@ -25,7 +25,7 @@ CHANGELOG_HEADER  := * $(CHANGELOG_DATE) $(CHANGELOG_USER) [$(XS_VERSION)-$(XS_R
 CHANGELOG_MESSAGE := - Build $(BRAND_SERVER) Configuration Console.
 
 # File selection criteria for base and OEM packages
-GIT_FILTERS_BASE :=  Makefile xsconsole LICENSE *.py plugins-base/*.py
+GIT_FILTERS_BASE :=  Makefile xsconsole xsconsole.service LICENSE *.py plugins-base/*.py
 GIT_FILTERS_OEM :=   Makefile LICENSE plugins-oem/*.py
 
 .PHONY: build

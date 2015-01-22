@@ -1,0 +1,12 @@
+[Unit]
+Description=XenServer Console
+After=xapi.service
+Requires=xapi.service
+
+[Service]
+Type=idle
+ExecStart=/sbin/agetty --noissue --autologin root --login-program=/usr/bin/xsconsole tty1
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
