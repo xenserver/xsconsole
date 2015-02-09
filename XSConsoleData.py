@@ -944,7 +944,7 @@ class Data:
                 device = ShellUtils.MakeSafeParam(device)
 
                 ipre = r'[0-9a-f.:]+'
-                ifRE = re.compile(r'\s*inet\s+addr\s*:'+ipre+'\s+bcast\s*:\s*'+ipre+r'\s+mask\s*:\s*('+ipre+r')\s*$',
+                ifRE = re.compile(r'\s*inet\s+' + ipre + '\s+netmask\s+(' + ipre + r')\s+broadcast\s+(' + ipre + r')\s*$',
                     re.IGNORECASE)
 
                 ifconfig = commands.getoutput("/sbin/ifconfig '"+device+"'").split("\n")
