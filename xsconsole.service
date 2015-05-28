@@ -1,6 +1,6 @@
 [Unit]
 Description=XenServer Console
-After=xapi.service
+After=xapi.service plymouth-quit-wait.service move-kernel-messages.service
 Requires=xapi.service
 
 [Service]
