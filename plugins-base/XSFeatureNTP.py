@@ -138,11 +138,13 @@ class NTPDialogue(Dialogue):
         try:
             if inChoice == 'ENABLE':
                 Layout.Inst().TransientBanner(Lang("Enabling..."))
-                data.EnableNTP()
+                data.EnableService('ntpd')
+                data.StartService('ntpd')
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("NTP Time Synchronization Enabled")))
             elif inChoice == 'DISABLE':
                 Layout.Inst().TransientBanner(Lang("Disabling..."))
-                data.DisableNTP()
+                data.DisableService('ntpd')
+                data.StopService('ntpd')
                 Layout.Inst().PushDialogue(InfoDialogue( Lang("NTP Time Synchronization Disabled")))
             elif inChoice == 'ADD':
                 self.ChangeState('ADD')
@@ -177,7 +179,7 @@ class NTPDialogue(Dialogue):
             data.SaveToNTPConf()
             if data.chkconfig.ntpd(False):
                 Layout.Inst().TransientBanner(Lang("Restarting NTP daemon with new configuration..."))
-                data.RestartNTP()
+                data.RestartService('ntpd')
             Layout.Inst().PushDialogue(InfoDialogue( inMessage))
         except Exception, e:
             Layout.Inst().PushDialogue(InfoDialogue( Lang("Update failed: ")+Lang(e)))

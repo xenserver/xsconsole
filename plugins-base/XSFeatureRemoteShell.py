@@ -55,12 +55,13 @@ class RemoteShellDialogue(Dialogue):
         Layout.Inst().PopDialogue()
         
         try:
-            data.ConfigureRemoteShell(inChoice)
             message = Lang("Configuration Successful")
             if inChoice:
-                ShellPipe(['/etc/init.d/sshd', 'start']).Call()
+                data.EnableService('sshd')
+                data.StartService('sshd')
             else:
-                ShellPipe(['/etc/init.d/sshd', 'stop']).CallRC() # Ignore failure if already stopped
+                data.DisableService('sshd')
+                data.StopService('sshd')
                 
                 if ShellPipe(['/sbin/pidof', 'sshd']).CallRC() == 0: # If PIDs are available
                     message = Lang("New connections via the remote shell are now disabled, but there are "

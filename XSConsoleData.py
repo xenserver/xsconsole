@@ -329,10 +329,9 @@ class Data:
         self.UpdateFromTimezone()
         self.UpdateFromKeymap()
         
-        if os.path.isfile("/sbin/chkconfig"):
-            (status, output) = commands.getstatusoutput("/sbin/chkconfig --list sshd && /sbin/chkconfig --list ntpd")
-            if status == 0:
-                self.ScanChkConfig(output.split("\n"))
+        self.data['chkconfig'] = {}
+        self.ScanService('sshd')
+        self.ScanService('ntpd')
 
         self.DeriveData()
         
@@ -621,20 +620,9 @@ class Data:
             if match:
                 self.data['bmc']['version'] = match.group(1)
     
-    def ScanChkConfig(self, inLines):
-        self.data['chkconfig'] = {}
-
-        for line in inLines:
-            # Is sshd on for runlevel 5?
-            if re.match(r'sshd.*5\s*:\s*on', line, re.IGNORECASE):
-                self.data['chkconfig']['sshd'] = True
-            elif re.match(r'sshd.*5\s*:\s*off', line, re.IGNORECASE):
-                self.data['chkconfig']['sshd'] = False
-            # else leave as Unknown
-            elif re.match(r'ntpd.*5\s*:\s*on', line, re.IGNORECASE):
-                self.data['chkconfig']['ntpd'] = True
-            elif re.match(r'ntpd.*5\s*:\s*off', line, re.IGNORECASE):
-                self.data['chkconfig']['ntpd'] = False
+    def ScanService(self, service):
+        (status, output) = commands.getstatusoutput("systemctl is-enabled %s" % (service,))
+        self.data['chkconfig'][service] = status == 0
 
     def ScanResolvConf(self, inLines):
         self.data['dns'] = {
@@ -900,15 +888,6 @@ class Data:
         Auth.Inst().AssertAuthenticatedOrPasswordUnset()
         self.RequireSession()
         self.session.xenapi.host.disable(self.host.opaqueref())
-
-    def ConfigureRemoteShell(self, inEnable):
-        if inEnable:
-            status, output = commands.getstatusoutput("/sbin/chkconfig sshd on")
-        else:
-            status, output = commands.getstatusoutput("/sbin/chkconfig sshd off")
-        
-        if status != 0:
-            raise Exception(output)
     
     def Ping(self,  inDest):
         # Must be careful that no unsanitised data is passed to the command
@@ -1089,20 +1068,28 @@ class Data:
             State.Inst().WeStoppedXAPISet(False)
             State.Inst().SaveIfRequired()
     
-    def EnableNTP(self):
-        status, output = commands.getstatusoutput(
-            "(export TERM=xterm && /sbin/chkconfig ntpd on && /etc/init.d/ntpd start)")
-        if status != 0:
-            raise Exception(output)
-        
-    def DisableNTP(self):
-        status, output = commands.getstatusoutput(
-            "(export TERM=xterm && /sbin/chkconfig ntpd off && /etc/init.d/ntpd stop)")
+    def EnableService(self, service):
+        status, output = commands.getstatusoutput("systemctl enable %s" % (service,))
         if status != 0:
             raise Exception(output)
 
-    def RestartNTP(self):
-        status, output = commands.getstatusoutput("(export TERM=xterm && /etc/init.d/ntpd restart)")
+    def DisableService(self, service):
+        status, output = commands.getstatusoutput("systemctl disable %s" % (service,))
+        if status != 0:
+            raise Exception(output)
+
+    def RestartService(self, service):
+        status, output = commands.getstatusoutput("systemctl restart %s" % (service,))
+        if status != 0:
+            raise Exception(output)
+
+    def StartService(self, service):
+        status, output = commands.getstatusoutput("systemctl start %s" % (service,))
+        if status != 0:
+            raise Exception(output)
+
+    def StopService(self, service):
+        status, output = commands.getstatusoutput("systemctl stop %s" % (service,))
         if status != 0:
             raise Exception(output)
 
