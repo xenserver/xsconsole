@@ -260,8 +260,10 @@ class App:
             secondsNow = time.time()    
             secondsRunning = secondsNow - startSeconds
 
-            if data.host.address('') == '':
-                # If the host doesn't yet have an IP, reload data occasionally to pick up DHCP updates
+            if data.host.address('') == '' or len(data.derived.managementpifs([])) == 0:
+                # If the host doesn't yet have an IP or doesn't have any
+                # management PIFs yet, reload data occasionally to pick up
+                # DHCP updates
                 if secondsNow - lastDataUpdateSeconds >= 4:
                     lastDataUpdateSeconds = secondsNow
                     data.Update()
