@@ -123,6 +123,10 @@ class Data:
         if status == 0:
             self.ScanCPUInfo(output.split("\n"))
 
+        (status, output) = commands.getstatusoutput("/bin/cat /etc/xensource-inventory")
+        if status == 0:
+            self.ScanInventory(output.split("\n"))
+
         (status, output) = commands.getstatusoutput("/usr/bin/openssl x509 -in %s/xapi-ssl.pem -fingerprint -noout" % (Config.Inst().XCPConfigDir()))
         if status == 0:
             fp = output.split("=")
@@ -338,8 +342,8 @@ class Data:
     def DeriveData(self):
         self.data.update({
             'derived' : {
-                'app_name' : Lang("XenCenter"),
-                'full_app_name' : Lang("Citrix XenCenter"),
+                'app_name' : Lang(self.data['inventory']['BRAND_CONSOLE']),
+                'full_app_name' : Lang(self.data['inventory']['COMPANY_NAME_SHORT'] + " " + self.data['inventory']['BRAND_CONSOLE']),
                 'cpu_name_summary' : {}
             }
         })
@@ -669,6 +673,13 @@ class Data:
             match = re.match(r'flags\s*:\s*(.*)', line)
             if match:
                 self.data['cpuinfo']['flags'] = match.group(1).split()
+
+    def ScanInventory(self, inLines):
+        self.data['inventory'] = {}
+        for line in inLines:
+            (key, value) = line.split("=")
+            # Strip the existing \'
+            self.data['inventory'][key] = value.strip('\'')
 
     def ReadTimezones(self):
         self.data['timezones'] = {

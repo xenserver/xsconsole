@@ -110,8 +110,8 @@ class XSFeaturePoolNewMaster:
     def StatusUpdateHandler(cls, inPane):
         db = HotAccessor()
         inPane.AddTitleField(Lang('Designate New Pool Master'))
-        inPane.AddWrappedTextField(Lang('This option will designate a new host as Master of the Pool.  ')+
-            Data.Inst().derived.app_name(Lang('XenCen'))+' will temporarily lose its connection to the Pool '
+        inPane.AddWrappedTextField(Lang('This option will designate a new host as Master of the Pool. ')+
+            Data.Inst().derived.app_name('')+' will temporarily lose its connection to the Pool '
             'as the transition occurs.  The transition may take several seconds.')
         inPane.NewLine()
         

@@ -24,7 +24,7 @@ class XSFeatureManagementHelp:
         data = Data.Inst()
         appName = data.derived.app_name('')
         fullAppName = data.derived.full_app_name('')
-        xenServerName = Language.Inst().Branding(data.host.software_version.product_brand('XenServer'))
+        xenServerName = Language.Inst().Branding(data.host.software_version.product_brand(''))
         inPane.AddTitleField(Lang("Manage Server Using ")+appName)
         
         inPane.AddWrappedTextField(fullAppName+Lang(" is the ")+xenServerName+

@@ -62,7 +62,7 @@ class XSFeatureDRBackup:
         inPane.AddTitleField(Lang("Backup Virtual Machine Metadata"))
 
         inPane.AddWrappedTextField(Lang(
-            "Press <Enter> to backup Virtual Machine metadata to a Storage Repository.  This will back up the information associated with the VM configuration to a special backup disk on the Storage Repository.  You can subsequently restore this metadata if you migrate the Storage Repository to another XenServer pool."))
+            "Press <Enter> to backup Virtual Machine metadata to a Storage Repository.  This will back up the information associated with the VM configuration to a special backup disk on the Storage Repository.  You can subsequently restore this metadata if you migrate the Storage Repository to another " + Language.Inst().Branding(data.host.software_version.product_brand('')) + " pool."))
         inPane.AddKeyHelpField( { Lang("<Enter>") : Lang("Backup") } )  
         
     @classmethod

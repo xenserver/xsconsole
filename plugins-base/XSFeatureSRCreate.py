@@ -330,14 +330,15 @@ class SRNewDialogue(Dialogue):
             pane.InputIndexSet(0)
     
     def UpdateFieldsGATHER_HBA(self):
+        data = Data.Inst()
         pane = self.Pane()
         pane.ResetFields()
         pane.AddTitleField(Lang('Hardware HBA'))
         # Text copied from XenCenter
-        pane.AddWrappedTextField(Lang('XenServer Hosts support Fibre Channel (FC) and shared Serial Attached SCSI (SAS) '
+        pane.AddWrappedTextField(Lang(Language.Inst().Branding(data.host.software_version.product_brand('')) + ' Hosts support Fibre Channel (FC) and shared Serial Attached SCSI (SAS) '
             'storage area networks (SANs) using host bus adapters (HBAs).  All FC or shared SAS configuration required '
             'to expose a LUN to the host must be completed manually, including storage devices, network devices, '
-            'and the HBA within the XenServer host.  Once all configuration is completed the HBA will expose '
+            'and the HBA within the host.  Once all configuration is completed the HBA will expose '
             'a SCSI device backed by the LUN to the host.  The SCSI device can then be used to access the '
             'LUN as if it were a locally attached SCSI device.'))
         pane.NewLine()

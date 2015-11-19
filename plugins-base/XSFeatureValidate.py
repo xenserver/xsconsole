@@ -55,6 +55,7 @@ class ValidateDialogue(Dialogue):
         self.UpdateFields()
         
     def UpdateFields(self):
+        data = Data.Inst()
         pane = self.Pane()
         pane.ResetFields()
         
@@ -64,7 +65,7 @@ class ValidateDialogue(Dialogue):
         pane.AddStatusField(Lang("Management network interface", 50), self.netResult)
         if self.srResult != 'OK':
             pane.NewLine()
-            pane.AddWrappedTextField(Lang('A local Storage Repository is useful but not essential for XenServer operation'))
+            pane.AddWrappedTextField(Lang('A local Storage Repository is useful but not essential for ' + Language.Inst().Branding(data.host.software_version.product_brand('')) + ' operation'))
             
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK") } )
 
