@@ -118,6 +118,11 @@ class XSFeatureChangePassword:
     @classmethod
     def ActivateHandler(cls, *inParams):
             DialogueUtils.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(ChangePasswordDialogue(*inParams)))
+
+    @classmethod
+    def ReadyHandler(cls, *inParams):
+        if State.Inst().PasswordChangeRequired() or not Auth.Inst().IsPasswordSet():
+            cls.ActivateHandler(*inParams)
         
     def Register(self):
         Importer.RegisterNamedPlugIn(
@@ -128,7 +133,9 @@ class XSFeatureChangePassword:
                 'menupriority' : 200,
                 'menutext' : Lang('Change Password') ,
                 'statusupdatehandler' : self.StatusUpdateHandler,
-                'activatehandler' : self.ActivateHandler
+                'activatehandler' : self.ActivateHandler,
+                'readyhandler' : self.ReadyHandler,
+                'readyhandlerpriority' : 1000,
             }
         )
 

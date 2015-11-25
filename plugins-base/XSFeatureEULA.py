@@ -91,16 +91,20 @@ class EULADialogue(Dialogue):
 
 class XSFeatureEULA:
     @classmethod
-    def ActivateHandler(cls, *inParams):
-        for eula in Config.Inst().FirstBootEULAs():
-            Layout.Inst().PushDialogue(EULADialogue(eula, *inParams))
+    def ReadyHandler(cls, *inParams):
+        if not Auth.Inst().IsPasswordSet():
+            for eula in Config.Inst().FirstBootEULAs():
+                Layout.Inst().PushDialogue(EULADialogue(eula, *inParams))
         
     def Register(self):
         Importer.RegisterNamedPlugIn(
             self,
             'EULA', # This key is referred to by name in XSConsoleTerm.py
             {
-                'activatehandler' : self.ActivateHandler
+                'readyhandler' : self.ReadyHandler,
+                # Create a stack of EULA dialogues that must be accepted before
+                # the password dialogue is revealed
+                'readyhandlerpriority' : 900,
             }
         )
 

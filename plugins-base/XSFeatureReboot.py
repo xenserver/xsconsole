@@ -52,6 +52,12 @@ class XSFeatureReboot:
         message = FirstValue(inMessage, Lang("Do you want to reboot this server?"))
         DialogueUtils.AuthenticatedOrPasswordUnsetOnly(lambda: Layout.Inst().PushDialogue(QuestionDialogue(
                 message, lambda x: cls.RebootReplyHandler(x))))
+
+    @classmethod
+    def ReadyHandler(cls, inMessage = None):
+        if State.Inst().RebootMessage() is not None and not (
+               State.Inst().PasswordChangeRequired() or not Auth.Inst().IsPasswordSet()):
+            cls.ActivateHandler(inMessage)
         
     def Register(self):
         Importer.RegisterNamedPlugIn(
@@ -62,7 +68,9 @@ class XSFeatureReboot:
                 'menupriority' : 200,
                 'menutext' : Lang('Reboot Server'),
                 'statusupdatehandler' : XSFeatureReboot.StatusUpdateHandler,
-                'activatehandler' : XSFeatureReboot.ActivateHandler
+                'activatehandler' : XSFeatureReboot.ActivateHandler,
+                'readyhandler' : XSFeatureReboot.ReadyHandler,
+                'readyhandlerpriority' : 1100,
             }
         )
 

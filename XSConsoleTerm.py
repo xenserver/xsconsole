@@ -108,29 +108,7 @@ class App:
                         Data.Inst().StartXAPI()
                         Data.Inst().Update()
                         
-                    if not Data.Inst().IsXAPIRunning() and State.Inst().RebootMessage() is None:
-                        XSLog("Displaying 'xapi is not running' dialogue")
-                        self.layout.PushDialogue(QuestionDialogue(
-                            Lang("The underlying Xen API xapi is not running.  This console will have reduced functionality.  "
-                                 "Would you like to attempt to restart xapi?"), lambda x: self.HandleRestartChoice(x)))
-
-                    if Auth.Inst().IsXenAPIConnectionBroken():
-                        XSLog("Displaying 'XenAPI connection timeout' dialogue")
-                        self.layout.PushDialogue(InfoDialogue(
-                            Lang("The XenAPI connection has timed out.  This console will have reduced functionality.  "
-                                "If this host is a pool slave, the master might be unreachable.")))
-
-                    if not Auth.Inst().IsPasswordSet() :
-                        # Request password change on first boot, or if it isn't set
-                        XSLog("Displaying 'Please specify a password' dialogue and EULAs")
-                        Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please specify a password for user 'root' before continuing"))
-                        # Create a stack of EULA dialogues that must be accepted before the password dialogue is revealed
-                        Importer.ActivateNamedPlugIn('EULA')
-                    elif State.Inst().PasswordChangeRequired():
-                        Importer.ActivateNamedPlugIn('CHANGE_PASSWORD', Lang("Please change the password for user 'root' before continuing"))
-                    elif State.Inst().RebootMessage() is not None:
-                        Importer.ActivateNamedPlugIn('REBOOT', State.Inst().RebootMessage())
-                        State.Inst().RebootMessageSet(None)
+                    Importer.CallReadyHandlers()
             
                     self.layout.Clear()
                     if not '--dryrun' in sys.argv:
@@ -320,17 +298,6 @@ class App:
             if secondsNow - lastGarbageCollectSeconds >= 60:
                 lastGarbageCollectSeconds = secondsNow
                 Task.Inst().GarbageCollect()
-
-    def HandleRestartChoice(self, inChoice):
-        if inChoice == 'y':
-            try:
-                XSLog('Attempting to restart xapi')
-                self.layout.TransientBanner(Lang("Restarting xapi...."))
-                Data.Inst().StartXAPI()
-                XSLog('Restarted xapi')
-            except Exception, e:
-                XSLogFailure('Failed to restart xapi', e)
-                self.layout.PushDialogue(InfoDialogue(Lang('Restart Failed'), Lang('Xapi did not restart successfully.  More information may be available in the file /var/log/messages.')))
 
     @classmethod
     def TransientBannerHandler(self, inMessage):

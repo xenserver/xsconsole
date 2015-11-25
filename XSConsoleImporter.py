@@ -109,6 +109,21 @@ class Importer:
             raise Exception(Lang("PlugIn (for activation) named '")+inName+Lang("' has no activation handler"))
         
         handler(*inParams)
+
+    @classmethod
+    def CallReadyHandlers(cls):
+        # Sort plugins in descending priority order with a default of 1000
+        def CmpPlugin(x, y):
+            return cmp(y.get('readyhandlerpriority', 1000),
+                       x.get('readyhandlerpriority', 1000))
+
+        plugins = cls.plugIns.values()
+        plugins.sort(CmpPlugin)
+
+        for plugin in plugins:
+            handler = plugin.get('readyhandler', None)
+            if handler:
+                handler()
     
     @classmethod
     def GetResource(cls, inName): # Don't use this until all of the PlugIns have had a chance to register
