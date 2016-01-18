@@ -29,7 +29,7 @@ class XSFeatureXAPIConnection:
                     XSLog('Restarted xapi')
                 except Exception, e:
                     XSLogFailure('Failed to restart xapi', e)
-                    Layout.Inst().PushDialogue(InfoDialogue(Lang('Restart Failed'), Lang('Xapi did not restart successfully.  More information may be available in the file /var/log/messages.')))
+                    Layout.Inst().PushDialogue(InfoDialogue(Lang('Restart Failed'), Lang('Xapi did not restart successfully.  More information may be available in the file /var/log/xensource.log.')))
 
         if not Data.Inst().IsXAPIRunning() and State.Inst().RebootMessage() is None:
             XSLog("Displaying 'xapi is not running' dialogue")
