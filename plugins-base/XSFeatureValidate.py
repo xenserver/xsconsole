@@ -29,13 +29,10 @@ class ValidateDialogue(Dialogue):
         pane.TitleSet(Lang("Validate Server Configuration"))
         pane.AddBox()
     
-        if 'vmx' not in data.cpuinfo.flags([]) and 'svm' not in data.cpuinfo.flags([]):
-            self.vtResult = Lang("Not Present on CPU")
-        else:
-            self.vtResult = Lang("Disabled in BIOS")
-            for capability in data.host.capabilities([]):
-                if re.match(r'hvm', capability):
-                    self.vtResult = Lang("OK")
+        self.vtResult = Lang("Not Present on CPU")
+        for capability in data.host.capabilities([]):
+            if re.match(r'hvm', capability):
+                self.vtResult = Lang("OK")
         
         # If there is an SR that allows vdi_create, signal SR OK
         self.srResult = "Not Present"

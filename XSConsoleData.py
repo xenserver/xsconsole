@@ -118,11 +118,6 @@ class Data:
             if status == 0:
                 self.ScanIpmiMcInfo(output.split("\n"))
         
-        # /proc/cpuinfo has details of the virtual CPUs exposed to DOM-0, not necessarily the real CPUs
-        (status, output) = commands.getstatusoutput("/bin/cat /proc/cpuinfo")
-        if status == 0:
-            self.ScanCPUInfo(output.split("\n"))
-
         (status, output) = commands.getstatusoutput("/bin/cat /etc/xensource-inventory")
         if status == 0:
             self.ScanInventory(output.split("\n"))
@@ -667,13 +662,6 @@ class Data:
             else:
                 self.data['ntp']['othercontents'].append(line)
                 
-    def ScanCPUInfo(self, inLines):
-        self.data['cpuinfo'] = {}
-        for line in inLines:
-            match = re.match(r'flags\s*:\s*(.*)', line)
-            if match:
-                self.data['cpuinfo']['flags'] = match.group(1).split()
-
     def ScanInventory(self, inLines):
         self.data['inventory'] = {}
         for line in inLines:
