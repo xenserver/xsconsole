@@ -784,7 +784,7 @@ class Data:
         Auth.Inst().AssertAuthenticated()
         self.RequireSession()
         pool = self.GetPoolForThisHost()
-        self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], inSR['uuid'])
+        self.session.xenapi.pool.set_suspend_image_SR(pool['opaqueref'], inSR['opaqueref'])
     
     def CrashDumpSRSet(self, inSR):
         # Double-check authentication
