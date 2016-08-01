@@ -13,7 +13,7 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-import os, pwd, re, sys, time, socket
+import os, spwd, re, sys, time, socket
 import PAM # From PyPAM module
 
 from XSConsoleBases import *
@@ -215,8 +215,9 @@ class Auth:
         # Security critical - mustn't wrongly return False
         retVal = True
         
-        rootHash = pwd.getpwnam("root")[1]
-        if rootHash == '!!':
+        rootHash = spwd.getspnam("root")[1]
+        # Account is locked or password is empty
+        if rootHash.startswith('!') or rootHash == '':
             retVal = False
             
         return retVal
