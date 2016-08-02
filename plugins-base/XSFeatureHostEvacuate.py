@@ -113,7 +113,7 @@ class HostEvacuateDialogue(Dialogue):
         if self.hostWasEnabled:
 
             pane.AddTitleField(Lang("Press <F8> to confirm the following actions."))
-            numVMs = max(0, len(HotAccessor().local_host.resident_VMs([]))-1) # Subtract 1 for dom0
+            numVMs = VMUtils.numLocalResidentVMs()
             pane.AddWrappedTextField(Lang('1.  Prevent new VMs starting on or migrating to this host'))
             pane.AddWrappedTextField(Lang('2.  Migrate ') + str(numVMs) + Language.Quantity(' Virtual Machine', numVMs) +
                 Lang(' to other hosts'))
@@ -221,7 +221,8 @@ class XSFeatureHostEvacuate:
     @classmethod
     def ActivateHandler(cls):
         db=HotAccessor()
-        if len(db.host([])) == 1 and len(db.local_host.resident_VMs([])) > 1: # If we are in a pool of one and VMs are running
+        numVMs = VMUtils.numLocalResidentVMs()
+        if len(db.host([])) == 1 and numVMs > 0: # If we are in a pool of one and VMs are running
             Layout.Inst().PushDialogue(InfoDialogue(Lang('This host has running Virtual Machines.  Please suspend or shutdown the Virtual Machines before entering Maintenance Mode.')))
         else:
             DialogueUtils.AuthenticatedOnly(lambda: Layout.Inst().PushDialogue(HostEvacuateDialogue()))

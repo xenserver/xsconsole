@@ -20,6 +20,7 @@ from XSConsoleData import *
 from XSConsoleHotData import *
 from XSConsoleLang import *
 from XSConsoleLog import *
+from XSConsoleTask import *
 
 # Utils that do not need to access XSConsoleData should go in XSConsoleUtils,
 # so that XSConsoleData can use them without creating circular import problems
@@ -468,3 +469,13 @@ class SRDataUtils:
         retVal.sort(lambda x, y : cmp(x.name, y.name))
 
         return retVal
+
+
+class VMUtils:
+    @staticmethod
+    def numLocalResidentVMs():
+        """Returns the number of VMs resident on the local host."""
+        query = ('field "is_a_template" = "false" and'
+                 'field "is_control_domain" = "false" and '
+                 'field "resident_on" = "%s"' % HotAccessor().local_host_ref().opaqueRef)
+        return len(Task.Sync(lambda x: x.xenapi.VM.get_all_records_where(query)))
