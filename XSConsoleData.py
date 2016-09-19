@@ -277,20 +277,27 @@ class Data:
 
                     # SRs in the pool record are often apparently valid but dangling references.
                     # We fetch the uuid to determine whether the SRs are real.
-                    try:
-                        retPool['default_SR_uuid'] = self.session.xenapi.SR.get_uuid(inPool['default_SR'])
-                    except:
-                        retPool['default_SR_uuid'] = None
 
-                    try:
-                        retPool['suspend_image_SR_uuid'] = self.session.xenapi.SR.get_uuid(inPool['suspend_image_SR'])
-                    except:
-                        retPool['suspend_image_SR_uuid'] = None
-                        
-                    try:
-                        retPool['crash_dump_SR_uuid'] = self.session.xenapi.SR.get_uuid(inPool['crash_dump_SR'])
-                    except:
-                        retPool['crash_dump_SR_uuid'] = None
+                    # [CP-18907] The checks for NULL references avoid the appearence of spurious
+                    #            backtraces in xensource.log
+
+                    def update_SR_reference(inPool, retPool, key):
+                        NULL_REF = "OpaqueRef:NULL"
+                        key_uuid = "%s_uuid" % key
+                        try:
+                            sr_ref = inPool[key]
+                            if sr_ref == NULL_REF:
+                                retPool[key_uuid] = None
+                            else:
+                                retPool[key_uuid] = self.session.xenapi.SR.get_uuid(sr_ref)
+                        except:
+                            XSLog("Cleared dangling reference for %s" % key)
+                            retPool[key_uuid] = None
+
+                    update_SR_reference(inPool, retPool, 'default_SR')
+                    update_SR_reference(inPool, retPool, 'suspend_image_SR')
+                    update_SR_reference(inPool, retPool, 'crash_dump_SR')
+
                     return retPool
                 
                 self.data['pools'] = {}
