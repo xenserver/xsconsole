@@ -20,11 +20,20 @@ from XSConsoleStandard import *
 import xml.dom.minidom
 
 class SRNewDialogue(Dialogue):
+    srTypes = {
+        'NFS': 'nfs',
+        'ISCSI': 'lvmoiscsi',
+        'HBA': 'lvmohba',
+        'EQUAL': 'equal',
+        'NETAPP': 'netapp',
+        'CIFS_ISO': 'iso',
+        'NFS_ISO': 'iso'
+    }
+
     srTypeNames = {
         'NFS': Lang('NFS VHD'),
         'ISCSI': Lang('Software iSCSI'),
         'HBA': Lang('Hardware HBA'),
-        'STORAGELINK': Lang('Advanced StorageLink Technology'),
         'EQUAL': Lang('Dell EqualLogic'),
         'NETAPP': Lang('NetApp'),
         'CIFS_ISO': Lang('Windows File Sharing (CIFS) ISO Library'),
@@ -51,14 +60,17 @@ class SRNewDialogue(Dialogue):
         self.createMenu = Menu()
 
         if self.variant == 'CREATE':
-            choices = ['NFS', 'ISCSI', 'HBA', 'STORAGELINK']
+            choices = ['NFS', 'ISCSI', 'HBA', 'EQUAL', 'NETAPP']
         else: # ATTACH choices
-            choices = ['NFS',  'ISCSI', 'HBA', 'STORAGELINK', 'CIFS_ISO', 'NFS_ISO']
-        
+            choices = ['NFS',  'ISCSI', 'HBA', 'EQUAL', 'NETAPP', 'CIFS_ISO', 'NFS_ISO']
+
+        srSupportedTypes = Task.Sync(lambda x: x.xenapi.SR.get_supported_types())
+
         for type in choices:
-            self.createMenu.AddChoice(name = self.srTypeNames[type],
-                onAction = self.HandleCreateChoice,
-                handle = type)
+            if self.srTypes[type] in srSupportedTypes:
+                self.createMenu.AddChoice(name = self.srTypeNames[type],
+                    onAction = self.HandleCreateChoice,
+                    handle = type)
 
         self.ChangeState('INITIAL')
 
@@ -248,17 +260,6 @@ class SRNewDialogue(Dialogue):
         pane.AddMenuField(self.createMenu)
         pane.AddKeyHelpField( { Lang("<Enter>") : Lang("OK"), Lang("<Esc>") : Lang("Cancel") } )
     
-    def UpdateFieldsGATHER_STORAGELINK(self):
-        # Overwrite menu with submenu
-        self.createMenu = Menu()
-        choices = ['EQUAL', 'NETAPP']
-        
-        for type in choices:
-            self.createMenu.AddChoice(name = self.srTypeNames[type],
-                onAction = self.HandleCreateChoice,
-                handle = type)
-
-        self.ChangeState('INITIAL')
     
     def UpdateFieldsGATHER_NFS(self):
         pane = self.Pane()
@@ -766,7 +767,7 @@ class SRNewDialogue(Dialogue):
                     'server':self.srParams['server'],
                     'serverpath':self.srParams['serverpath'],
                 },
-                'nfs' # type
+                self.srTypes['NFS'] # type
                 )
             )
             if xmlSRList == '':
@@ -812,7 +813,7 @@ class SRNewDialogue(Dialogue):
                     'target':self.srParams['remotehost'],
                     'port':self.srParams['port']
                 },
-                'lvmoiscsi' # type
+                self.srTypes['ISCSI'] # type
                 )
             )
         except XenAPI.Failure, e:
@@ -870,7 +871,7 @@ class SRNewDialogue(Dialogue):
                     '0', # physical_size
                     self.srParams['name'], # name_label
                     self.srParams['description'], # name_description
-                    'netapp', # type
+                    self.srTypes['NETAPP'], # type
                     'user', # content_type
                     True # shared
                     )
@@ -904,7 +905,7 @@ class SRNewDialogue(Dialogue):
             xmlOutput = Task.Sync(lambda x: x.xenapi.SR.probe(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
                 self.NetAppBaseConfig(), # device_config
-                'netapp' # type
+                self.srTypes['NETAPP'] # type
                 )
             )
     
@@ -936,7 +937,7 @@ class SRNewDialogue(Dialogue):
             srRef = Task.Sync(lambda x: x.xenapi.SR.probe(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
                 {}, # device_config
-                'lvmohba', # type
+                self.srTypes['HBA'], # type
                 )
             )
         except XenAPI.Failure, e:
@@ -990,7 +991,7 @@ class SRNewDialogue(Dialogue):
                     '0', # physical_size
                     self.srParams['name'], # name_label
                     self.srParams['description'], # name_description
-                    'equal', # type
+                    self.srTypes['EQUAL'], # type
                     'user', # content_type
                     True # shared
                     )
@@ -1017,7 +1018,7 @@ class SRNewDialogue(Dialogue):
             xmlOutput = Task.Sync(lambda x: x.xenapi.SR.probe(
                 HotAccessor().local_host_ref().OpaqueRef(), # host
                 self.EqualBaseConfig(), # device_config
-                'equal' # type
+                self.srTypes['EQUAL'] # type
                 )
             )
     
@@ -1064,7 +1065,7 @@ class SRNewDialogue(Dialogue):
                         'port':self.srParams['port'],
                         'targetIQN':self.srParams['iqn'].iqn
                     },
-                    'lvmoiscsi' # type
+                    self.srTypes['ISCSI'] # type
                     )
                 )
         except XenAPI.Failure, e:
@@ -1103,7 +1104,7 @@ class SRNewDialogue(Dialogue):
                     'targetIQN':self.srParams['iqn'].iqn,
                     'SCSIid':self.srParams['lun'].SCSIid
                 },
-                'lvmoiscsi' # type
+                self.srTypes['ISCSI'] # type
                 )
             )
 
@@ -1141,7 +1142,7 @@ class SRNewDialogue(Dialogue):
         xmlResult = Task.Sync(lambda x: x.xenapi.SR.probe(
             HotAccessor().local_host_ref().OpaqueRef(), # host
             { 'SCSIid' : self.srParams['scsiid'] }, # device_config
-            'lvmohba' # type
+            self.srTypes['HBA'] # type
             )
         )
         xmlDoc = xml.dom.minidom.parseString(xmlResult)
@@ -1268,7 +1269,7 @@ class SRNewDialogue(Dialogue):
             Layout.Inst().PushDialogue(InfoDialogue(Lang("Storage Repository Attachment Failed"), message))
 
     def CommitNFS_CREATE(self):
-        self.CommitCreate('nfs', { # device_config
+        self.CommitCreate(self.srTypes['NFS'], { # device_config
             'server':self.srParams['server'],
             'serverpath':self.srParams['serverpath'],
         },
@@ -1277,7 +1278,7 @@ class SRNewDialogue(Dialogue):
         })
         
     def CommitNFS_ATTACH(self):
-        self.CommitAttach('nfs', { # device_config
+        self.CommitAttach(self.srTypes['NFS'], { # device_config
             'server':self.srParams['server'],
             'serverpath':self.srParams['serverpath'],
         },
@@ -1286,14 +1287,14 @@ class SRNewDialogue(Dialogue):
 
     def CommitNFS_ISO_ATTACH(self):
         self.srParams['uuid'] = commands.getoutput('/usr/bin/uuidgen')
-        self.CommitAttach('iso', { # device_config
+        self.CommitAttach(self.srTypes['NFS_ISO'], { # device_config
             'location':self.srParams['server']+':'+self.srParams['serverpath'],
             'options':self.srParams['options']
         },
         { # Set auto-scan to true for ISO SRs
             'auto-scan':'true'
         },
-        'iso'
+        self.srTypes['NFS_ISO']
         )
 
     def CommitCIFS_ISO_ATTACH(self):
@@ -1308,16 +1309,16 @@ class SRNewDialogue(Dialogue):
                 'username' : self.srParams['username'],
                 'cifspassword' : self.srParams['cifspassword']
             })
-        self.CommitAttach('iso', 
+        self.CommitAttach(self.srTypes['CIFS_ISO'], 
             deviceConfig,
             { # Set auto-scan to true for ISO SRs
                 'auto-scan':'true'
             },
-            'iso'
+            self.srTypes['CIFS_ISO']
         )
 
     def CommitISCSI_CREATE(self):
-        self.CommitCreate('lvmoiscsi', { # device_config
+        self.CommitCreate(self.srTypes['ISCSI'], { # device_config
             'target':self.srParams['remotehost'],
             'port':self.srParams['port'],
             'targetIQN':self.srParams['iqn'].iqn,
@@ -1329,7 +1330,7 @@ class SRNewDialogue(Dialogue):
         )
         
     def CommitISCSI_ATTACH(self):
-        self.CommitAttach('lvmoiscsi', { # device_config
+        self.CommitAttach(self.srTypes['ISCSI'], { # device_config
             'target':self.srParams['remotehost'],
             'port':self.srParams['port'],
             'targetIQN':self.srParams['iqn'].iqn,
@@ -1346,7 +1347,7 @@ class SRNewDialogue(Dialogue):
             'FlexVols':str(self.srParams['numflexvols'])
         })
         deviceConfig.update(self.NetAppProvisioningConfig(self.srParams['provisioning']))
-        self.CommitCreate('netapp',
+        self.CommitCreate(self.srTypes['NETAPP'],
             deviceConfig,
             { # Set auto-scan to false for non-ISO SRs
                 'auto-scan':'false'
@@ -1356,7 +1357,7 @@ class SRNewDialogue(Dialogue):
     def CommitNETAPP_ATTACH(self):
         deviceConfig = self.NetAppBaseConfig()
         
-        self.CommitAttach('netapp',
+        self.CommitAttach(self.srTypes['NETAPP'],
             deviceConfig, # device_config
             {}, # other_config
             'user' # content_type
@@ -1364,7 +1365,7 @@ class SRNewDialogue(Dialogue):
         
     def CommitHBA_CREATE(self):
         deviceConfig = { 'SCSIid' : self.srParams['scsiid'] }
-        self.CommitCreate('lvmohba',
+        self.CommitCreate(self.srTypes['HBA'],
             deviceConfig,
             { # Set auto-scan to false for non-ISO SRs
                 'auto-scan':'false'
@@ -1374,7 +1375,7 @@ class SRNewDialogue(Dialogue):
     def CommitHBA_ATTACH(self):
         deviceConfig = { 'SCSIid' : self.srParams['scsiid'] }
         
-        self.CommitAttach('lvmohba',
+        self.CommitAttach(self.srTypes['HBA'],
             deviceConfig, # device_config
             {}, # other_config
             'user' # content_type
@@ -1385,7 +1386,7 @@ class SRNewDialogue(Dialogue):
         deviceConfig.update({
             'storagepool':self.srParams['storagepool']
         })
-        self.CommitCreate('equal',
+        self.CommitCreate(self.srTypes['EQUAL'],
             deviceConfig,
             { # Set auto-scan to false for non-ISO SRs
                 'auto-scan':'false'
@@ -1395,7 +1396,7 @@ class SRNewDialogue(Dialogue):
     def CommitEQUAL_ATTACH(self):
         deviceConfig = self.EqualBaseConfig()
         
-        self.CommitAttach('equal',
+        self.CommitAttach(self.srTypes['EQUAL'],
             deviceConfig, # device_config
             {}, # other_config
             'user' # content_type
