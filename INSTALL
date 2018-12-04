@@ -12,7 +12,7 @@ Follow these steps to build an RPM.
 
 1. Clone the xsconsole git repository to /some/path/xsconsole
 
-2. To obtain a tarballs of source for both the base and the plugin-oem run
+4. To obtain a tarballs of source for both the base and the plugin-oem run
    the following commands:
 
     git archive --prefix=xsconsole/ HEAD  Makefile  xsconsole LICENSE '*.py' \
@@ -21,7 +21,7 @@ Follow these steps to build an RPM.
     git archive --prefix=xsconsole/ HEAD  LICENSE 'plugins-oem/*py' | \
          bzip2 -c > xsconsole-plugins-oem.tar.bz2
 
-3. Replace with correct version numbers to create the spec file:
+6. Replace with correct version numbers to create the spec file:
      sed -e s\,@XS_VERSION@,6.2.50,g\
          -e s\,@XS_RELEASE@,385,g\
 	  < ./mk/xsconsole.spec.in  \
@@ -32,16 +32,16 @@ Follow these steps to build an RPM.
 	  < ./mk/xsconsole-plugins-oem.spec.in  \
 	  > xsconsole-plugins-oem.spec
 
-4. Move xsconsole.tar.bz2 to /usr/src/redhat/SOURCES/
+7. Move xsconsole.tar.bz2 to /usr/src/redhat/SOURCES/
    Move xsconsole.spec    to /usr/src/redhat/SPECS/
    Move xsconsole-plugins-oem.tar.bz2 to /usr/src/redhat/SOURCES/
    Move xsconsole-plugins-oem.spec    to /usr/src/redhat/SPECS/
 	      
-5. To build the RPMs run:
+8. To build the RPMs run:
      cd /usr/src/redhat/SPECS/
      rpmbuild -ba xsconsole.spec --target noarch
      rpmbuild -ba xsconsole-plugins-oem.spec --target noarch
 			  
-6. Install using
+9. Install using
      rpm -ivh /usr/src/redhat/RPMS/noarch/xsconsole*.rpm
 
